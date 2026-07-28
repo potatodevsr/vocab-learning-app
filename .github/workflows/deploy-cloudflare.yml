@@ -54,10 +54,11 @@ jobs:
         run: pnpm cf:build
         env:
           NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
-          # Valid build-time fallbacks make the first deploy possible before its
-          # workers.dev URL and production API URL are known.
-          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'https://vocab-learning-app.workers.dev' }}
-          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'http://localhost:4000' }}
+          # Use the known workers.dev origin until a custom domain and the API service
+          # binding are configured. Never ship localhost: Chrome treats that as an
+          # attempt to access services on the visitor's private network.
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'https://vocab-learning-app.hoshiku1997.workers.dev' }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://vocab-learning-app.hoshiku1997.workers.dev/api' }}
 
       - name: Create or update Worker
         run: pnpm exec wrangler deploy
