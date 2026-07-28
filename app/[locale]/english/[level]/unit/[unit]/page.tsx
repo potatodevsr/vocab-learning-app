@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react";
 
+import { getTranslations } from "next-intl/server";
+
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,6 +85,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
 
   if (words.length === 0) notFound();
 
+  const t = await getTranslations("Unit");
   const unitCount = Math.max(Math.ceil(levelTotal / UNIT_SIZE), 1);
   const levelHref = `/english/${level.toLowerCase()}`;
 
@@ -117,24 +120,22 @@ export default async function UnitPage({ params }: UnitPageProps) {
           <Button
             asChild
             variant="ghost"
-            className="play-press rounded-full text-white/90 hover:bg-white/20 hover:text-white"
+            className="play-press rounded-full font-semibold text-white hover:bg-white/25 hover:text-white"
           >
             <Link href={levelHref}>
               <ArrowLeft className="size-4" />
-              {`คำศัพท์ ${level} ทั้งหมด`}
+              {t("backToLevel", { level })}
             </Link>
           </Button>
 
-          <Badge className="mt-8 rounded-full bg-white/25 text-white hover:bg-white/25">
-            {`Oxford 3000 · ${level}`}
+          <Badge className="mt-8 rounded-full bg-white text-sm font-bold text-brand hover:bg-white">
+            {t("badge", { level })}
           </Badge>
 
-          <h1 className="mt-4 max-w-3xl">
-            {`คำศัพท์ภาษาอังกฤษ ${level} บทที่ ${unit}`}
-          </h1>
+          <h1 className="mt-4 max-w-3xl">{t("title", { level, unit })}</h1>
 
-          <p className="mt-3 max-w-2xl text-base leading-7 text-white/90">
-            {`${words.length} คำพร้อมความหมายภาษาไทย คำอ่าน และตัวอย่างประโยค — บทที่ ${unit} จาก ${unitCount} บท`}
+          <p className="mt-3 max-w-2xl text-base leading-7 text-white">
+            {t("subtitle", { count: words.length, unit, total: unitCount })}
           </p>
 
           <Button
@@ -143,7 +144,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
             className="play-press mt-6 h-12 rounded-full bg-white px-6 font-semibold text-brand hover:bg-white"
           >
             <Link href={`/learn?level=${level}&unit=${unit}`}>
-              เริ่มเรียนบทนี้
+              {t("startLesson")}
               <ArrowRight className="size-4" />
             </Link>
           </Button>
@@ -171,7 +172,10 @@ export default async function UnitPage({ params }: UnitPageProps) {
                     {word.meaningTh}
                   </p>
                   {word.exampleEn ? (
-                    <Volume2 className="size-4 shrink-0 text-muted-foreground" />
+                    <Volume2
+                      aria-label={t("listenable")}
+                      className="size-4 shrink-0 text-muted-foreground"
+                    />
                   ) : null}
                 </div>
               </Link>
@@ -191,7 +195,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
                 href={`/english/${level.toLowerCase()}/unit/${unit - 1}`}
               >
                 <ArrowLeft className="size-4" />
-                {`บทที่ ${unit - 1}`}
+                {t("unitLink", { unit: unit - 1 })}
               </Link>
             </Button>
           ) : (
@@ -208,7 +212,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
                 data-testid="next-unit"
                 href={`/english/${level.toLowerCase()}/unit/${unit + 1}`}
               >
-                {`บทที่ ${unit + 1}`}
+                {t("unitLink", { unit: unit + 1 })}
                 <ArrowRight className="size-4" />
               </Link>
             </Button>

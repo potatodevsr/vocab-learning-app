@@ -230,6 +230,25 @@ Running it found dead code: `backend/src/middleware/auth.ts` (the Express-era
 | Colour is never the only signal (icons on answer buttons) | `design.spec` |
 | No horizontal scroll at 390px (lesson + profile); 44px touch targets | `design.spec` (3) |
 
+## Interaction states, every page (SPEC §6.1 craft bar #2)
+
+`hover-states.spec` walks **every route the app has** — public, learner, in-session,
+admin, and a 390px phone pass — puts a real pointer on every link, button and field, and
+measures what the browser computes before and after. Each hover is photographed into
+`test-results/hover-states/<page>/`, so a state can be reviewed as a picture rather than
+as an assertion.
+
+| Rule | Test |
+| --- | --- |
+| Every interactive element changes *something* under the pointer (itself, a pseudo-element, a child, or its tile) | `hover-states.spec` (29 pages) |
+| Links, buttons and `summary` show `cursor: pointer` | `hover-states.spec` |
+| No control is unreachable behind another element (disabled controls excepted) | `hover-states.spec` |
+| Every control's label clears WCAG AA against the **composited** backdrop, not its own transparent background | `hover-states.spec` |
+
+Two things it is deliberately strict about: it measures contrast with the pointer parked
+away from the page (a hover state is not the rest state), and it scopes itself to the open
+menu when one is open, because an open dropdown covers the page behind it on purpose.
+
 ## Known gaps
 
 Stated rather than hidden:

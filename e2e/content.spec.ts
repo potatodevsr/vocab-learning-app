@@ -19,7 +19,7 @@ test.describe("public content", () => {
     await page.goto("/en/english/a1");
 
     await expect(
-      page.getByText(`${SEED.publishedWordCount} A1 entries`),
+      page.getByText(`${SEED.publishedWordCount} words at A1`),
     ).toBeVisible();
 
     await expect(

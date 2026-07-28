@@ -1,7 +1,7 @@
 import { Check, RotateCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 const cards = [
   {
@@ -31,16 +31,23 @@ const cards = [
 ];
 
 export function HeroWordIllustration() {
+  const t = useTranslations("Home");
+
   return (
-    <div className="relative mx-auto h-[560px] w-full max-w-[560px] overflow-hidden">
+    // Decorative: the cards below are a picture of the product, and a screen reader
+    // reading three sample words as if they were content is noise.
+    <div
+      aria-hidden
+      className="relative mx-auto h-[560px] w-full max-w-[560px] overflow-hidden"
+    >
       <div className="absolute inset-0 rounded-[28px] border-3 border-ink bg-accent-sun/30" />
 
-      <div className="absolute left-6 top-6 rounded-full bg-white/25 px-3 py-1 text-xs font-medium text-white">
-        UI preview
+      <div className="absolute left-6 top-6 rounded-full border-3 border-ink bg-white px-3 py-1 text-xs font-bold text-ink">
+        {t("illustrationPreview")}
       </div>
 
-      <div className="absolute right-6 top-6 rounded-full bg-white/25 px-3 py-1 text-xs font-medium text-white">
-        Word cards
+      <div className="absolute right-6 top-6 rounded-full border-3 border-ink bg-white px-3 py-1 text-xs font-bold text-ink">
+        {t("illustrationCards")}
       </div>
 
       <div className="absolute left-[calc(50%-160px)] top-[122px] h-[340px] w-[320px]">
@@ -80,25 +87,24 @@ export function HeroWordIllustration() {
               </p>
             </div>
 
+            {/*
+              Drawn, not wired. These were real <button>s in a decorative illustration:
+              they took focus, showed a pointer cursor and did nothing when clicked — a
+              control that lies about being one. They are now inert shapes, hidden from
+              assistive tech along with the rest of the picture.
+            */}
             <div className="mt-7 grid grid-cols-2 gap-3">
-              <Button className="play-press rounded-full bg-success text-white hover:bg-success">
+              <span className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-success text-sm font-medium text-white">
                 <Check className="size-4" />I know this
-              </Button>
+              </span>
 
-              <Button
-                variant="outline"
-                className="rounded-full border-zinc-200 bg-white hover:bg-zinc-50"
-              >
+              <span className="flex h-9 items-center justify-center gap-1.5 rounded-full border border-border bg-white text-sm font-medium">
                 <RotateCcw className="size-4" />
                 Review
-              </Button>
+              </span>
             </div>
           </article>
         ))}
-      </div>
-
-      <div className="absolute bottom-8 left-8 right-8 rounded-2xl bg-white/25 px-4 py-3 text-center text-sm font-medium text-white">
-        Thai meaning · pronunciation · CEFR levels
       </div>
     </div>
   );

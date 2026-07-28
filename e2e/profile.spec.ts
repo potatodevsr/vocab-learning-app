@@ -24,7 +24,7 @@ test.describe("profile", () => {
     const user = await registerThroughUi(page);
 
     await page.getByText(user.username).click();
-    await page.getByRole("menuitem", { name: /โปรไฟล์/ }).click();
+    await page.getByRole("menuitem", { name: "Profile" }).click();
 
     await expect(page).toHaveURL(/\/en\/profile/);
     await expect(page.getByTestId("profile-email")).toHaveText(user.email);

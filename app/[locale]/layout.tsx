@@ -3,7 +3,7 @@ import { Geist, Geist_Mono, Noto_Sans_Thai } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
-import { UserNavbar } from "@/components/user-navbar";
+import { AppBar } from "@/components/app-bar";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { SITE_URL } from "@/lib/seo";
 import "../globals.css";
@@ -62,9 +62,7 @@ export default async function LocaleLayout({
     >
       <body className="antialiased">
         <NextIntlClientProvider>
-          <div className="fixed top-4 right-4 z-50">
-            <UserNavbar locale={locale} />
-          </div>
+          <AppBar locale={locale} />
           {children}
         </NextIntlClientProvider>
       </body>

@@ -51,8 +51,11 @@ export function MasteryPips({
           data-testid="mastery-pip"
           data-filled={index < filled}
           className={cn(
-            "h-2 w-5 rounded-full transition-colors duration-150",
-            index < filled ? FILL[level] : "bg-muted",
+            // An empty pip has to read as an empty *slot*: `bg-muted` alone was very
+            // nearly the card behind it, so a word at mastery 0 showed no pips at all
+            // and the meter looked broken rather than empty.
+            "h-2 w-5 rounded-full border-2 border-ink/25 transition-colors duration-150",
+            index < filled ? `${FILL[level]} border-ink/40` : "bg-ink/5",
           )}
         />
       ))}

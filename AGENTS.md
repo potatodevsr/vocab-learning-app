@@ -35,17 +35,22 @@ in R2. Details and reasoning: `docs/SPEC.md` §2–3.
    `lib/admin-api.ts` drifted from the schema.
 3. **No hardcoded user-facing strings.** Everything through `next-intl`; keys land in both
    `messages/en.json` and `messages/th.json`. Thai is the primary audience — an untranslated
-   `th` value is a bug, not a TODO.
+   `th` value is a bug, not a TODO. Page titles count: they are what the browser tab says.
+   (`app/admin/` is the documented exception — it is Thai-only and not localised.)
 4. **No Node-only APIs** in anything that runs on a Worker. `jose`, not `jsonwebtoken`;
    WebCrypto, not `bcryptjs`; `fetch`, not `http`.
 5. **One `API_URL`.** `constants/config.ts` is the only place it is defined.
 6. **Every route that fetches gets `error.tsx` and `loading.tsx`.** Server fetches throw by
    design; an unhandled throw is a white screen.
 7. **Mobile-first.** Design at 390px. Desktop is the adaptation, not the baseline.
-8. **Fetch by unit, never by level.** The API caps a single read (guard `take.max`), so
+8. **Colour comes in two tiers, and the tier decides what may be written on it.** White
+   text belongs on `--brand`, `--success`, `--danger`, `--accent-grape`, `--accent-deep-sky`;
+   the bright hues (`--warn`, `--accent-sun/mint/sky`) carry `--ink` text only. Chips on a
+   coloured band are solid, never `bg-white/25` — see `docs/SPEC.md` §6.1.
+9. **Fetch by unit, never by level.** The API caps a single read (guard `take.max`), so
    "fetch the level and slice locally" silently truncates a 900-word level to the first
    page. Use `getWordsByUnit` / `getLevelWordCount` from `lib/oxford-words.ts`.
-9. **API paths are lowercase and have no trailing slash.** Hono routes strictly, unlike
+10. **API paths are lowercase and have no trailing slash.** Hono routes strictly, unlike
    the Express API it replaced: `/VocabWord` and `/vocabword/` both 404.
 
 ## Schema changes are a two-repo dance
@@ -68,6 +73,14 @@ rows a test creates are really committed.
 pnpm test:e2e             # the gate. builds, boots API + web, runs everything
 pnpm test:e2e:ui          # interactive runner
 ```
+
+`e2e/hover-states.spec.ts` is the design half of that gate: it visits **every route**,
+hovers **every** link, button and field, and fails on a control that answers the pointer
+with nothing, shows the wrong cursor, sits under something else, or whose label misses
+WCAG AA against its composited backdrop. Every hover is photographed to
+`test-results/hover-states/<page>/`, so states can be reviewed as pictures. **A new page
+needs an entry in that file** — a route missing from it is a route whose interaction
+states nobody has looked at.
 
 Ports are deliberately split so a test run can never touch what you are developing
 against:

@@ -149,7 +149,7 @@ export function LessonCardSession({
         <section className="mx-auto flex min-h-screen w-full max-w-3xl items-center px-6">
           <div className="play-card w-full p-8">
             <div>
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-warn text-white">
+              <div className="flex size-12 items-center justify-center rounded-2xl border-3 border-ink bg-warn text-ink">
                 <CircleAlert className="size-5" />
               </div>
 
@@ -194,7 +194,7 @@ export function LessonCardSession({
                 {tLesson("completeTitle", { count: words.length })}
               </h1>
 
-              <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-600">
+              <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
                 {tLesson("completeDescription")}
               </p>
 
@@ -281,7 +281,7 @@ export function LessonCardSession({
             <Button
               asChild
               variant="ghost"
-              className="play-press rounded-full text-white/90 hover:bg-white/20 hover:text-white"
+              className="play-press rounded-full text-white hover:bg-white/20 hover:text-white"
             >
               <Link href={pathHref}>
                 <ArrowLeft className="size-4" />
@@ -291,7 +291,7 @@ export function LessonCardSession({
 
             <Badge
               data-testid="round-badge"
-              className="rounded-full bg-white/20 text-white hover:bg-white/20"
+              className="rounded-full bg-white font-bold text-brand hover:bg-white"
             >
               {tCommon("unitLabel", { level, unit })} ·{" "}
               {tLesson("roundLabel", { round, total: roundCount })}
@@ -304,12 +304,12 @@ export function LessonCardSession({
                 {tLesson("title")}
               </h1>
 
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/85">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white">
                 {tLesson("description")}
               </p>
             </div>
 
-            <div className="text-sm font-medium text-white/90">
+            <div className="text-sm font-medium text-white">
               {tLesson("cardCounter", {
                 current: currentIndex + 1,
                 total: words.length,
@@ -376,7 +376,7 @@ export function LessonCardSession({
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-3xl border bg-white p-5">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         {tLesson("thaiMeaning")}
                       </p>
 
@@ -402,7 +402,7 @@ export function LessonCardSession({
                   </div>
 
                   <div className="rounded-3xl border bg-white p-5">
-                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       {tLesson("pronunciation")}
                     </p>
 
@@ -417,10 +417,10 @@ export function LessonCardSession({
                 </div>
 
                 <div className="mt-4 rounded-3xl border bg-white p-5">
-                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     {tLesson("example")}
                   </p>
-                  <p className="mt-2 text-base leading-7 text-zinc-600">
+                  <p className="mt-2 text-base leading-7 text-muted-foreground">
                     {currentWord.exampleEn || tLesson("examplePlaceholder")}
                   </p>
                 </div>
@@ -452,7 +452,7 @@ export function LessonCardSession({
 
         <div className="space-y-4">
           <div className="play-card p-6">
-              <h2 className="font-semibold">{tLesson("sidebarTitle")}</h2>
+              <h2 className="text-lg font-bold">{tLesson("sidebarTitle")}</h2>
 
               <div className="mt-4 grid gap-3 text-sm">
                 <div className="flex justify-between rounded-2xl bg-brand-soft px-4 py-3">
@@ -485,7 +485,7 @@ export function LessonCardSession({
           </div>
 
           <div className="play-card p-6">
-              <h2 className="font-semibold">{tLesson("comingNext")}</h2>
+              <h2 className="text-lg font-bold">{tLesson("comingNext")}</h2>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {nextWords.length > 0 ? (
@@ -493,7 +493,7 @@ export function LessonCardSession({
                     <Badge
                       key={word.id}
                       variant="outline"
-                      className="rounded-full bg-zinc-50"
+                      className="rounded-full bg-brand-soft"
                     >
                       {word.displayWord}
                     </Badge>

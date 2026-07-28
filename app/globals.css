@@ -25,6 +25,7 @@
   --color-accent-mint: var(--accent-mint);
   --color-accent-sun: var(--accent-sun);
   --color-accent-grape: var(--accent-grape);
+  --color-accent-deep-sky: var(--accent-deep-sky);
   --color-ink: var(--ink);
   --font-heading: var(--font-geist-sans), var(--font-noto-sans-thai), ui-sans-serif,
     system-ui, sans-serif;
@@ -79,8 +80,8 @@
   --popover-foreground: oklch(0.24 0.03 275);
 
   /* Primary action / progress fill — friendly blue */
-  --primary: oklch(0.58 0.19 250);
-  --primary-foreground: oklch(0.99 0.005 285);
+  --primary: oklch(0.54 0.19 250);
+  --primary-foreground: oklch(1 0 0);
 
   --secondary: oklch(0.96 0.02 285);
   --secondary-foreground: oklch(0.32 0.08 290);
@@ -88,25 +89,39 @@
   --muted-foreground: oklch(0.48 0.03 280);
   --accent: oklch(0.93 0.06 200);
   --accent-foreground: oklch(0.28 0.07 240);
-  --destructive: oklch(0.6 0.22 22);
+  --destructive: oklch(0.55 0.2 28);
   --border: oklch(0.9 0.02 280);
   --input: oklch(0.9 0.02 280);
-  --ring: oklch(0.58 0.19 250);
+  --ring: oklch(0.54 0.19 250);
 
-  /* Semantic play tokens — flat, primary-ish, no magenta lead (SPEC §6.1).
-     Pink is an accent at most; it is never a surface.                        */
-  --brand: oklch(0.58 0.19 250);      /* blue    — actions, progress          */
+  /* ── Semantic play tokens ──────────────────────────────────────────────────
+     Two tiers, and which tier a colour belongs to decides what may be written
+     on it. This is not a style preference — it is the only way a saturated
+     palette clears WCAG AA, and the hover sweep measures it on every control.
+
+     INK TIER — dark enough that white body text clears 4.5:1:
+       brand 4.96 · success 5.15 · danger 5.37 · grape 5.96 · deep-sky 5.15
+
+     BRIGHT TIER — the playful hues. White text on these is 1.6–2.4:1, i.e.
+     unreadable, so they carry INK text only and are used for blocks, chips,
+     pips and confetti rather than for text surfaces:
+       warn 8.08 (with ink) · sun 10.05 · mint 7.60 · sky 6.86
+
+     A hero band therefore uses the ink tier; a sticker block uses the bright
+     tier. Mixing the two is what produced 2.85:1 nav links on the old palette.  */
+  --brand: oklch(0.54 0.19 250);      /* blue    — actions, progress          */
   --brand-soft: oklch(0.94 0.04 250);
-  --success: oklch(0.63 0.18 148);    /* green   — correct, mastered          */
+  --success: oklch(0.52 0.15 148);    /* green   — correct, mastered          */
   --success-soft: oklch(0.94 0.07 148);
-  --warn: oklch(0.78 0.15 78);        /* sun     — review later, due          */
+  --warn: oklch(0.78 0.15 78);        /* sun     — review later, due (ink)    */
   --warn-soft: oklch(0.95 0.07 85);
-  --danger: oklch(0.62 0.2 28);       /* coral   — wrong answers only         */
+  --danger: oklch(0.55 0.2 28);       /* coral   — wrong answers only         */
   --danger-soft: oklch(0.95 0.05 28);
-  --accent-sky: oklch(0.72 0.13 225);
+  --accent-sky: oklch(0.72 0.13 225); /* bright tier — blocks, chips          */
   --accent-mint: oklch(0.74 0.14 165);
   --accent-sun: oklch(0.84 0.15 90);
-  --accent-grape: oklch(0.6 0.16 300);
+  --accent-grape: oklch(0.52 0.17 300);  /* ink tier — a second hero colour   */
+  --accent-deep-sky: oklch(0.52 0.14 232); /* ink tier — sky you can write on */
   --ink: oklch(0.24 0.03 265);        /* flat outline colour                  */
 
   /* One motion language: two durations, one curve */
@@ -213,6 +228,20 @@
     font-size: 1rem;
   }
 
+  /* Tailwind v4 dropped the opinionated `cursor: pointer` on buttons, so every
+     button in the app silently reverted to an arrow. A control that does not
+     look clickable under the pointer is a control people do not click. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
   /* Thai has taller ascenders/descenders than Latin and looks cramped at Latin
      leading — give any Thai-tagged text a little more room. */
   :lang(th) {
@@ -225,6 +254,10 @@
     sans-serif;
 }
 
+/* The card stack: one card is being read, the other two are the deck it came from.
+   They used to sit at 0.72/0.66 opacity, close enough that three sets of words
+   overlapped and the front card read as clipped rather than as topmost. Pushing the
+   back cards further out and further down in opacity makes the stack read as depth. */
 @keyframes heroCardCycle {
 
   0%,
@@ -236,16 +269,16 @@
 
   33%,
   60% {
-    opacity: 0.72;
+    opacity: 0.4;
     z-index: 20;
-    transform: translate3d(116px, 72px, 0) scale(0.86) rotate(7deg);
+    transform: translate3d(132px, 84px, 0) scale(0.84) rotate(7deg);
   }
 
   66%,
   93% {
-    opacity: 0.66;
+    opacity: 0.32;
     z-index: 10;
-    transform: translate3d(-112px, -54px, 0) scale(0.88) rotate(-7deg);
+    transform: translate3d(-128px, -66px, 0) scale(0.86) rotate(-7deg);
   }
 
   100% {
@@ -355,6 +388,81 @@
   transform: translateY(2px);
 }
 
+/* ── Fields answer the pointer too ───────────────────────────────────────────
+   Deliberately unlayered rather than in `@layer base`: shadcn's Input ships
+   `bg-transparent border-input` as *utilities*, and a utility beats anything in
+   the base layer, so a base-layer hover simply never painted. Without these, a
+   form is the one place in the app where hovering tells you nothing (SPEC §6.1
+   craft bar #2 — four states, on every interactive element).
+
+   `[data-slot="select-trigger"]` is shadcn's select: a button in a field's
+   clothing, shipped with focus and disabled styling but no hover. It is styled
+   here because `components/ui/` is generated and the next `shadcn add` would
+   overwrite a fix made there. */
+input:not(:disabled),
+textarea:not(:disabled),
+select:not(:disabled),
+[data-slot="select-trigger"]:not(:disabled) {
+  transition: border-color var(--dur-fast) var(--ease-play),
+    background-color var(--dur-fast) var(--ease-play);
+}
+
+input:not(:disabled):hover,
+textarea:not(:disabled):hover,
+select:not(:disabled):hover,
+[data-slot="select-trigger"]:not(:disabled):hover {
+  border-color: var(--brand);
+  background-color: var(--brand-soft);
+}
+
+/* ── Admin sidebar: undo an attribute-presence trap ──────────────────────────
+   Tailwind v4 reads `data-active:` as "the attribute exists", and shadcn's
+   `SidebarMenuButton` always renders `data-active="true|false"`. Every item
+   therefore painted itself as selected, and because the rest state was already
+   the accent colour, hovering one changed nothing at all — a whole navigation
+   with no hover state and no visible current page. Unlayered so it beats the
+   utility, and here because `components/ui/` is generated. */
+[data-sidebar="menu-button"][data-active="false"] {
+  background-color: transparent;
+  color: var(--sidebar-foreground);
+  font-weight: 500;
+}
+
+[data-sidebar="menu-button"][data-active="false"]:hover {
+  background-color: var(--brand-soft);
+  color: var(--brand);
+}
+
+[data-sidebar="menu-button"][data-active="true"] {
+  background-color: var(--brand);
+  color: oklch(1 0 0);
+}
+
+[data-sidebar="menu-button"][data-active="true"]:hover {
+  background-color: color-mix(in oklab, var(--brand) 86%, var(--ink));
+}
+
+/* shadcn's default button lightens on hover (`hover:bg-primary/80`), which both
+   washes the colour out and drops white label text from 4.94:1 to 3.56:1 — a
+   hover state that fails AA is still a state people read. Darkening keeps the
+   contrast climbing as the pointer arrives. Unlayered so it beats the utility,
+   and here rather than in generated `components/ui/`. */
+[data-slot="button"][data-variant="default"]:not(:disabled):hover {
+  background-color: color-mix(in oklab, var(--primary) 86%, var(--ink));
+}
+
+/* Lift: the smallest honest hover. For links that are a lockup rather than a
+   label — a logo, a segmented-control chip — where an underline would read as
+   decoration rather than as an affordance. */
+.play-lift {
+  transition: transform var(--dur-fast) var(--ease-play);
+}
+
+.play-lift:hover,
+.play-lift:focus-visible {
+  transform: translateY(-2px);
+}
+
 /* Playful tilt for icons and badges. */
 .play-wiggle {
   transition: transform var(--dur-fast) var(--ease-play);
@@ -439,7 +547,14 @@
   .play-press,
   .play-press::after,
   .play-wiggle,
-  .play-underline::after {
+  .play-underline::after,
+  input,
+  textarea,
+  select {
+    transition: none !important;
+  }
+
+  .play-lift {
     transition: none !important;
   }
 

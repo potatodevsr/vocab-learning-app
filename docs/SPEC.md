@@ -535,6 +535,20 @@ is information rather than mood:
 | `--danger` | wrong answers only — never used decoratively |
 | `--accent-*` | a small set of playful hues for unit nodes, badges, confetti |
 
+**Two tiers, and the tier decides what may be written on a colour.** A saturated palette
+only clears AA if this is explicit, so it is a rule rather than a habit:
+
+| Tier | Tokens | White text on it | Use for |
+| --- | --- | --- | --- |
+| **Ink tier** | `--brand` 4.94 · `--success` 5.15 · `--danger` 5.39 · `--accent-grape` 5.97 · `--accent-deep-sky` 5.14 | passes AA | hero bands, primary buttons, anything with a label |
+| **Bright tier** | `--warn` 2.03 · `--accent-sun` 1.64 · `--accent-mint` 2.17 · `--accent-sky` 2.40 | fails badly | sticker blocks, pips, chips and confetti — **`--ink` text only** |
+
+Mixing the tiers is what produced 2.85:1 navigation links and a 4.24:1 primary button in
+the first build; `hover-states.spec` now measures every control against its *composited*
+backdrop, so the mistake cannot come back quietly. The same rule kills translucent chrome:
+white text on a `bg-white/25` pill over a coloured band measures ~3.2:1, so chips on a hero
+are solid.
+
 Dark mode is a later concern; **get one delightful light theme right first.**
 
 **Craft bar.** "Awwwards-worthy" is not a colour choice, it is consistency of execution.
@@ -543,7 +557,8 @@ Concretely, for this app:
 1. **One motion language.** A single easing curve and two durations (fast ~150ms for state,
    slow ~400ms for celebration). Everything animates the same way or not at all.
 2. **Every interactive element has four states** — rest, hover, active, focus-visible — and
-   focus is *designed*, not the browser default.
+   focus is *designed*, not the browser default. Enforced by `hover-states.spec`, which
+   hovers every control on every page and fails when one answers with nothing.
 3. **Celebrate at exactly one moment per session.** Confetti on lesson complete; a pip fill
    and a colour pulse on each correct answer. More than that and it becomes noise.
 4. **Numbers animate.** XP, completion percentage and streak counters roll up rather than

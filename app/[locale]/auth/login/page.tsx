@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { ArrowLeft } from "lucide-react";
 import Swal from "sweetalert2";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,12 +17,12 @@ const isValidEmail = (value: string) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 };
 
-const showWarning = async (title: string, text: string) => {
+const showWarning = async (title: string, text: string, confirm: string) => {
   await Swal.fire({
     icon: "warning",
     title,
     text,
-    confirmButtonText: "ตกลง",
+    confirmButtonText: confirm,
     confirmButtonColor: "#3f3f46",
     background: "#ffffff",
     color: "#18181b",
@@ -34,12 +35,12 @@ const showWarning = async (title: string, text: string) => {
   });
 };
 
-const showError = async (title: string, text: string) => {
+const showError = async (title: string, text: string, confirm: string) => {
   await Swal.fire({
     icon: "error",
     title,
     text,
-    confirmButtonText: "ตกลง",
+    confirmButtonText: confirm,
     confirmButtonColor: "#3f3f46",
     background: "#ffffff",
     color: "#18181b",
@@ -52,13 +53,13 @@ const showError = async (title: string, text: string) => {
   });
 };
 
-const getErrorMessage = (err: unknown) => {
-  return err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
-};
+const getErrorMessage = (err: unknown, fallback: string) =>
+  err instanceof Error ? err.message : fallback;
 
 export default function LoginPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("Auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -66,20 +67,29 @@ export default function LoginPage() {
 
   const validateForm = async () => {
     if (!email.trim()) {
-      await showWarning("กรุณากรอกอีเมล", "โปรดระบุอีเมลก่อนเข้าสู่ระบบ");
+      await showWarning(
+        t("validation.emailRequiredTitle"),
+        t("validation.emailRequiredText"),
+        t("confirm"),
+      );
       return false;
     }
 
     if (!isValidEmail(email)) {
       await showWarning(
-        "อีเมลไม่ถูกต้อง",
-        "กรุณากรอกอีเมลให้ถูกต้อง เช่น name@example.com"
+        t("validation.emailInvalidTitle"),
+        t("validation.emailInvalidText"),
+        t("confirm"),
       );
       return false;
     }
 
     if (!password.trim()) {
-      await showWarning("กรุณากรอกรหัสผ่าน", "โปรดระบุรหัสผ่านก่อนเข้าสู่ระบบ");
+      await showWarning(
+        t("validation.passwordRequiredTitle"),
+        t("validation.passwordRequiredText"),
+        t("confirm"),
+      );
       return false;
     }
 
@@ -111,14 +121,18 @@ export default function LoginPage() {
       router.push(redirectTo);
     } catch (err) {
       setLoading(false);
-      await showError("เข้าสู่ระบบไม่สำเร็จ", getErrorMessage(err));
+      await showError(
+        t("error.loginFailed"),
+        getErrorMessage(err, t("error.generic")),
+        t("confirm"),
+      );
     }
   };
 
   if (loading || success) {
     return (
       <LoadingOverlay
-        message={success ? "กำลังเข้าสู่ระบบ..." : "กำลังตรวจสอบข้อมูล..."}
+        message={success ? t("loadingLogin") : t("loadingChecking")}
       />
     );
   }
@@ -126,11 +140,18 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-brand px-4">
       <div className="w-full max-w-md">
+        {/* The app bar is hidden on auth screens, so this is the only way back out. */}
+        <Link
+          href={`/${locale}`}
+          className="play-underline play-focus mb-6 inline-flex items-center gap-2 text-sm font-semibold text-white"
+        >
+          <ArrowLeft className="size-4" />
+          {t("backHome")}
+        </Link>
+
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white drop-shadow-sm">เข้าสู่ระบบ</h1>
-          <p className="mt-2 text-sm text-white/90">
-            เพื่อเริ่มเรียนคำศัพท์ Oxford 3000
-          </p>
+          <h1 className="text-3xl font-bold text-white">{t("loginTitle")}</h1>
+          <p className="mt-2 text-sm text-white">{t("loginSubtitle")}</p>
         </div>
 
         <Card className="play-card rounded-[28px] border-0">
@@ -142,7 +163,7 @@ export default function LoginPage() {
               noValidate
             >
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -155,7 +176,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("password")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -167,16 +188,16 @@ export default function LoginPage() {
               </div>
 
               <Button type="submit" className="play-press h-12 w-full rounded-full bg-brand text-base font-semibold text-white hover:bg-brand">
-                ยืนยัน
+                {t("submit")}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                ยังไม่มีบัญชี?{" "}
+                {t("noAccount")}{" "}
                 <Link
                   href={`/${locale}/auth/register`}
-                  className="text-primary hover:underline"
+                  className="play-focus font-semibold text-brand underline-offset-4 hover:underline"
                 >
-                  สมัครสมาชิก
+                  {t("register")}
                 </Link>
               </p>
             </form>

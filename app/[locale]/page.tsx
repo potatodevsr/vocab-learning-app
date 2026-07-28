@@ -6,11 +6,9 @@ import {
   Brain,
   Languages,
   Mic2,
-  Sparkles,
 } from "lucide-react";
 
 import { HeroWordIllustration } from "@/components/hero-word-illustration";
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,39 +18,15 @@ import { jsonLd, publicMetadata, SITE_URL } from "@/lib/seo";
 const a1WordsHref = "/english/a1";
 const learnHref = "/learn?level=A1&unit=1";
 
+/** Copy lives in `messages/*.json`; only the icon and the tile colour live here. */
 const features = [
-  {
-    title: "Oxford 3000 vocabulary",
-    description:
-      "Learn essential English words from the Oxford 3000 list, organized by CEFR level.",
-    icon: BookOpen,
-  },
-  {
-    title: "Thai meaning",
-    description:
-      "Understand each word through clear Thai meanings and simple explanations.",
-    icon: Languages,
-  },
-  {
-    title: "Pronunciation help",
-    description:
-      "Practice pronunciation with IPA and Thai-style pronunciation guidance.",
-    icon: Mic2,
-  },
-  {
-    title: "Review system",
-    description:
-      "Return to difficult words regularly and strengthen your long-term memory.",
-    icon: Brain,
-  },
-];
+  { key: "Words", icon: BookOpen, block: "var(--accent-sky)" },
+  { key: "Meaning", icon: Languages, block: "var(--accent-mint)" },
+  { key: "Pronunciation", icon: Mic2, block: "var(--accent-sun)" },
+  { key: "Review", icon: Brain, block: "var(--accent-grape)" },
+] as const;
 
-const steps = [
-  "Choose your English level",
-  "Learn words with meaning and pronunciation",
-  "Practice with short quizzes",
-  "Review difficult words regularly",
-];
+const steps = ["flowStep1", "flowStep2", "flowStep3", "flowStep4"] as const;
 
 type HomeProps = { params: Promise<{ locale: string }> };
 
@@ -86,63 +60,17 @@ export default async function Home() {
       />
     <main className="min-h-screen bg-background text-foreground">
       <section className="bg-brand text-white">
-        <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 lg:px-8">
-          <header className="flex items-center justify-between rounded-3xl bg-white/20 px-4 py-3 backdrop-blur">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-white text-brand">
-                <Sparkles className="size-5" />
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold leading-none">
-                  Vocab Learning
-                </p>
-                <p className="text-xs text-white/80">{t("brandSubtitle")}</p>
-              </div>
-            </Link>
-
-            <nav className="hidden items-center gap-6 text-sm font-medium text-white/90 md:flex">
-              <Link href={a1WordsHref} className="play-underline">
-                A1 Words
-              </Link>
-
-              <Link href={learnHref} className="play-underline">
-                Learn
-              </Link>
-
-              <Link href="/quiz" className="play-underline">
-                Quiz
-              </Link>
-
-              <Link href="/review" className="play-underline">
-                Progress
-              </Link>
-            </nav>
-
-            <div className="flex items-center gap-3">
-              <LanguageSwitcher />
-
-              <Button
-                asChild
-                className="play-press rounded-full bg-white font-semibold text-brand hover:bg-white"
-              >
-                <Link href={learnHref}>
-                  {t("start")}
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-            </div>
-          </header>
-
+        <div className="mx-auto flex w-full max-w-7xl flex-col px-6 py-6 lg:px-8">
           <div className="grid flex-1 items-center gap-12 py-16 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="space-y-8">
               <div className="space-y-5">
-                <Badge className="rounded-full border-0 bg-white/25 px-4 py-1.5 text-sm text-white hover:bg-white/25">
+                {/* Solid, not translucent: white-on-white/25 measured 3.2:1. */}
+                <Badge className="rounded-full border-0 bg-white px-4 py-1.5 text-sm font-bold text-brand hover:bg-white">
                   {t("heroBadge")}
                 </Badge>
 
                 <div className="space-y-4">
-                  <h1 className="max-w-4xl text-5xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">
+                  <h1 className="max-w-4xl text-balance text-5xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">
                     {t("heroTitleStart")}{" "}
                     <span className="text-accent-sun drop-shadow-sm">
                       {t("heroTitleHighlight")}
@@ -150,7 +78,7 @@ export default async function Home() {
                     {t("heroTitleEnd")}
                   </h1>
 
-                  <p className="max-w-2xl text-lg leading-8 text-white/90">
+                  <p className="max-w-2xl text-lg leading-8 text-white">
                     {t("heroDescription")}
                   </p>
                 </div>
@@ -178,18 +106,15 @@ export default async function Home() {
                 </Button>
               </div>
 
-              <div className="grid max-w-2xl gap-3 text-sm text-white sm:grid-cols-3">
-                <div className="rounded-2xl bg-white/20 px-4 py-3 font-medium">
-                  {t("heroStatWords")}
-                </div>
-
-                <div className="rounded-2xl bg-white/20 px-4 py-3 font-medium">
-                  {t("heroStatLevel")}
-                </div>
-
-                <div className="rounded-2xl bg-white/20 px-4 py-3 font-medium">
-                  {t("heroStatThai")}
-                </div>
+              <div className="grid max-w-2xl gap-3 text-sm sm:grid-cols-3">
+                {["heroStatWords", "heroStatLevel", "heroStatThai"].map((key) => (
+                  <div
+                    key={key}
+                    className="rounded-2xl border-3 border-ink bg-white px-4 py-3 font-bold text-ink"
+                  >
+                    {t(key)}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -202,19 +127,17 @@ export default async function Home() {
         <div className="mx-auto grid w-full max-w-7xl gap-8 px-6 py-20 lg:px-8">
           <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <div>
-              <Badge className="rounded-full border-0 bg-accent-mint/25 text-accent-mint hover:bg-accent-mint/25">
-                Core features
+              <Badge className="rounded-full border-3 border-ink bg-accent-mint text-sm font-bold text-ink hover:bg-accent-mint">
+                {t("featuresBadge")}
               </Badge>
 
-              <h2 className="mt-4 max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl">
-                Everything you need to build lasting vocabulary.
+              <h2 className="mt-4 max-w-xl text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+                {t("featuresTitle")}
               </h2>
             </div>
 
             <p className="max-w-2xl text-base leading-7 text-muted-foreground lg:justify-self-end">
-              Build a strong English foundation through structured vocabulary
-              lessons, pronunciation guidance, short quizzes, and regular
-              review.
+              {t("featuresBody")}
             </p>
           </div>
 
@@ -223,18 +146,24 @@ export default async function Home() {
               const Icon = feature.icon;
 
               return (
-                <Card key={feature.title} className="play-tile rounded-[28px] border-0 [--tile-block:var(--accent-sky)]">
+                <Card
+                  key={feature.key}
+                  className="play-tile rounded-[28px] border-0"
+                  style={{ "--tile-block": feature.block } as React.CSSProperties}
+                >
                   <CardHeader>
-                    <div className="mb-2 flex size-12 items-center justify-center rounded-2xl bg-brand text-white">
+                    <div className="mb-2 flex size-12 items-center justify-center rounded-2xl border-3 border-ink bg-brand text-white">
                       <Icon className="size-5" />
                     </div>
 
-                    <CardTitle className="text-lg">{feature.title}</CardTitle>
+                    <CardTitle className="text-lg">
+                      {t(`feature${feature.key}Title`)}
+                    </CardTitle>
                   </CardHeader>
 
                   <CardContent>
                     <p className="text-sm leading-6 text-muted-foreground">
-                      {feature.description}
+                      {t(`feature${feature.key}Body`)}
                     </p>
                   </CardContent>
                 </Card>
@@ -247,17 +176,16 @@ export default async function Home() {
       <section className="bg-brand-soft/40">
         <div className="mx-auto grid w-full max-w-7xl gap-10 px-6 py-20 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
           <div className="space-y-5">
-            <Badge className="rounded-full border-0 bg-brand text-white hover:bg-brand">
-              Learning flow
+            <Badge className="rounded-full border-0 bg-brand text-sm font-bold text-white hover:bg-brand">
+              {t("flowBadge")}
             </Badge>
 
-            <h2 className="max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl">
-              Simple to begin, structured for steady progress.
+            <h2 className="max-w-xl text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+              {t("flowTitle")}
             </h2>
 
             <p className="max-w-xl text-base leading-7 text-muted-foreground">
-              Choose your level, study each word with clear guidance, test your
-              understanding, and return regularly to review difficult words.
+              {t("flowBody")}
             </p>
 
             <Button
@@ -265,7 +193,7 @@ export default async function Home() {
               className="play-press rounded-full bg-brand px-6 text-white hover:bg-brand"
             >
               <Link href={learnHref}>
-                Start learning
+                {t("flowCta")}
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -279,11 +207,11 @@ export default async function Home() {
                     key={step}
                     className="play-tile flex items-center gap-4 rounded-2xl bg-white p-4 [--tile-block:var(--accent-mint)]"
                   >
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent-sky text-sm font-semibold text-white">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border-3 border-ink bg-accent-sun text-sm font-extrabold text-ink">
                       {String(index + 1).padStart(2, "0")}
                     </div>
 
-                    <p className="font-medium">{step}</p>
+                    <p className="font-medium">{t(step)}</p>
                   </div>
                 ))}
               </div>

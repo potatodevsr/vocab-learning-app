@@ -13,7 +13,16 @@ import { getPublishedWordCount } from "@/lib/oxford-words";
 import { CollectionMeter } from "@/components/play/collection-meter";
 import { privateMetadata } from "@/lib/seo";
 
-export const metadata = privateMetadata("โปรไฟล์");
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Meta" });
+
+  return privateMetadata(t("profile"));
+}
 
 type ProfilePageProps = {
   params: Promise<{ locale: string }>;
@@ -99,10 +108,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   ];
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-950">
-      <section className="border-b bg-zinc-950 text-white">
+    <main className="min-h-screen bg-background text-foreground">
+      <section className="bg-brand text-white">
         <div className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
-          <Badge className="rounded-full bg-white/10 text-white hover:bg-white/10">
+          <Badge className="rounded-full bg-white text-sm font-bold text-brand hover:bg-white">
             {t("badge")}
           </Badge>
 
@@ -118,14 +127,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
                 {fullName || user.username}
               </h1>
-              <p className="mt-1 text-sm text-zinc-300">{user.email}</p>
+              <p className="mt-1 text-sm text-white">{user.email}</p>
             </div>
           </div>
         </div>
       </section>
 
       <section className="mx-auto grid w-full max-w-4xl gap-6 px-6 py-10 lg:px-8">
-        <Card className="rounded-3xl bg-white">
+        <Card className="play-card rounded-3xl">
           <CardContent className="p-6 sm:p-8">
             <h2 className="text-xl font-semibold">{t("accountTitle")}</h2>
 
@@ -136,11 +145,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 return (
                   <div
                     key={detail.key}
-                    className="flex items-start gap-3 rounded-2xl border bg-zinc-50 px-4 py-3"
+                    className="flex items-start gap-3 rounded-2xl border border-border bg-brand-soft/40 px-4 py-3"
                   >
-                    <Icon className="mt-0.5 size-4 shrink-0 text-zinc-500" />
+                    <Icon className="mt-0.5 size-4 shrink-0 text-brand" />
                     <div className="min-w-0">
-                      <dt className="text-xs uppercase tracking-wide text-zinc-500">
+                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">
                         {detail.label}
                       </dt>
                       <dd
@@ -187,8 +196,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         <Card
           className={
             hasProgress
-              ? "rounded-3xl bg-white"
-              : "rounded-3xl border-dashed bg-white"
+              ? "play-card rounded-3xl"
+              : "play-card rounded-3xl border-dashed"
           }
         >
           <CardContent className="p-6 sm:p-8">
@@ -205,7 +214,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   {stats.map((stat) => (
                     <div
                       key={stat.key}
-                      className="rounded-2xl border bg-zinc-50 p-4"
+                      className="rounded-2xl border border-border bg-brand-soft/40 p-4"
                     >
                       <p
                         className="text-3xl font-semibold"
@@ -213,14 +222,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                       >
                         {stat.value}
                       </p>
-                      <p className="mt-1 text-sm text-zinc-600">{stat.label}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
                     </div>
                   ))}
                 </div>
 
                 {summary!.recentQuizzes.length > 0 && (
                   <div className="mt-6">
-                    <h3 className="text-sm font-medium text-zinc-500">
+                    <h3 className="text-sm font-medium text-muted-foreground">
                       {t("recentQuizzes")}
                     </h3>
 
@@ -233,7 +242,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                           <span className="font-medium">
                             {quiz.level} · {t("unitShort")} {quiz.unit}
                           </span>
-                          <span className="text-zinc-600">
+                          <span className="text-muted-foreground">
                             {quiz.score}/{quiz.total}
                           </span>
                         </li>
@@ -243,9 +252,29 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 )}
               </>
             ) : (
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
-                {t("progressEmptyBody")}
-              </p>
+              <>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  {t("progressEmptyBody")}
+                </p>
+
+                {/*
+                  Drawn, not apologised for (SPEC §6.1 #5): the three lesson stops of a
+                  unit, waiting to be filled in. CSS only — no image payload on a Thai
+                  mobile connection.
+                */}
+                <div aria-hidden className="mt-6 flex items-center gap-2">
+                  {[0, 1, 2].map((stop) => (
+                    <div key={stop} className="flex items-center gap-2">
+                      <span className="flex size-11 items-center justify-center rounded-2xl border-3 border-dashed border-ink/25 text-sm font-extrabold text-ink/25">
+                        {stop + 1}
+                      </span>
+                      {stop < 2 && (
+                        <span className="h-1 w-6 rounded-full bg-ink/10" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
 
             <Button

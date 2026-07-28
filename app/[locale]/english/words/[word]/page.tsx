@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { ArrowRight } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
+import { Button } from "@/components/ui/button";
 import { getWordsBySlug } from "@/lib/oxford-words";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +57,7 @@ export default async function WordPage({ params }: WordPageProps) {
   }
 
   const head = entries[0];
+  const t = await getTranslations("Word");
 
   return (
     <>
@@ -125,13 +129,13 @@ export default async function WordPage({ params }: WordPageProps) {
           <nav
             aria-label="breadcrumb"
             data-testid="word-breadcrumb"
-            className="flex flex-wrap items-center gap-2 text-sm font-medium text-white/90"
+            className="flex flex-wrap items-center gap-2 text-sm font-semibold text-white"
           >
             <Link
               href={`/english/${head.level.toLowerCase()}`}
               className="play-underline"
             >
-              {`คำศัพท์ ${head.level}`}
+              {t("breadcrumbLevel", { level: head.level })}
             </Link>
 
             {head.unit ? (
@@ -142,7 +146,7 @@ export default async function WordPage({ params }: WordPageProps) {
                   className="play-underline"
                   data-testid="breadcrumb-unit"
                 >
-                  {`บทที่ ${head.unit}`}
+                  {t("breadcrumbUnit", { unit: head.unit })}
                 </Link>
               </>
             ) : null}
@@ -156,15 +160,15 @@ export default async function WordPage({ params }: WordPageProps) {
           </h1>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Badge className="rounded-full bg-white/25 text-white hover:bg-white/25">
+            <Badge className="rounded-full bg-white text-sm font-bold text-brand hover:bg-white">
               {head.level}
             </Badge>
 
             <Badge
               variant="outline"
-              className="rounded-full border-white/40 bg-white/15 text-white"
+              className="rounded-full border-3 border-ink bg-white text-sm font-bold text-ink"
             >
-              {entries.length} {entries.length === 1 ? "entry" : "entries"}
+              {t("entryCount", { count: entries.length })}
             </Badge>
           </div>
         </div>
@@ -181,7 +185,7 @@ export default async function WordPage({ params }: WordPageProps) {
 
                 {entry.homograph !== null && (
                   <Badge variant="outline" className="rounded-full bg-white">
-                    Homograph {entry.homograph}
+                    {t("homograph", { number: entry.homograph })}
                   </Badge>
                 )}
 
@@ -195,7 +199,7 @@ export default async function WordPage({ params }: WordPageProps) {
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl bg-brand-soft/50 p-5">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Thai meaning
+                    {t("thaiMeaning")}
                   </p>
                   <p className="font-thai mt-2 text-lg font-semibold" lang="th">
                     {entry.meaningTh || "—"}
@@ -204,7 +208,7 @@ export default async function WordPage({ params }: WordPageProps) {
 
                 <div className="rounded-2xl bg-brand-soft/50 p-5">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Pronunciation
+                    {t("pronunciation")}
                   </p>
                   <p className="font-thai mt-2 text-lg font-semibold" lang="th">
                     {entry.pronunciationTh || "—"}
@@ -219,7 +223,7 @@ export default async function WordPage({ params }: WordPageProps) {
               {entry.exampleEn && (
                 <div className="mt-4 rounded-2xl bg-accent-mint/15 p-5">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Example
+                    {t("example")}
                   </p>
                   <p className="mt-2 text-base leading-7 text-foreground">
                     {entry.exampleEn}
@@ -238,6 +242,27 @@ export default async function WordPage({ params }: WordPageProps) {
             </CardContent>
           </Card>
         ))}
+
+        {head.unit ? (
+          <div className="play-tile flex flex-wrap items-center justify-between gap-4 p-6 [--tile-block:var(--accent-sun)]">
+            <div>
+              <p className="text-lg font-bold">{t("practiseTitle")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("practiseBody", { unit: head.unit })}
+              </p>
+            </div>
+
+            <Button
+              asChild
+              className="play-press h-11 rounded-full bg-brand px-6 font-semibold text-white hover:bg-brand"
+            >
+              <Link href={`/learn?level=${head.level}&unit=${head.unit}`}>
+                {t("practiseCta", { unit: head.unit })}
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </div>
+        ) : null}
       </section>
     </main>
     </>

@@ -1,13 +1,6 @@
-import {
-  ArrowLeft,
-  ArrowRight,
-  BookOpen,
-  Play,
-  Repeat2,
-  Sparkles,
-} from "lucide-react";
+import { ArrowRight, BookOpen, Play, Repeat2, Sparkles } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
-import { LanguageSwitcher } from "@/components/language-switcher";
 import { Link } from "@/i18n/navigation";
 import type { CefrLevel, OxfordWord } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +19,6 @@ import { jsonLd, publicMetadata } from "@/lib/seo";
 type LessonUnit = {
   id: string;
   number: number;
-  title: string;
   words: OxfordWord[];
   wordRange: string;
   href: string;
@@ -63,7 +55,6 @@ const createLessonUnits = (
     return {
       id: `${level.toLowerCase()}-unit-${number}`,
       number,
-      title: `Unit ${number}`,
       words: unitWords,
       wordRange:
         firstWord && lastWord
@@ -74,59 +65,26 @@ const createLessonUnits = (
   });
 };
 
+/** Copy is translated; only the icon belongs in the component. */
 const learningSteps = [
-  {
-    title: "Learn",
-    description: "Read each word, part of speech, and learning notes.",
-    icon: BookOpen,
-  },
-  {
-    title: "Practice",
-    description: "Answer short questions from the same unit.",
-    icon: Sparkles,
-  },
-  {
-    title: "Review",
-    description: "Weak words can come back later for spaced review.",
-    icon: Repeat2,
-  },
-];
+  { key: "Learn", icon: BookOpen },
+  { key: "Practice", icon: Sparkles },
+  { key: "Review", icon: Repeat2 },
+] as const;
 
 type LevelPageProps = {
   params: Promise<{ locale: string; level: string }>;
 };
 
-/** Each CEFR level is its own search target, so each gets its own copy. */
-const LEVEL_COPY: Record<CefrLevel, { badge: string; blurb: string }> = {
-  A1: {
-    badge: "beginner path",
-    blurb:
-      "คำศัพท์ภาษาอังกฤษพื้นฐานที่สุด เหมาะกับผู้เริ่มต้น เรียนทีละบทสั้น ๆ พร้อมความหมายไทยและคำอ่าน",
-  },
-  A2: {
-    badge: "elementary path",
-    blurb:
-      "คำศัพท์ภาษาอังกฤษระดับต้น ต่อยอดจาก A1 ใช้ในชีวิตประจำวันได้จริง พร้อมความหมายไทยและตัวอย่างประโยค",
-  },
-  B1: {
-    badge: "intermediate path",
-    blurb:
-      "คำศัพท์ภาษาอังกฤษระดับกลาง สำหรับการทำงานและการเรียน พร้อมความหมายไทย คำอ่าน และตัวอย่างการใช้",
-  },
-  B2: {
-    badge: "upper-intermediate path",
-    blurb:
-      "คำศัพท์ภาษาอังกฤษระดับสูง สำหรับการอ่านบทความและการสอบ พร้อมความหมายไทยและตัวอย่างประโยค",
-  },
-};
+const LEVELS: CefrLevel[] = ["A1", "A2", "B1", "B2"];
 
 const parseLevel = (value: string): CefrLevel | null => {
-  const upper = value.toUpperCase();
-  return upper in LEVEL_COPY ? (upper as CefrLevel) : null;
+  const upper = value.toUpperCase() as CefrLevel;
+  return LEVELS.includes(upper) ? upper : null;
 };
 
 export function generateStaticParams() {
-  return Object.keys(LEVEL_COPY).map((level) => ({ level: level.toLowerCase() }));
+  return LEVELS.map((level) => ({ level: level.toLowerCase() }));
 }
 
 export async function generateMetadata({
@@ -140,6 +98,7 @@ export async function generateMetadata({
   }
 
   const total = await getLevelWordCount(level);
+  const t = await getTranslations({ locale, namespace: "Level" });
 
   const isThai = locale === "th";
 
@@ -149,9 +108,7 @@ export async function generateMetadata({
     title: isThai
       ? `คำศัพท์ภาษาอังกฤษ ${level} — Oxford 3000 ${total} คำ พร้อมคำแปลไทย`
       : `Oxford 3000 ${level} vocabulary — ${total} English words with Thai meanings`,
-    description: isThai
-      ? LEVEL_COPY[level].blurb
-      : `Every Oxford 3000 word at CEFR level ${level}, with Thai meanings, pronunciation and example sentences, split into short units.`,
+    description: t(`blurb${level}`),
   });
 }
 
@@ -160,6 +117,8 @@ export default async function LevelPage({ params }: LevelPageProps) {
   const level = parseLevel(raw);
 
   if (!level) notFound();
+
+  const t = await getTranslations("Level");
 
   const [totalWords, previewWords] = await Promise.all([
     getLevelWordCount(level),
@@ -182,53 +141,39 @@ export default async function LevelPage({ params }: LevelPageProps) {
           itemListElement: visibleUnits.map((unit, index) => ({
             "@type": "ListItem",
             position: index + 1,
-            name: unit.title,
+            name: `Unit ${unit.number}`,
           })),
         })}
       />
     <main className="min-h-screen bg-background text-foreground">
       <section className="bg-brand text-white">
         <div className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-8">
-          <div className="mb-10 flex items-center justify-between gap-4">
-            <Button
-              asChild
-              variant="ghost"
-              className="play-press rounded-full text-white/90 hover:bg-white/20 hover:text-white"
-            >
-              <Link href="/">
-                <ArrowLeft className="size-4" />
-                Back to home
-              </Link>
-            </Button>
-
-            <LanguageSwitcher />
-          </div>
-
           <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div className="space-y-6">
-              <Badge className="rounded-full bg-white/25 text-white hover:bg-white/25">
-                {`Oxford 3000 · ${level} ${LEVEL_COPY[level].badge}`}
+              <Badge className="rounded-full bg-white text-sm font-bold text-brand hover:bg-white">
+                {t("badge", { level, track: t(`track${level}`) })}
               </Badge>
 
               <div className="space-y-4">
-                <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-                  {`คำศัพท์ภาษาอังกฤษ ${level} — เรียนทีละบท`}
+                <h1 className="max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+                  {t("title", { level })}
                 </h1>
 
-                <p className="max-w-2xl text-base leading-7 text-white/90">
-{LEVEL_COPY[level].blurb}
+                <p className="max-w-2xl text-base leading-7 text-white">
+                  {t(`blurb${level}`)}
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-3 text-sm text-white/90">
-                <div className="rounded-full bg-white/20 px-4 py-2 font-medium">
-                  {totalWords} {level} entries
+              {/* Solid chips: small white text on a white/20 wash measured 3.7:1. */}
+              <div className="flex flex-wrap gap-3 text-sm">
+                <div className="rounded-full border-3 border-ink bg-white px-4 py-2 font-bold text-ink">
+                  {t("statEntries", { count: totalWords, level })}
                 </div>
-                <div className="rounded-full bg-white/20 px-4 py-2 font-medium">
-                  {units.length} units
+                <div className="rounded-full border-3 border-ink bg-white px-4 py-2 font-bold text-ink">
+                  {t("statUnits", { count: units.length })}
                 </div>
-                <div className="rounded-full bg-white/20 px-4 py-2 font-medium">
-                  {unitSize} words per unit
+                <div className="rounded-full border-3 border-ink bg-white px-4 py-2 font-bold text-ink">
+                  {t("statPerUnit", { size: unitSize })}
                 </div>
               </div>
 
@@ -241,7 +186,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
                   >
                     <Link href={firstUnit.href}>
                       <Play className="size-4" />
-                      Start Unit 1
+                      {t("startFirstUnit")}
                     </Link>
                   </Button>
 
@@ -252,7 +197,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
                     className="play-press h-12 rounded-full border-2 border-white/60 bg-transparent px-6 text-white hover:bg-white/20 hover:text-white"
                   >
                     <Link href="#lesson-path">
-                      View lesson path
+                      {t("viewPath")}
                       <ArrowRight className="size-4" />
                     </Link>
                   </Button>
@@ -260,18 +205,20 @@ export default async function LevelPage({ params }: LevelPageProps) {
               )}
             </div>
 
+            {/* A solid card, not a translucent one: every label on it has to be
+                readable, and a wash over the hero cannot promise that. */}
             {firstUnit && (
-              <Card className="rounded-[28px] border-0 bg-white/20 text-white backdrop-blur">
+              <Card className="play-card rounded-[28px] border-0">
                 <CardContent className="p-6">
-                  <Badge className="rounded-full bg-white text-brand hover:bg-white">
-                    First lesson
+                  <Badge className="rounded-full bg-brand text-sm font-bold text-white hover:bg-brand">
+                    {t("firstLesson")}
                   </Badge>
 
-                  <h2 className="mt-5 text-2xl font-semibold">
-                    Unit 1 · Basic A1 words
+                  <h2 className="mt-5 text-2xl font-semibold text-foreground">
+                    {t("firstLessonTitle", { level })}
                   </h2>
 
-                  <p className="mt-2 text-sm leading-6 text-white/90">
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
                     {firstUnit.wordRange}
                   </p>
 
@@ -280,7 +227,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
                       <Badge
                         key={word.id}
                         variant="outline"
-                        className="rounded-full border-white/40 bg-white/15 text-white"
+                        className="rounded-full border-border bg-brand-soft text-foreground"
                       >
                         {word.displayWord}
                       </Badge>
@@ -299,14 +246,14 @@ export default async function LevelPage({ params }: LevelPageProps) {
             const Icon = step.icon;
 
             return (
-              <Card key={step.title} className="play-tile rounded-[28px] border-0 [--tile-block:var(--accent-mint)]">
+              <Card key={step.key} className="play-tile rounded-[28px] border-0 [--tile-block:var(--accent-mint)]">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div
                       className={
                         index === 0
-                          ? "flex size-11 shrink-0 items-center justify-center rounded-2xl bg-brand text-white"
-                          : "flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent-sky text-white"
+                          ? "flex size-11 shrink-0 items-center justify-center rounded-2xl border-3 border-ink bg-brand text-white"
+                          : "flex size-11 shrink-0 items-center justify-center rounded-2xl border-3 border-ink bg-accent-sky text-ink"
                       }
                     >
                       <Icon className="size-5" />
@@ -314,13 +261,13 @@ export default async function LevelPage({ params }: LevelPageProps) {
 
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">
-                        Step {index + 1}
+                        {t("stepLabel", { number: index + 1 })}
                       </p>
                       <h2 className="mt-1 text-xl font-semibold">
-                        {step.title}
+                        {t(`step${step.key}Title`)}
                       </h2>
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        {step.description}
+                        {t(`step${step.key}Body`)}
                       </p>
                     </div>
                   </div>
@@ -338,26 +285,28 @@ export default async function LevelPage({ params }: LevelPageProps) {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <Badge variant="outline" className="rounded-full bg-white">
-              Your path
+              {t("pathBadge")}
             </Badge>
 
             <h2 className="mt-3 text-3xl font-semibold tracking-tight">
-              {`${level} lesson path`}
+              {t("pathTitle", { level })}
             </h2>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
-              Start from Unit 1. Other units are shown as previews until lesson
-              progress and authentication are added.
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              {t("pathBody")}
             </p>
           </div>
 
           <Badge variant="outline" className="w-fit rounded-full bg-white">
-            Showing {visibleUnits.length} of {units.length} units
+            {t("showing", { shown: visibleUnits.length, total: units.length })}
           </Badge>
         </div>
 
         <div className="relative grid gap-4">
-          <div className="absolute left-7 top-8 hidden h-[calc(100%-64px)] w-px bg-zinc-200 sm:block" />
+          <div
+            aria-hidden
+            className="absolute left-[46px] top-8 hidden h-[calc(100%-64px)] w-1 rounded-full bg-ink/15 sm:block"
+          />
 
           {visibleUnits.map((unit, index) => {
             const isFirst = index === 0;
@@ -375,8 +324,8 @@ export default async function LevelPage({ params }: LevelPageProps) {
                   <div
                     className={
                       isFirst
-                        ? "relative z-10 flex size-14 items-center justify-center rounded-2xl bg-brand text-base font-semibold text-white"
-                        : "relative z-10 flex size-14 items-center justify-center rounded-2xl bg-brand-soft text-base font-semibold text-brand"
+                        ? "relative z-10 flex size-14 items-center justify-center rounded-2xl border-3 border-ink bg-brand text-base font-extrabold text-white"
+                        : "relative z-10 flex size-14 items-center justify-center rounded-2xl border-3 border-ink bg-brand-soft text-base font-extrabold text-brand"
                     }
                   >
                     {String(unit.number).padStart(2, "0")}
@@ -384,23 +333,27 @@ export default async function LevelPage({ params }: LevelPageProps) {
 
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-xl font-semibold">{unit.title}</h3>
+                      <h3 className="text-xl font-semibold">
+                        {t("unitTitle", { unit: unit.number })}
+                      </h3>
 
                       <Badge
                         variant="outline"
                         className="rounded-full bg-white"
                       >
-                        {unit.words.length || unitSize} words
+                        {t("wordsCount", {
+                          count: unit.words.length || unitSize,
+                        })}
                       </Badge>
 
                       {isFirst && (
-                        <Badge className="rounded-full bg-success text-white hover:bg-success">
-                          Start here
+                        <Badge className="rounded-full bg-success font-bold text-white hover:bg-success">
+                          {t("startHere")}
                         </Badge>
                       )}
                     </div>
 
-                    <p className="mt-2 text-sm text-zinc-600">
+                    <p className="mt-2 text-sm text-muted-foreground">
                       {unit.wordRange}
                     </p>
 
@@ -409,7 +362,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
                         <Badge
                           key={word.id}
                           variant="outline"
-                          className="rounded-full bg-zinc-50"
+                          className="rounded-full bg-brand-soft"
                         >
                           {word.displayWord}
                         </Badge>
@@ -427,7 +380,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
                     variant={isFirst ? "default" : "outline"}
                   >
                     <Link href={`/english/${level.toLowerCase()}/unit/${unit.number}`}>
-                      {isFirst ? "Start" : "Preview"}
+                      {isFirst ? t("start") : t("preview")}
                       <ArrowRight className="size-4" />
                     </Link>
                   </Button>
@@ -444,9 +397,9 @@ export default async function LevelPage({ params }: LevelPageProps) {
         */}
         {units.length > visibleUnits.length && (
           <div className="play-card mt-6 p-6">
-            <h3 className="text-lg font-bold">{`ทุกบทเรียนของระดับ ${level}`}</h3>
+            <h3 className="text-lg font-bold">{t("allUnitsTitle", { level })}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              {`${units.length} บท · บทละ ${unitSize} คำ`}
+              {t("allUnitsBody", { count: units.length, size: unitSize })}
             </p>
 
             <ul
@@ -457,6 +410,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
                 <li key={unit.id}>
                   <Link
                     href={`/english/${level.toLowerCase()}/unit/${unit.number}`}
+                    aria-label={t("unitAria", { unit: unit.number })}
                     className="play-press flex size-11 items-center justify-center rounded-xl border-3 border-ink bg-white text-sm font-bold hover:bg-brand-soft"
                   >
                     {unit.number}

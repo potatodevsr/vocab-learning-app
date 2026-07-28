@@ -46,9 +46,9 @@ test.describe("authentication", () => {
     const user = await registerThroughUi(page);
 
     await page.getByText(user.username).click();
-    await page.getByRole("menuitem", { name: /ออกจากระบบ/ }).click();
+    await page.getByRole("menuitem", { name: "Log out" }).click();
 
-    await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Log in" })).toBeVisible();
 
     // And the protected route is protected again.
     await page.goto("/en/learn?level=A1&unit=1");

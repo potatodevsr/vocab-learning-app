@@ -7,9 +7,20 @@ import {
   UNIT_SIZE,
 } from "@/lib/oxford-words";
 import type { CefrLevel } from "@/lib/types";
+import { getTranslations } from "next-intl/server";
+
 import { privateMetadata } from "@/lib/seo";
 
-export const metadata = privateMetadata("บทเรียน");
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Meta" });
+
+  return privateMetadata(t("lesson"));
+}
 
 type LearnPageProps = {
   searchParams: Promise<{

@@ -142,7 +142,7 @@ export function QuizSession({
           <Card className="play-card w-full rounded-[28px] border-0">
             <CardContent className="p-8">
               <div className="flex items-center justify-between gap-4">
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-warn text-white">
+                <div className="flex size-12 items-center justify-center rounded-2xl border-3 border-ink bg-warn text-ink">
                   <CircleAlert className="size-5" />
                 </div>
                 <LanguageSwitcher />
@@ -182,24 +182,24 @@ export function QuizSession({
   if (!started) {
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <section className="bg-accent-sky text-white">
+        <section className="bg-accent-deep-sky text-white">
           <div className="mx-auto w-full max-w-5xl px-6 py-8 lg:px-8">
             <div className="flex items-center justify-between gap-4">
               <Button
                 asChild
                 variant="ghost"
-                className="play-press rounded-full text-white/90 hover:bg-white/20 hover:text-white"
+                className="play-press rounded-full text-white hover:bg-white/20 hover:text-white"
               >
                 <Link href={learnHref}>
                   <ArrowLeft className="size-4" />
                   {tCommon("backToLesson")}
                 </Link>
               </Button>
-              <LanguageSwitcher />
+              <LanguageSwitcher tone="onColor" />
             </div>
 
             <div className="py-16">
-              <Badge className="rounded-full bg-white/25 text-white hover:bg-white/25">
+              <Badge className="rounded-full bg-white font-bold text-brand hover:bg-white">
                 {tQuiz("introBadge", { level, unit })}
               </Badge>
 
@@ -207,38 +207,27 @@ export function QuizSession({
                 {tQuiz("introTitle")}
               </h1>
 
-              <p className="mt-4 max-w-2xl text-base leading-7 text-white/90">
+              <p className="mt-4 max-w-2xl text-base leading-7 text-white">
                 {tQuiz("introDescription")}
               </p>
 
               <div className="mt-8 grid gap-3 sm:grid-cols-4">
-                <div className="rounded-3xl bg-white/20 p-5">
-                  <p className="text-3xl font-semibold">{questions.length}</p>
-                  <p className="mt-1 text-sm text-white/90">
-                    {tQuiz("statQuestions")}
-                  </p>
-                </div>
-
-                <div className="rounded-3xl bg-white/20 p-5">
-                  <p className="text-3xl font-semibold">{readyWords.length}</p>
-                  <p className="mt-1 text-sm text-white/90">
-                    {tQuiz("statReadyWords")}
-                  </p>
-                </div>
-
-                <div className="rounded-3xl bg-white/20 p-5">
-                  <p className="text-3xl font-semibold">{QUIZ_TYPE_COUNT}</p>
-                  <p className="mt-1 text-sm text-white/90">
-                    {tQuiz("statQuizTypes")}
-                  </p>
-                </div>
-
-                <div className="rounded-3xl bg-white/20 p-5">
-                  <p className="text-3xl font-semibold">{words.length}</p>
-                  <p className="mt-1 text-sm text-white/90">
-                    {tQuiz("statUnitWords")}
-                  </p>
-                </div>
+                {[
+                  { value: questions.length, label: tQuiz("statQuestions") },
+                  { value: readyWords.length, label: tQuiz("statReadyWords") },
+                  { value: QUIZ_TYPE_COUNT, label: tQuiz("statQuizTypes") },
+                  { value: words.length, label: tQuiz("statUnitWords") },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-3xl border-3 border-ink bg-white p-5 text-ink"
+                  >
+                    <p className="text-3xl font-extrabold">{stat.value}</p>
+                    <p className="mt-1 text-sm font-medium text-muted-foreground">
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
               </div>
 
               <Button
@@ -295,14 +284,14 @@ export function QuizSession({
                   <p className="play-count text-3xl font-semibold">
                     {questions.length - score}
                   </p>
-                  <p className="mt-1 text-sm text-zinc-600">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {tQuiz("statNeedReview")}
                   </p>
                 </div>
 
                 <div className="rounded-3xl bg-brand-soft p-5">
                   <p className="play-count text-3xl font-semibold">{questions.length}</p>
-                  <p className="mt-1 text-sm text-zinc-600">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {tQuiz("statQuestions")}
                   </p>
                 </div>
@@ -310,7 +299,7 @@ export function QuizSession({
 
               {wrongResults.length > 0 && (
                 <div className="mt-8 rounded-3xl bg-warn-soft p-5">
-                  <h2 className="font-semibold">{tQuiz("reviewHeading")}</h2>
+                  <h2 className="text-lg font-bold">{tQuiz("reviewHeading")}</h2>
 
                   <div className="mt-4 grid gap-3">
                     {wrongResults.map((result) => (
@@ -379,13 +368,13 @@ export function QuizSession({
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="bg-accent-sky text-white">
+      <section className="bg-accent-deep-sky text-white">
         <div className="mx-auto w-full max-w-5xl px-6 py-8 lg:px-8">
           <div className="flex items-center justify-between gap-4">
             <Button
               asChild
               variant="ghost"
-              className="play-press rounded-full text-white/90 hover:bg-white/20 hover:text-white"
+              className="play-press rounded-full text-white hover:bg-white/20 hover:text-white"
             >
               <Link href={learnHref}>
                 <ArrowLeft className="size-4" />
@@ -393,7 +382,7 @@ export function QuizSession({
               </Link>
             </Button>
 
-            <Badge className="rounded-full bg-white/25 text-white hover:bg-white/25">
+            <Badge className="rounded-full bg-white font-bold text-brand hover:bg-white">
               {tQuiz("questionCounter", {
                 current: currentIndex + 1,
                 total: questions.length,

@@ -94,7 +94,7 @@ export function AdminSidebar() {
                     ) : (
                       <Link
                         href={item.href}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 transition-colors"
                       >
                         <item.icon className="w-4 h-4" />
                         <span>{item.label}</span>
@@ -113,7 +113,7 @@ export function AdminSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={handleLogout}
-              className="text-muted-foreground hover:text-destructive"
+              className="transition-colors hover:bg-danger-soft! hover:text-destructive!"
             >
               <LogOut className="w-4 h-4" />
               <span>ออกจากระบบ</span>

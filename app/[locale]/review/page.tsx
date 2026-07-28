@@ -9,7 +9,16 @@ import { MasteryPips } from "@/components/play/mastery-pips";
 import { getMistakesWithToken } from "@/lib/progress-api";
 import { privateMetadata } from "@/lib/seo";
 
-export const metadata = privateMetadata("คำที่ตอบผิด");
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Meta" });
+
+  return privateMetadata(t("review"));
+}
 
 type ReviewPageProps = {
   params: Promise<{ locale: string }>;
@@ -37,9 +46,9 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="bg-warn text-white">
+      <section className="bg-warn text-ink">
         <div className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
-          <div className="flex size-14 items-center justify-center rounded-3xl bg-white/25">
+          <div className="flex size-14 items-center justify-center rounded-3xl border-3 border-ink bg-white">
             <Target className="size-7" />
           </div>
 
@@ -47,14 +56,14 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             {t("title")}
           </h1>
 
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/90">
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-ink">
             {t("subtitle")}
           </p>
 
           <p className="mt-6 text-5xl font-semibold" data-testid="mistakes-count">
             {rows.length}
           </p>
-          <p className="text-sm text-white/90">{t("wordsToPractise")}</p>
+          <p className="text-sm font-medium text-ink">{t("wordsToPractise")}</p>
         </div>
       </section>
 

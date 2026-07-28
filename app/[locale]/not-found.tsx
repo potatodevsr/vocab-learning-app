@@ -1,17 +1,18 @@
 import { ArrowLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 
-export default function LocaleNotFound() {
+export default async function LocaleNotFound() {
+  const t = await getTranslations("NotFound");
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-accent-sky px-6 text-white">
+    <main className="flex min-h-screen items-center justify-center bg-accent-deep-sky px-6 text-white">
       <div className="w-full max-w-md text-center" data-testid="not-found">
-        <p className="text-sm font-semibold text-white/80">404</p>
-        <h1 className="mt-2 text-2xl font-semibold">We couldn&apos;t find that page</h1>
-        <p className="mt-2 text-sm leading-6 text-white/90">
-          The word or lesson you were looking for isn&apos;t here.
-        </p>
+        <p className="text-sm font-bold text-white">{t("code")}</p>
+        <h1 className="mt-2 text-2xl font-semibold">{t("title")}</h1>
+        <p className="mt-2 text-sm leading-6 text-white">{t("body")}</p>
 
         <Button
           asChild
@@ -19,7 +20,7 @@ export default function LocaleNotFound() {
         >
           <Link href="/english/a1">
             <ArrowLeft className="size-4" />
-            Back to the A1 path
+            {t("cta")}
           </Link>
         </Button>
       </div>

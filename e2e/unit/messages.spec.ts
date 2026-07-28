@@ -54,7 +54,14 @@ test.describe("translation files", () => {
 
   test("Thai copy is actually Thai, not copied English", () => {
     // Keys whose value is legitimately identical across locales (proper nouns, symbols).
-    const allowed = new Set(["Lesson.homograph"]);
+    const allowed = new Set([
+      "Lesson.homograph",
+      // The product name, and two badges that are the product name plus a placeholder —
+      // `Level.badge`'s {track} is what carries the translated words.
+      "Nav.brand",
+      "Level.badge",
+      "Unit.badge",
+    ]);
 
     const untranslated = thKeys.filter((key) => {
       if (allowed.has(key)) return false;

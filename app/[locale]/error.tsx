@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { RotateCcw, TriangleAlert } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,8 @@ export default function LocaleError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("ErrorPage");
+
   useEffect(() => {
     console.error("[locale-error]", error);
   }, [error]);
@@ -27,18 +30,16 @@ export default function LocaleError({
           <TriangleAlert className="size-6" />
         </div>
 
-        <h1 className="mt-6 text-2xl font-semibold">Something went wrong</h1>
+        <h1 className="mt-6 text-2xl font-semibold">{t("title")}</h1>
 
-        <p className="mt-2 text-sm leading-6 text-white/90">
-          We couldn&apos;t load this page. Your progress is saved — try again.
-        </p>
+        <p className="mt-2 text-sm leading-6 text-white">{t("body")}</p>
 
         <Button
           onClick={reset}
           className="play-press mt-6 h-11 rounded-full bg-white px-6 font-semibold text-brand hover:bg-white"
         >
           <RotateCcw className="size-4" />
-          Try again
+          {t("retry")}
         </Button>
       </div>
     </main>
