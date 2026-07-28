@@ -34,9 +34,18 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            backend/pnpm-lock.yaml
 
-      - name: Install dependencies
+      - name: Install web dependencies
         run: pnpm install --frozen-lockfile
+
+      # Web unit specs import a few pure API helpers, so the root TypeScript program
+      # resolves their Hono/prisma-guard types even though backend/ is excluded as a
+      # source glob.
+      - name: Install API type dependencies
+        run: pnpm --dir backend install --frozen-lockfile
 
       - name: Type-check
         run: pnpm exec tsc --noEmit
