@@ -68,4 +68,4 @@ jobs:
       - name: Show deployment URL
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
-        run: echo "Deployment URL: ${DEPLOYMENT_URL}"
+        run: 'echo "Deployment URL: ${DEPLOYMENT_URL}"'
