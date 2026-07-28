@@ -78,7 +78,8 @@ pnpm test:e2e:ui          # interactive runner
 hovers **every** link, button and field, and fails on a control that answers the pointer
 with nothing, shows the wrong cursor, sits under something else, or whose label misses
 WCAG AA against its composited backdrop. Every hover is photographed to
-`test-results/hover-states/<page>/`, so states can be reviewed as pictures. **A new page
+`test-results/hover-states/<page>/` (gitignored, and rebuilt from scratch on each run),
+so states can be reviewed as pictures. **A new page
 needs an entry in that file** — a route missing from it is a route whose interaction
 states nobody has looked at.
 

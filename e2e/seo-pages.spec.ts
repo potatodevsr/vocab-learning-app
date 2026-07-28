@@ -138,6 +138,15 @@ test.describe("FAQ", () => {
     await page.goto("/en/faq");
 
     await expect(page.getByTestId("faq-list").locator("dt")).not.toHaveCount(0);
+    // The English page used to serve the Thai copy — the same content on /en and /th is
+    // exactly the duplicate hreflang exists to prevent, and it read as broken to a
+    // learner who chose English.
+    await expect(page.getByText("What is the Oxford 3000?")).toBeVisible();
+  });
+
+  test("serves Thai copy on the Thai page", async ({ page }) => {
+    await page.goto("/th/faq");
+
     await expect(page.getByText("Oxford 3000 คืออะไร")).toBeVisible();
   });
 

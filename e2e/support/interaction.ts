@@ -12,8 +12,10 @@ import type { Page } from "@playwright/test";
  * interactive element on a page, measures what the browser computes before and after the
  * pointer arrives, and photographs each one mid-hover.
  *
- * Screenshots land in `test-results/hover-states/<page>/` (gitignored) — one rest shot of
- * the whole page, then one framed shot per element while it is hovered.
+ * Screenshots land in `test-results/hover-states/<page>/` — one rest shot of the whole
+ * page, then one viewport shot per element while it is hovered. That directory is
+ * Playwright's own output root, so it is gitignored and cleared at the start of every
+ * run: the pictures are always from the run you just did.
  */
 export const SHOT_DIR = "test-results/hover-states";
 

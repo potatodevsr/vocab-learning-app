@@ -383,6 +383,12 @@ test.describe("interaction states are designed", () => {
     await registerThroughUi(page);
     await page.goto("/en/learn?level=A1&unit=1");
 
+    // The pips render only once the client-side progress fetch resolves, which means the
+    // streamed tree has settled. Focusing before that is a race: the button takes focus,
+    // React swaps the subtree in, and `document.activeElement` falls back to <body> —
+    // which reads as "focus is not designed" when the real cause is timing.
+    await expect(page.getByTestId("mastery-pips")).toBeVisible();
+
     // Focus the neighbour, then Tab: that makes the next focus keyboard-initiated,
     // which is the condition :focus-visible actually tests for.
     await page.getByTestId("review-later").focus();

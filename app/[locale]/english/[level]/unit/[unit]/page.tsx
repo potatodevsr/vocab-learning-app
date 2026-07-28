@@ -117,16 +117,20 @@ export default async function UnitPage({ params }: UnitPageProps) {
 
       <section className="bg-brand text-white">
         <div className="mx-auto w-full max-w-5xl px-6 py-10 lg:px-8">
-          <Button
-            asChild
-            variant="ghost"
-            className="play-press rounded-full font-semibold text-white hover:bg-white/25 hover:text-white"
-          >
-            <Link href={levelHref}>
-              <ArrowLeft className="size-4" />
-              {t("backToLevel", { level })}
-            </Link>
-          </Button>
+          {/* Two inline-level elements with a top margin sat on the same line and read
+              as one cramped row; the back link is its own step in the hierarchy. */}
+          <div>
+            <Button
+              asChild
+              variant="ghost"
+              className="play-press -ml-2 rounded-full font-semibold text-white hover:bg-white/25 hover:text-white"
+            >
+              <Link href={levelHref}>
+                <ArrowLeft className="size-4" />
+                {t("backToLevel", { level })}
+              </Link>
+            </Button>
+          </div>
 
           <Badge className="mt-8 rounded-full bg-white text-sm font-bold text-brand hover:bg-white">
             {t("badge", { level })}

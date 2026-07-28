@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { loginAsAdmin, registerThroughUi } from "./support/actions";
 import { SEED } from "./support/fixtures";
@@ -86,17 +86,16 @@ test.describe("hover states — learner pages", () => {
    * bank needs a *fresh* learner — it asserts an empty bank, and the quiz tests above it
    * put wrong answers in one.
    */
-  let session: Awaited<ReturnType<typeof registerThroughUi>> | null = null;
-  let cookies: Awaited<ReturnType<Page["context"]>["cookies"]> | null = null;
+  let session: Awaited<ReturnType<BrowserContext["cookies"]>> | null = null;
 
   test.beforeEach(async ({ page, context }) => {
-    if (!session || !cookies) {
-      session = await registerThroughUi(page);
-      cookies = await context.cookies();
+    if (!session) {
+      await registerThroughUi(page);
+      session = await context.cookies();
       return;
     }
 
-    await context.addCookies(cookies);
+    await context.addCookies(session);
   });
 
   test("the signed-in home page answers the pointer everywhere", async ({
