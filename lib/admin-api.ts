@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+import { API_URL } from "@/constants/config";
 
 export type VocabWord = {
     id: string;
@@ -54,7 +54,9 @@ export const updateWord = async (
     id: string,
     data: Partial<Pick<VocabWord, "meaningTh" | "pronunciationTh" | "ipa" | "exampleEn" | "exampleTh" | "notes" | "status">>
 ): Promise<VocabWord> => {
-    const res = await fetch(`${API_URL}/vocabword/`, {
+    // No trailing slash: Hono routes strictly, so `/vocabword/` 404s where the old
+    // Express API happily matched it.
+    const res = await fetch(`${API_URL}/vocabword`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

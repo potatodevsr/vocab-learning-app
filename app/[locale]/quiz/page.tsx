@@ -1,6 +1,9 @@
 import { QuizSession } from "@/components/quiz-session";
-import { getWordsByLevel } from "@/lib/oxford-words";
+import { getLevelWordCount, getWordsByUnit, UNIT_SIZE } from "@/lib/oxford-words";
 import type { CefrLevel } from "@/lib/types";
+import { privateMetadata } from "@/lib/seo";
+
+export const metadata = privateMetadata("แบบทดสอบ");
 
 type QuizPageProps = {
   searchParams: Promise<{
@@ -9,7 +12,6 @@ type QuizPageProps = {
   }>;
 };
 
-const unitSize = 20;
 const validLevels = new Set<CefrLevel>(["A1", "A2", "B1", "B2"]);
 const pathHref = "/english/a1";
 
@@ -27,32 +29,25 @@ const normalizeUnit = (value: string | string[] | undefined) => {
   return unit;
 };
 
-const getUnitWords = async (level: CefrLevel, unit: number) => {
-  const words = await getWordsByLevel(level);
-  const totalUnits = Math.ceil(words.length / unitSize);
-  const safeUnit = Math.min(unit, Math.max(totalUnits, 1));
-  const startIndex = (safeUnit - 1) * unitSize;
-
-  return {
-    unit: safeUnit,
-    words: words.slice(startIndex, startIndex + unitSize),
-  };
-};
-
 export default async function QuizPage({ searchParams }: QuizPageProps) {
   const query = await searchParams;
   const level = normalizeLevel(query.level);
-  const unit = normalizeUnit(query.unit);
-  const lesson = await getUnitWords(level, unit);
+  const requestedUnit = normalizeUnit(query.unit);
+
+  const total = await getLevelWordCount(level);
+  const unitCount = Math.max(Math.ceil(total / UNIT_SIZE), 1);
+  const unit = Math.min(requestedUnit, unitCount);
+
+  const words = await getWordsByUnit(level, unit);
 
   return (
     <QuizSession
       level={level}
-      unit={lesson.unit}
-      words={lesson.words}
+      unit={unit}
+      words={words}
       pathHref={pathHref}
-      learnHref={`/learn?level=${level}&unit=${lesson.unit}`}
-      nextUnitHref={`/learn?level=${level}&unit=${lesson.unit + 1}`}
+      learnHref={`/learn?level=${level}&unit=${unit}`}
+      nextUnitHref={`/learn?level=${level}&unit=${Math.min(unit + 1, unitCount)}`}
     />
   );
 }

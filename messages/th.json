@@ -44,7 +44,10 @@
         "sidebarKnown": "รู้แล้ว",
         "sidebarReviewLater": "ทบทวนทีหลัง",
         "comingNext": "คำถัดไป",
-        "lastCard": "นี่คือการ์ดสุดท้ายของบทนี้"
+        "lastCard": "นี่คือการ์ดสุดท้ายของบทนี้",
+        "roundLabel": "รอบ {round}/{total}",
+        "nextRound": "รอบถัดไป",
+        "masteryLabel": "ความชำนาญ {mastery} จาก {max}"
     },
     "Quiz": {
         "notReadyTitle": "ยังทำแบบทดสอบไม่ได้",
@@ -81,5 +84,63 @@
         "finish": "เสร็จสิ้น",
         "next": "ถัดไป",
         "check": "ตรวจคำตอบ"
+    },
+    "Auth": {
+        "loginTitle": "เข้าสู่ระบบ",
+        "loginSubtitle": "เพื่อเริ่มเรียนคำศัพท์ Oxford 3000",
+        "email": "อีเมล",
+        "password": "รหัสผ่าน",
+        "submit": "ยืนยัน",
+        "noAccount": "ยังไม่มีบัญชี?",
+        "register": "สมัครสมาชิก",
+        "loadingLogin": "กำลังเข้าสู่ระบบ...",
+        "loadingChecking": "กำลังตรวจสอบข้อมูล...",
+        "confirm": "ตกลง",
+        "validation": {
+            "emailRequiredTitle": "กรุณากรอกอีเมล",
+            "emailRequiredText": "โปรดระบุอีเมลก่อนเข้าสู่ระบบ",
+            "emailInvalidTitle": "อีเมลไม่ถูกต้อง",
+            "emailInvalidText": "กรุณากรอกอีเมลให้ถูกต้อง เช่น name@example.com",
+            "passwordRequiredTitle": "กรุณากรอกรหัสผ่าน",
+            "passwordRequiredText": "โปรดระบุรหัสผ่านก่อนเข้าสู่ระบบ"
+        },
+        "error": {
+            "loginFailed": "เข้าสู่ระบบไม่สำเร็จ",
+            "generic": "เกิดข้อผิดพลาด"
+        }
+    },
+    "Profile": {
+        "badge": "บัญชีของคุณ",
+        "accountTitle": "ข้อมูลบัญชี",
+        "username": "ชื่อผู้ใช้",
+        "email": "อีเมล",
+        "name": "ชื่อ",
+        "memberSince": "เป็นสมาชิกตั้งแต่",
+        "progressTitle": "ความคืบหน้าการเรียนของคุณ",
+        "continueLearning": "เรียนต่อ",
+        "statLessons": "บทเรียนที่จบแล้ว",
+        "statQuizzes": "แบบทดสอบที่ทำแล้ว",
+        "statWordsKnown": "คำที่รู้แล้ว",
+        "statAccuracy": "ความแม่นยำล่าสุด",
+        "recentQuizzes": "แบบทดสอบล่าสุด",
+        "unitShort": "บทที่",
+        "progressEmptyTitle": "ยังไม่มีบทเรียนที่เรียนจบ",
+        "progressEmptyBody": "เมื่อเรียนจบบทเรียนหรือทำแบบทดสอบ ผลลัพธ์จะแสดงที่นี่ ทั้งคำที่รู้แล้ว คะแนนแบบทดสอบ และจุดที่ควรเรียนต่อ",
+        "collectionTitle": "คลังคำศัพท์ Oxford 3000 ของคุณ",
+        "collectionCaption": "คำที่คุณเชี่ยวชาญแล้ว",
+        "statMastered": "คำที่เชี่ยวชาญ",
+        "statMistakes": "คำที่ต้องฝึก",
+        "reviewMistakes": "ฝึกคำที่ผิด"
+    },
+    "Review": {
+        "title": "คำที่ตอบผิด",
+        "subtitle": "คำที่คุณตอบผิดหรือเลือกไว้ทบทวน ฝึกจนคล่องแล้วคำจะหายไปจากรายการ",
+        "wordsToPractise": "คำที่ต้องฝึก",
+        "emptyTitle": "ไม่มีคำต้องแก้ เก่งมาก",
+        "emptyBody": "คำที่ตอบผิดจะมาแสดงที่นี่เพื่อให้ฝึกเพิ่ม ลองทำแบบทดสอบสักชุดแล้วกลับมาดู",
+        "startLearning": "เริ่มเรียน",
+        "practise": "ฝึกคำเหล่านี้",
+        "timesWrong": "ผิด {count} ครั้ง",
+        "masteryLabel": "ความชำนาญ {mastery} จาก {max}"
     }
 }

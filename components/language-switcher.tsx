@@ -29,7 +29,7 @@ export function LanguageSwitcher() {
             locale={item.value}
             className={
               isActive
-                ? "rounded-full bg-white px-2.5 py-1 font-medium text-zinc-950 sm:px-3 sm:py-1.5"
+                ? "rounded-full bg-white px-2.5 py-1 font-semibold text-brand sm:px-3 sm:py-1.5"
                 : "rounded-full px-2.5 py-1 hover:bg-white/10 hover:text-white sm:px-3 sm:py-1.5"
             }
           >

@@ -1,15 +1,24 @@
 import { LessonCardSession } from "@/components/lesson-card-session";
-import { getWordsByLevel } from "@/lib/oxford-words";
+import {
+  getLevelWordCount,
+  getWordsByUnit,
+  roundCount,
+  sliceRound,
+  UNIT_SIZE,
+} from "@/lib/oxford-words";
 import type { CefrLevel } from "@/lib/types";
+import { privateMetadata } from "@/lib/seo";
+
+export const metadata = privateMetadata("บทเรียน");
 
 type LearnPageProps = {
   searchParams: Promise<{
     level?: string | string[];
     unit?: string | string[];
+    round?: string | string[];
   }>;
 };
 
-const unitSize = 20;
 const validLevels = new Set<CefrLevel>(["A1", "A2", "B1", "B2"]);
 const pathHref = "/english/a1";
 
@@ -21,35 +30,39 @@ const normalizeLevel = (value: string | string[] | undefined): CefrLevel => {
   return validLevels.has(level as CefrLevel) ? (level as CefrLevel) : "A1";
 };
 
-const normalizeUnit = (value: string | string[] | undefined) => {
-  const unit = Number(getSingleValue(value));
-  if (!Number.isInteger(unit) || unit < 1) return 1;
-  return unit;
-};
-
-const getUnitWords = async (level: CefrLevel, unit: number) => {
-  const words = await getWordsByLevel(level);
-  const totalUnits = Math.ceil(words.length / unitSize);
-  const safeUnit = Math.min(unit, Math.max(totalUnits, 1));
-  const startIndex = (safeUnit - 1) * unitSize;
-
-  return {
-    unit: safeUnit,
-    words: words.slice(startIndex, startIndex + unitSize),
-  };
+const normalizePositive = (value: string | string[] | undefined) => {
+  const parsed = Number(getSingleValue(value));
+  if (!Number.isInteger(parsed) || parsed < 1) return 1;
+  return parsed;
 };
 
 export default async function LearnPage({ searchParams }: LearnPageProps) {
   const query = await searchParams;
   const level = normalizeLevel(query.level);
-  const unit = normalizeUnit(query.unit);
-  const lesson = await getUnitWords(level, unit);
+  const requestedUnit = normalizePositive(query.unit);
+  const requestedRound = normalizePositive(query.round);
+
+  // Clamp to a unit that exists rather than rendering an empty lesson.
+  const total = await getLevelWordCount(level);
+  const unitCount = Math.max(Math.ceil(total / UNIT_SIZE), 1);
+  const unit = Math.min(requestedUnit, unitCount);
+
+  const unitWords = await getWordsByUnit(level, unit);
+  const rounds = roundCount(unitWords.length);
+  const round = Math.min(requestedRound, rounds);
+  const words = sliceRound(unitWords, round);
 
   return (
+    // Keyed so moving to the next round mounts a fresh session. Without it the client
+    // component keeps its state across a same-route navigation, so `currentIndex` stays
+    // at the end of the previous round and round 2 opens already "complete".
     <LessonCardSession
+      key={`${level}-${unit}-${round}`}
       level={level}
-      unit={lesson.unit}
-      words={lesson.words}
+      unit={unit}
+      round={round}
+      roundCount={rounds}
+      words={words}
       pathHref={pathHref}
     />
   );

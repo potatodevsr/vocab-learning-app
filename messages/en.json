@@ -44,7 +44,10 @@
         "sidebarKnown": "Known",
         "sidebarReviewLater": "Review later",
         "comingNext": "Coming next",
-        "lastCard": "This is the last card in the unit."
+        "lastCard": "This is the last card in the unit.",
+        "roundLabel": "Round {round}/{total}",
+        "nextRound": "Next round",
+        "masteryLabel": "Mastery {mastery} of {max}"
     },
     "Quiz": {
         "notReadyTitle": "Quiz is not ready yet",
@@ -81,5 +84,63 @@
         "finish": "Finish",
         "next": "Next",
         "check": "Check answer"
+    },
+    "Auth": {
+        "loginTitle": "Log in",
+        "loginSubtitle": "Start learning Oxford 3000 vocabulary",
+        "email": "Email",
+        "password": "Password",
+        "submit": "Confirm",
+        "noAccount": "Don't have an account?",
+        "register": "Register",
+        "loadingLogin": "Logging in...",
+        "loadingChecking": "Checking your information...",
+        "confirm": "OK",
+        "validation": {
+            "emailRequiredTitle": "Please enter your email",
+            "emailRequiredText": "Enter your email before logging in.",
+            "emailInvalidTitle": "Invalid email",
+            "emailInvalidText": "Please enter a valid email, for example name@example.com.",
+            "passwordRequiredTitle": "Please enter your password",
+            "passwordRequiredText": "Enter your password before logging in."
+        },
+        "error": {
+            "loginFailed": "Login failed",
+            "generic": "Something went wrong"
+        }
+    },
+    "Profile": {
+        "badge": "Your account",
+        "accountTitle": "Account details",
+        "username": "Username",
+        "email": "Email",
+        "name": "Name",
+        "memberSince": "Member since",
+        "progressTitle": "Your learning so far",
+        "continueLearning": "Continue learning",
+        "statLessons": "lessons finished",
+        "statQuizzes": "quizzes taken",
+        "statWordsKnown": "words known",
+        "statAccuracy": "recent accuracy",
+        "recentQuizzes": "Recent quizzes",
+        "unitShort": "Unit",
+        "progressEmptyTitle": "No lessons finished yet",
+        "progressEmptyBody": "Finish a lesson or a quiz and your results will show up here — words known, quiz scores and where to pick up next.",
+        "collectionTitle": "Your Oxford 3000 collection",
+        "collectionCaption": "Words you have mastered so far",
+        "statMastered": "words mastered",
+        "statMistakes": "to practise",
+        "reviewMistakes": "Practise mistakes"
+    },
+    "Review": {
+        "title": "Your mistakes",
+        "subtitle": "Words you got wrong or flagged for review. Practise these and they leave the list.",
+        "wordsToPractise": "words to practise",
+        "emptyTitle": "Nothing to fix — nice work",
+        "emptyBody": "Words you answer incorrectly show up here so you can practise them. Finish a quiz to fill it.",
+        "startLearning": "Start learning",
+        "practise": "Practise these words",
+        "timesWrong": "{count}× wrong",
+        "masteryLabel": "Mastery {mastery} of {max}"
     }
 }

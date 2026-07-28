@@ -96,10 +96,10 @@ export default function RegisterPage() {
 
   if (loading || success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+      <div className="flex min-h-screen items-center justify-center bg-brand">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 text-pink-500 animate-spin" />
-          <p className="text-zinc-400 text-sm">
+          <Loader2 className="size-10 animate-spin text-white" />
+          <p className="text-sm text-white/90">
             {success ? "สมัครสำเร็จ กำลังเข้าสู่ระบบ..." : "กำลังสร้างบัญชี..."}
           </p>
         </div>
@@ -108,16 +108,16 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-brand px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">สมัครสมาชิก</h1>
-          <p className="text-zinc-400 mt-2 text-sm">
+          <h1 className="text-3xl font-bold text-white drop-shadow-sm">สมัครสมาชิก</h1>
+          <p className="mt-2 text-sm text-white/90">
             เริ่มเรียนคำศัพท์ Oxford 3000 ฟรี
           </p>
         </div>
 
-        <Card className="border-0 shadow-2xl">
+        <Card className="play-card rounded-[28px] border-0">
           <CardContent className="pt-6">
             <form
               onSubmit={handleSubmit}
@@ -216,7 +216,7 @@ export default function RegisterPage() {
                 </Alert>
               )}
 
-              <Button type="submit" className="w-full" disabled={!isFormValid}>
+              <Button type="submit" className="play-press h-12 w-full rounded-full bg-brand text-base font-semibold text-white hover:bg-brand" disabled={!isFormValid}>
                 ยืนยัน
               </Button>
 
@@ -226,7 +226,7 @@ export default function RegisterPage() {
                   href={`/${locale}/auth/login`}
                   className="text-primary hover:underline"
                 >
-                  เข้าสู่ระบบ
+                  Sign In
                 </Link>
               </p>
             </form>

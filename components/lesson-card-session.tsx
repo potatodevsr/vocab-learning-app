@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -8,6 +8,7 @@ import {
   CircleAlert,
   ListChecks,
   RotateCcw,
+  Volume2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -15,22 +16,53 @@ import { Link } from "@/i18n/navigation";
 import type { CefrLevel, OxfordWord } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { getWordLabel } from "@/lib/word";
+import {
+  getWordProgress,
+  newSessionId,
+  reportLessonComplete,
+  type WordProgress,
+} from "@/lib/progress-api";
+import { MasteryPips } from "@/components/play/mastery-pips";
+import { Confetti } from "@/components/play/confetti";
 
 type LessonCardSessionProps = {
   level: CefrLevel;
   unit: number;
+  round: number;
+  roundCount: number;
   words: OxfordWord[];
   pathHref: string;
 };
 
+type SpeechLang = "en-US" | "th-TH";
+
 const addUnique = (items: string[], value: string) =>
   items.includes(value) ? items : [...items, value];
+
+const speak = (text: string | null | undefined, lang: SpeechLang) => {
+  const value = text?.trim();
+
+  if (!value) return;
+  if (typeof window === "undefined") return;
+  if (!window.speechSynthesis) return;
+
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(value);
+
+  utterance.lang = lang;
+  utterance.rate = lang === "en-US" ? 0.85 : 0.8;
+  utterance.pitch = 1;
+
+  window.speechSynthesis.speak(utterance);
+};
 
 export function LessonCardSession({
   level,
   unit,
+  round,
+  roundCount,
   words,
   pathHref,
 }: LessonCardSessionProps) {
@@ -43,6 +75,47 @@ export function LessonCardSession({
 
   const currentWord = words[currentIndex];
   const isComplete = currentIndex >= words.length;
+
+  const [wordProgress, setWordProgress] = useState<Record<string, WordProgress>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void getWordProgress(words.map((word) => word.id)).then((progress) => {
+      if (!cancelled) setWordProgress(progress);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [words]);
+
+  // One id per mounted session, so a re-render or a retry replays rather than
+  // double-counts. Both are impure calls, so they are initialised in an effect
+  // rather than during render.
+  const sessionIdRef = useRef<string>("");
+  const startedAtRef = useRef<number>(0);
+  const reportedRef = useRef(false);
+
+  useEffect(() => {
+    sessionIdRef.current = newSessionId();
+    startedAtRef.current = Date.now();
+  }, []);
+
+  useEffect(() => {
+    if (!isComplete || words.length === 0 || reportedRef.current) return;
+
+    reportedRef.current = true;
+
+    void reportLessonComplete({
+      sessionId: sessionIdRef.current,
+      level,
+      unit,
+      knownWordIds: knownIds,
+      reviewWordIds: reviewIds,
+      durationSec: Math.round((Date.now() - startedAtRef.current) / 1000),
+    });
+  }, [isComplete, words.length, level, unit, knownIds, reviewIds]);
 
   const progress = useMemo(() => {
     if (words.length === 0) return 0;
@@ -72,11 +145,11 @@ export function LessonCardSession({
 
   if (words.length === 0) {
     return (
-      <main className="min-h-screen bg-zinc-50 text-zinc-950">
+      <main className="min-h-screen bg-background text-foreground">
         <section className="mx-auto flex min-h-screen w-full max-w-3xl items-center px-6">
-          <Card className="w-full rounded-3xl bg-white">
-            <CardContent className="p-8">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-zinc-950 text-white">
+          <div className="play-card w-full p-8">
+            <div>
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-warn text-white">
                 <CircleAlert className="size-5" />
               </div>
 
@@ -84,35 +157,37 @@ export function LessonCardSession({
                 {tLesson("emptyTitle")}
               </h1>
 
-              <p className="mt-2 text-sm leading-6 text-zinc-600">
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {tLesson("emptyDescription")}
               </p>
 
-              <Button asChild className="mt-6 rounded-full">
+              <Button asChild className="play-press mt-6 rounded-full bg-brand text-white hover:bg-brand">
                 <Link href={pathHref}>
                   <ArrowLeft className="size-4" />
                   {tCommon("backToPath")}
                 </Link>
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </section>
       </main>
     );
   }
 
   if (isComplete) {
-    return (
-      <main className="min-h-screen bg-zinc-50 text-zinc-950">
-        <section className="mx-auto flex min-h-screen w-full max-w-4xl items-center px-6 py-10">
-          <Card className="w-full rounded-[32px] bg-white">
-            <CardContent className="p-8 sm:p-10">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-pink-600 text-white">
-                <ListChecks className="size-6" />
-              </div>
+    const hasNextRound = round < roundCount;
 
-              <Badge className="mt-6 rounded-full bg-zinc-950 text-white hover:bg-zinc-950">
-                {tCommon("unitLabel", { level, unit })}
+    return (
+      <main className="min-h-screen bg-background text-foreground">
+        <Confetti />
+        <section className="mx-auto flex min-h-screen w-full max-w-4xl items-center px-6 py-10">
+          <div className="play-card w-full p-8 sm:p-10">
+            <div className="play-pop flex size-16 items-center justify-center rounded-3xl bg-success text-white">
+              <ListChecks className="size-7" />
+            </div>
+
+              <Badge className="mt-6 rounded-full bg-brand-soft text-brand hover:bg-brand-soft">
+                {tCommon("unitLabel", { level, unit })} · {tLesson("roundLabel", { round, total: roundCount })}
               </Badge>
 
               <h1 className="mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
@@ -124,33 +199,58 @@ export function LessonCardSession({
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl border bg-zinc-50 p-5">
-                  <p className="text-3xl font-semibold">{words.length}</p>
-                  <p className="mt-1 text-sm text-zinc-600">
+                <div className="rounded-3xl bg-brand-soft p-5">
+                  <p className="play-count text-3xl font-semibold">{words.length}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {tLesson("statWordCards")}
                   </p>
                 </div>
 
-                <div className="rounded-3xl border bg-zinc-50 p-5">
-                  <p className="text-3xl font-semibold">{knownIds.length}</p>
-                  <p className="mt-1 text-sm text-zinc-600">
+                <div className="rounded-3xl bg-success-soft p-5">
+                  <p className="play-count text-3xl font-semibold" data-testid="summary-known">
+                    {knownIds.length}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {tLesson("statKnown")}
                   </p>
                 </div>
 
-                <div className="rounded-3xl border bg-zinc-50 p-5">
-                  <p className="text-3xl font-semibold">{reviewIds.length}</p>
-                  <p className="mt-1 text-sm text-zinc-600">
+                <div className="rounded-3xl bg-warn-soft p-5">
+                  <p className="play-count text-3xl font-semibold" data-testid="summary-review">
+                    {reviewIds.length}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {tLesson("statReviewLater")}
                   </p>
                 </div>
               </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                {hasNextRound && (
+                  <Button
+                    asChild
+                    size="lg"
+                    className="play-press h-12 rounded-full bg-brand px-6 text-white hover:bg-brand"
+                  >
+                    <Link
+                      data-testid="next-round"
+                      href={`/learn?level=${level}&unit=${unit}&round=${round + 1}`}
+                    >
+                      {tLesson("nextRound")}
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  </Button>
+                )}
+
                 <Button
                   asChild
                   size="lg"
-                  className="h-12 rounded-full bg-pink-600 px-6 text-white hover:bg-pink-500"
+                  variant={hasNextRound ? "outline" : "default"}
+                  className={
+                    hasNextRound
+                      ? "play-press h-12 rounded-full bg-white px-6"
+                      : "play-press h-12 rounded-full bg-brand px-6 text-white hover:bg-brand"
+                  }
                 >
                   <Link href={`/quiz?level=${level}&unit=${unit}`}>
                     {tLesson("startQuiz")}
@@ -162,27 +262,26 @@ export function LessonCardSession({
                   asChild
                   size="lg"
                   variant="outline"
-                  className="h-12 rounded-full bg-white px-6"
+                  className="play-press h-12 rounded-full bg-white px-6"
                 >
                   <Link href={pathHref}>{tCommon("backToPath")}</Link>
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+          </div>
         </section>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-950">
-      <section className="border-b bg-zinc-950 text-white">
+    <main className="min-h-screen bg-background text-foreground">
+      <section className="bg-brand text-white">
         <div className="mx-auto w-full max-w-6xl px-6 py-8 lg:px-8">
           <div className="flex items-center justify-between gap-4">
             <Button
               asChild
               variant="ghost"
-              className="rounded-full text-zinc-300 hover:bg-white/10 hover:text-white"
+              className="play-press rounded-full text-white/90 hover:bg-white/20 hover:text-white"
             >
               <Link href={pathHref}>
                 <ArrowLeft className="size-4" />
@@ -190,8 +289,12 @@ export function LessonCardSession({
               </Link>
             </Button>
 
-            <Badge className="rounded-full bg-white/10 text-white hover:bg-white/10">
-              {tCommon("unitLabel", { level, unit })}
+            <Badge
+              data-testid="round-badge"
+              className="rounded-full bg-white/20 text-white hover:bg-white/20"
+            >
+              {tCommon("unitLabel", { level, unit })} ·{" "}
+              {tLesson("roundLabel", { round, total: roundCount })}
             </Badge>
           </div>
 
@@ -201,12 +304,12 @@ export function LessonCardSession({
                 {tLesson("title")}
               </h1>
 
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-300">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/85">
                 {tLesson("description")}
               </p>
             </div>
 
-            <div className="text-sm text-zinc-300">
+            <div className="text-sm font-medium text-white/90">
               {tLesson("cardCounter", {
                 current: currentIndex + 1,
                 total: words.length,
@@ -214,9 +317,10 @@ export function LessonCardSession({
             </div>
           </div>
 
-          <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/25">
             <div
-              className="h-full rounded-full bg-pink-600 transition-all duration-300"
+              data-testid="lesson-progress-fill"
+              className="h-full rounded-full bg-white transition-[width] duration-[400ms] ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -224,11 +328,11 @@ export function LessonCardSession({
       </section>
 
       <section className="mx-auto grid w-full max-w-6xl gap-6 px-6 py-10 lg:grid-cols-[1fr_320px] lg:px-8">
-        <Card className="rounded-[36px] bg-white shadow-sm">
-          <CardContent className="p-6 sm:p-8">
-            <article className="rounded-[32px] border bg-zinc-50 p-6 sm:p-8">
+        <div className="play-card p-6 sm:p-8">
+          <div>
+            <article className="rounded-[28px] bg-brand-soft/60 p-6 sm:p-8">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className="rounded-full bg-zinc-950 text-white hover:bg-zinc-950">
+                <Badge className="rounded-full bg-brand text-white hover:bg-brand">
                   {currentWord.level}
                 </Badge>
 
@@ -244,15 +348,51 @@ export function LessonCardSession({
               </div>
 
               <div className="mt-8">
-                <h2 className="text-6xl font-semibold tracking-tight">
-                  {getWordLabel(currentWord)}
-                </h2>
+                <MasteryPips
+                  mastery={wordProgress[currentWord.id]?.mastery ?? 0}
+                  label={tLesson("masteryLabel", {
+                    mastery: wordProgress[currentWord.id]?.mastery ?? 0,
+                    max: 5,
+                  })}
+                />
+
+                <div className="mt-4 flex flex-wrap items-center gap-4">
+                  <h2 className="text-6xl font-semibold tracking-tight">
+                    {getWordLabel(currentWord)}
+                  </h2>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="play-press mt-3 size-12 rounded-full bg-white"
+                    onClick={() => speak(currentWord.word, "en-US")}
+                    aria-label="Listen to English pronunciation"
+                  >
+                    <Volume2 className="size-5" />
+                  </Button>
+                </div>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-3xl border bg-white p-5">
-                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                      {tLesson("thaiMeaning")}
-                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                        {tLesson("thaiMeaning")}
+                      </p>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 rounded-full"
+                        disabled={!currentWord.meaningTh}
+                        onClick={() => speak(currentWord.meaningTh, "th-TH")}
+                        aria-label="Listen to Thai meaning"
+                      >
+                        <Volume2 className="size-4" />
+                      </Button>
+                    </div>
+
                     <p
                       className="font-thai mt-2 text-lg font-semibold"
                       lang="th"
@@ -265,6 +405,7 @@ export function LessonCardSession({
                     <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
                       {tLesson("pronunciation")}
                     </p>
+
                     <p
                       className="font-thai mt-2 text-lg font-semibold"
                       lang="th"
@@ -289,56 +430,61 @@ export function LessonCardSession({
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <Button
                 variant="outline"
-                className="h-12 rounded-full border-zinc-200 bg-white"
+                data-testid="review-later"
+                className="play-press h-14 rounded-2xl border-2 border-warn/40 bg-warn-soft text-base font-semibold text-foreground hover:bg-warn-soft"
                 onClick={handleReview}
               >
-                <RotateCcw className="size-4" />
+                <RotateCcw className="size-5" />
                 {tLesson("reviewLater")}
               </Button>
 
               <Button
-                className="h-12 rounded-full bg-pink-600 text-white hover:bg-pink-500"
+                data-testid="i-know-this"
+                className="play-press h-14 rounded-2xl bg-success text-base font-semibold text-white hover:bg-success"
                 onClick={handleKnown}
               >
-                <Check className="size-4" />
+                <Check className="size-5" />
                 {tLesson("iKnowThis")}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <div className="space-y-4">
-          <Card className="rounded-3xl bg-white">
-            <CardContent className="p-6">
+          <div className="play-card p-6">
               <h2 className="font-semibold">{tLesson("sidebarTitle")}</h2>
 
               <div className="mt-4 grid gap-3 text-sm">
-                <div className="flex justify-between rounded-2xl border bg-zinc-50 px-4 py-3">
-                  <span className="text-zinc-500">
+                <div className="flex justify-between rounded-2xl bg-brand-soft px-4 py-3">
+                  <span className="text-muted-foreground">
                     {tLesson("sidebarProgress")}
                   </span>
-                  <span className="font-medium">{progress}%</span>
+                  <span className="font-semibold" data-testid="stat-progress">
+                    {progress}%
+                  </span>
                 </div>
 
-                <div className="flex justify-between rounded-2xl border bg-zinc-50 px-4 py-3">
-                  <span className="text-zinc-500">
+                <div className="flex justify-between rounded-2xl bg-success-soft px-4 py-3">
+                  <span className="text-muted-foreground">
                     {tLesson("sidebarKnown")}
                   </span>
-                  <span className="font-medium">{knownIds.length}</span>
+                  <span className="font-semibold" data-testid="stat-known">
+                    {knownIds.length}
+                  </span>
                 </div>
 
-                <div className="flex justify-between rounded-2xl border bg-zinc-50 px-4 py-3">
-                  <span className="text-zinc-500">
+                <div className="flex justify-between rounded-2xl bg-warn-soft px-4 py-3">
+                  <span className="text-muted-foreground">
                     {tLesson("sidebarReviewLater")}
                   </span>
-                  <span className="font-medium">{reviewIds.length}</span>
+                  <span className="font-semibold" data-testid="stat-review">
+                    {reviewIds.length}
+                  </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+          </div>
 
-          <Card className="rounded-3xl bg-white">
-            <CardContent className="p-6">
+          <div className="play-card p-6">
               <h2 className="font-semibold">{tLesson("comingNext")}</h2>
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -353,11 +499,10 @@ export function LessonCardSession({
                     </Badge>
                   ))
                 ) : (
-                  <p className="text-sm text-zinc-600">{tLesson("lastCard")}</p>
+                  <p className="text-sm text-muted-foreground">{tLesson("lastCard")}</p>
                 )}
               </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
       </section>
     </main>

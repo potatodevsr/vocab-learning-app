@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { API_URL } from "@/constants/config";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 const PAGE_SIZE = 50;
 
 type User = {
@@ -77,7 +77,9 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
 
   const load = useCallback(async (p: number, q: string) => {
     setLoading(true);

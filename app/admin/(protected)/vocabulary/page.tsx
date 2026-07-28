@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { API_URL } from "@/constants/config";
 
 const LEVELS = ["A1", "A2", "B1", "B2"];
 const STATUSES = ["draft", "published"];
@@ -72,7 +73,9 @@ export default function AdminDashboardPage() {
   const [searchInput, setSearchInput] = useState("");
   const [edit, setEdit] = useState<EditState>(null);
   const [saving, setSaving] = useState(false);
-  const searchTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
 
   const load = useCallback(
     async (p: number, level: string, status: string, q: string) => {
@@ -146,7 +149,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleLogout = async () => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+    await fetch(`${API_URL}/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
@@ -278,6 +281,7 @@ export default function AdminDashboardPage() {
                       {EDITABLE_FIELDS.map((field) => (
                         <TableCell
                           key={field}
+                          data-testid={`cell-${field}`}
                           className="cursor-pointer min-w-[140px] group"
                           onClick={() =>
                             setEdit({
@@ -290,6 +294,7 @@ export default function AdminDashboardPage() {
                           {edit?.wordId === word.id && edit?.field === field ? (
                             <Input
                               autoFocus
+                              data-testid={`input-${field}`}
                               value={edit.value}
                               onChange={(e) =>
                                 setEdit({ ...edit, value: e.target.value })

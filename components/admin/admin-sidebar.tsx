@@ -20,6 +20,7 @@ import {
   LogOut,
   GraduationCap,
 } from "lucide-react";
+import { API_URL } from "@/constants/config";
 
 const NAV_ITEMS = [
   {
@@ -48,7 +49,7 @@ export function AdminSidebar() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+    await fetch(`${API_URL}/auth/logout`, {
       method: "POST",
       credentials: "include",
     });

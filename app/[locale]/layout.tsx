@@ -4,6 +4,8 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { UserNavbar } from "@/components/user-navbar";
+import { GoogleAnalytics } from "@/components/google-analytics";
+import { SITE_URL } from "@/lib/seo";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -23,8 +25,14 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "Vocab Learning App",
-  description: "Learn English words with Thai meaning and pronunciation.",
+  // Resolves relative OG/canonical URLs, and stops Next warning at build time.
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "เรียนคำศัพท์ภาษาอังกฤษ Oxford 3000 พร้อมคำแปลไทย",
+    template: "%s · Vocab Learning",
+  },
+  description:
+    "เรียนคำศัพท์ภาษาอังกฤษจากชุด Oxford 3000 พร้อมความหมายภาษาไทย คำอ่าน และตัวอย่างประโยค ฝึกทีละบทสั้น ๆ",
 };
 
 export function generateStaticParams() {
@@ -45,10 +53,14 @@ export default async function LocaleLayout({
   }
 
   return (
-    <html lang={locale}>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${notoSansThai.variable} antialiased`}
-      >
+    // The font variables must live on <html>: globals.css applies `font-sans` there, and
+    // a var defined only on <body> is not in scope for the element that consumes it —
+    // which silently dropped the whole app to Times.
+    <html
+      lang={locale}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansThai.variable}`}
+    >
+      <body className="antialiased">
         <NextIntlClientProvider>
           <div className="fixed top-4 right-4 z-50">
             <UserNavbar locale={locale} />
@@ -56,6 +68,7 @@ export default async function LocaleLayout({
           {children}
         </NextIntlClientProvider>
       </body>
+      <GoogleAnalytics />
     </html>
   );
 }

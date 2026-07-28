@@ -33,13 +33,13 @@ const cards = [
 export function HeroWordIllustration() {
   return (
     <div className="relative mx-auto h-[560px] w-full max-w-[560px] overflow-hidden">
-      <div className="absolute inset-0 rounded-[32px] border border-white/10 bg-white/5" />
+      <div className="absolute inset-0 rounded-[28px] border-3 border-ink bg-accent-sun/30" />
 
-      <div className="absolute left-6 top-6 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-300">
+      <div className="absolute left-6 top-6 rounded-full bg-white/25 px-3 py-1 text-xs font-medium text-white">
         UI preview
       </div>
 
-      <div className="absolute right-6 top-6 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-300">
+      <div className="absolute right-6 top-6 rounded-full bg-white/25 px-3 py-1 text-xs font-medium text-white">
         Word cards
       </div>
 
@@ -47,11 +47,11 @@ export function HeroWordIllustration() {
         {cards.map((card) => (
           <article
             key={card.word}
-            className="hero-card-cycle absolute left-0 top-0 w-full rounded-[32px] border border-white/10 bg-white p-6 text-zinc-950 shadow-2xl"
+            className="hero-card-cycle play-card absolute left-0 top-0 w-full rounded-[28px] p-6 text-foreground"
             style={{ animationDelay: card.delay }}
           >
             <div className="flex items-center justify-between">
-              <Badge className="bg-zinc-950 text-white hover:bg-zinc-950">
+              <Badge className="bg-brand text-white hover:bg-brand">
                 {card.level}
               </Badge>
             </div>
@@ -62,7 +62,7 @@ export function HeroWordIllustration() {
               </h3>
 
               <p
-                className="font-thai mt-2 text-sm font-medium text-zinc-500"
+                className="font-thai mt-2 text-sm font-medium text-muted-foreground"
                 lang="th"
               >
                 {card.pronunciation}
@@ -75,13 +75,13 @@ export function HeroWordIllustration() {
                 {card.meaning}
               </p>
 
-              <p className="mt-4 text-sm leading-6 text-zinc-600">
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
                 {card.example}
               </p>
             </div>
 
             <div className="mt-7 grid grid-cols-2 gap-3">
-              <Button className="rounded-full bg-pink-600 text-white hover:bg-pink-500">
+              <Button className="play-press rounded-full bg-success text-white hover:bg-success">
                 <Check className="size-4" />I know this
               </Button>
 
@@ -97,7 +97,7 @@ export function HeroWordIllustration() {
         ))}
       </div>
 
-      <div className="absolute bottom-8 left-8 right-8 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-center text-sm text-zinc-300">
+      <div className="absolute bottom-8 left-8 right-8 rounded-2xl bg-white/25 px-4 py-3 text-center text-sm font-medium text-white">
         Thai meaning · pronunciation · CEFR levels
       </div>
     </div>

@@ -1,9 +1,8 @@
 "use client";
 
-"use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/constants/config";
 import {
   Card,
   CardContent,
@@ -29,7 +28,7 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -48,7 +47,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="flex min-h-screen items-center justify-center bg-ink">
       <div className="w-full max-w-md px-4">
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4 shadow-lg">
@@ -108,10 +107,10 @@ export default function AdminLoginPage() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    กำลังเข้าสู่ระบบ...
+                    Logging in...
                   </>
                 ) : (
-                  "เข้าสู่ระบบ"
+                  "Sign In"
                 )}
               </Button>
             </form>

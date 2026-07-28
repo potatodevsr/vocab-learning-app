@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+import { API_URL } from "@/constants/config";
 
 export type User = {
     id: string;
@@ -6,6 +6,23 @@ export type User = {
     username: string;
     firstName: string;
     lastName: string;
+    /** ISO timestamp. Absent from the register/login responses, present on /user/me. */
+    createdAt?: string;
+};
+
+/**
+ * Server-side variant of {@link getMe}: Server Components have no ambient cookie jar, so
+ * the caller forwards the `user_token` explicitly.
+ */
+export const getMeWithToken = async (token: string): Promise<User | null> => {
+    const res = await fetch(`${API_URL}/user/me`, {
+        headers: { Cookie: `user_token=${token}` },
+        cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+
+    return res.json();
 };
 
 export const userRegister = async (data: {
@@ -48,11 +65,20 @@ export const userLogout = async () => {
     });
 };
 
+/**
+ * Client-side "who am I". Returns null for *any* answer that is not a live session —
+ * including the API being unreachable. Callers render the signed-out UI from that null,
+ * so a rejected fetch here would surface as an unhandled rejection, not a login button.
+ */
 export const getMe = async (): Promise<User | null> => {
-    const res = await fetch(`${API_URL}/user/me`, {
-        credentials: "include",
-        cache: "no-store",
-    });
-    if (!res.ok) return null;
-    return res.json();
+    try {
+        const res = await fetch(`${API_URL}/user/me`, {
+            credentials: "include",
+            cache: "no-store",
+        });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch {
+        return null;
+    }
 };

@@ -1,14 +1,19 @@
 export type CefrLevel = "A1" | "A2" | "B1" | "B2";
 
-export type WordStatus = "draft" | "ready";
+export type WordStatus = "draft" | "published";
 
+/**
+ * Exactly the fields the API's public guard shape returns — no more, no less. This used
+ * to carry `sourceName`/`sourceTitle` as string *literals* (false for the
+ * `oxford-3000-american` dataset) and to omit `unit` entirely. Keep it in step with
+ * `backend/src/guard-shapes.ts`; once the API types are generated from its OpenAPI spec,
+ * this hand-written type goes away.
+ */
 export type OxfordWord = {
     id: string;
-    sourceKey: string;
-    sourceOrder: number;
-    sourceName: "oxford-3000";
-    sourceTitle: "The Oxford 3000 by CEFR level";
     level: CefrLevel;
+    unit: number | null;
+    sourceOrder: number;
     word: string;
     displayWord: string;
     slug: string;
@@ -20,16 +25,7 @@ export type OxfordWord = {
     ipa: string;
     exampleEn: string;
     exampleTh: string;
-    notes: string;
     status: WordStatus;
-};
-
-export type OxfordSeedData = {
-    sourceName: "oxford-3000";
-    sourceTitle: "The Oxford 3000 by CEFR level";
-    totalEntries: number;
-    totalUniqueWords: number;
-    entryCountsByLevel: Record<CefrLevel, number>;
-    uniqueWordCountsByLevel: Record<CefrLevel, number>;
-    words: OxfordWord[];
+    /** ISO timestamp; drives <lastmod> in the sitemap. */
+    updatedAt?: string;
 };

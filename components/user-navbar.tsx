@@ -48,14 +48,14 @@ export function UserNavbar({ locale }: { locale: string }) {
           size="sm"
           className="text-zinc-300 hover:text-white hover:bg-white/10"
         >
-          <Link href={`/${locale}/auth/login`}>เข้าสู่ระบบ</Link>
+          <Link href={`/${locale}/auth/login`}>Sign In</Link>
         </Button>
         <Button
           asChild
           size="sm"
-          className="rounded-full bg-pink-600 hover:bg-pink-500 text-white"
+          className="play-press rounded-full bg-success font-semibold text-white hover:bg-success"
         >
-          <Link href={`/${locale}/auth/register`}>สมัครสมาชิก</Link>
+          <Link href={`/${locale}/auth/register`}>Sign Up</Link>
         </Button>
       </div>
     );
@@ -68,7 +68,7 @@ export function UserNavbar({ locale }: { locale: string }) {
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 hover:bg-white/10 transition-colors">
             <Avatar className="w-6 h-6">
-              <AvatarFallback className="bg-pink-600 text-white text-xs">
+              <AvatarFallback className="bg-brand text-white text-xs">
                 {user.username.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
