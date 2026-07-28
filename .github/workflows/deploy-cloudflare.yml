@@ -65,7 +65,8 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
-          packageManager: pnpm
+          packageManager: npm
+          wranglerVersion: "4.114.0"
 
       # Wrangler Action uploads secrets before running its command. A brand-new Worker
       # must therefore be created by the step above before its first secret upload.
@@ -76,7 +77,8 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
-          packageManager: pnpm
+          packageManager: npm
+          wranglerVersion: "4.114.0"
           secrets: |
             JWT_SECRET
         env:
