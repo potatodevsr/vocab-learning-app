@@ -10,13 +10,19 @@ export default async function LocaleNotFound() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-accent-deep-sky px-6 text-white">
       <div className="w-full max-w-md text-center" data-testid="not-found">
-        <p className="text-sm font-bold text-white">{t("code")}</p>
-        <h1 className="mt-2 text-2xl font-semibold">{t("title")}</h1>
+        {/* The code, set as an outline, is the whole illustration — no payload. */}
+        <p aria-hidden className="play-outline-word play-display text-white">
+          {t("code")}
+        </p>
+
+        <h1 className="mt-4 text-3xl font-extrabold tracking-tight">
+          {t("title")}
+        </h1>
         <p className="mt-2 text-sm leading-6 text-white">{t("body")}</p>
 
         <Button
           asChild
-          className="play-press mt-6 h-11 rounded-full bg-white px-6 font-semibold text-brand hover:bg-white"
+          className="play-key mt-8 h-14 rounded-2xl bg-accent-sun px-7 text-base font-extrabold text-ink hover:bg-accent-sun"
         >
           <Link href="/english/a1">
             <ArrowLeft className="size-4" />

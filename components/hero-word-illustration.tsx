@@ -38,23 +38,37 @@ export function HeroWordIllustration() {
     // reading three sample words as if they were content is noise.
     <div
       aria-hidden
-      className="relative mx-auto h-[560px] w-full max-w-[560px] overflow-hidden"
+      data-testid="hero-word-illustration"
+      className="relative isolate mx-auto h-[460px] w-full max-w-[460px]"
     >
-      <div className="absolute inset-0 rounded-[28px] border-3 border-ink bg-accent-sun/30" />
+      {/*
+        A solid sun panel, not a 30% wash of it over the blue hero: the wash read as
+        muddy grey-blue and gave the white cards nothing to sit against. The panel is a
+        sticker like everything else — ink rule, hard shadow.
+      */}
+      <div className="absolute inset-0 z-0 rounded-[32px] border-3 border-ink bg-accent-sun shadow-[10px_10px_0_0_var(--ink)]" />
 
-      <div className="absolute left-6 top-6 rounded-full border-3 border-ink bg-white px-3 py-1 text-xs font-bold text-ink">
+      <div className="play-stamp absolute left-5 top-5 z-30 bg-white px-3 py-1 text-xs font-extrabold text-ink [--tilt:-3deg]">
         {t("illustrationPreview")}
       </div>
 
-      <div className="absolute right-6 top-6 rounded-full border-3 border-ink bg-white px-3 py-1 text-xs font-bold text-ink">
+      <div className="play-stamp absolute right-5 top-5 z-30 bg-white px-3 py-1 text-xs font-extrabold text-ink [--tilt:3deg]">
         {t("illustrationCards")}
       </div>
 
-      <div className="absolute left-[calc(50%-160px)] top-[122px] h-[340px] w-[320px]">
+      {/*
+        The deck sits inside the panel with room on every side, so the cycling cards
+        never run under the panel edge — the old box clipped whichever card was mid-swap.
+      */}
+      <div
+        data-testid="hero-card-stage"
+        className="hero-card-stage absolute z-10"
+      >
         {cards.map((card) => (
           <article
             key={card.word}
-            className="hero-card-cycle play-card absolute left-0 top-0 w-full rounded-[28px] p-6 text-foreground"
+            data-hero-word={card.word}
+            className="hero-card-cycle play-card absolute left-0 top-0 w-full rounded-[24px] p-5 text-foreground"
             style={{ animationDelay: card.delay }}
           >
             <div className="flex items-center justify-between">

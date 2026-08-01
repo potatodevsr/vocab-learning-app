@@ -1,206 +1,95 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { ArrowLeft, CheckCircle2, Mail } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowLeft } from "lucide-react";
-import Swal from "sweetalert2";
-import { LoadingOverlay } from "@/components/loading-overlay";
+
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { userLogin } from "@/lib/user-api";
-import Link from "next/link";
+import { requestMagicLink } from "@/lib/user-api";
 
-const isValidEmail = (value: string) => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-};
-
-const showWarning = async (title: string, text: string, confirm: string) => {
-  await Swal.fire({
-    icon: "warning",
-    title,
-    text,
-    confirmButtonText: confirm,
-    confirmButtonColor: "#3f3f46",
-    background: "#ffffff",
-    color: "#18181b",
-    customClass: {
-      popup: "app-swal-popup",
-      title: "app-swal-title",
-      htmlContainer: "app-swal-text",
-      confirmButton: "app-swal-confirm",
-    },
-  });
-};
-
-const showError = async (title: string, text: string, confirm: string) => {
-  await Swal.fire({
-    icon: "error",
-    title,
-    text,
-    confirmButtonText: confirm,
-    confirmButtonColor: "#3f3f46",
-    background: "#ffffff",
-    color: "#18181b",
-    customClass: {
-      popup: "app-swal-popup",
-      title: "app-swal-title",
-      htmlContainer: "app-swal-text",
-      confirmButton: "app-swal-confirm",
-    },
-  });
-};
-
-const getErrorMessage = (err: unknown, fallback: string) =>
-  err instanceof Error ? err.message : fallback;
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 export default function LoginPage() {
-  const router = useRouter();
   const locale = useLocale();
   const t = useTranslations("Auth");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [devMagicLink, setDevMagicLink] = useState<string | null>(null);
 
-  const validateForm = async () => {
-    if (!email.trim()) {
-      await showWarning(
-        t("validation.emailRequiredTitle"),
-        t("validation.emailRequiredText"),
-        t("confirm"),
-      );
-      return false;
-    }
-
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError(null);
     if (!isValidEmail(email)) {
-      await showWarning(
-        t("validation.emailInvalidTitle"),
-        t("validation.emailInvalidText"),
-        t("confirm"),
-      );
-      return false;
-    }
-
-    if (!password.trim()) {
-      await showWarning(
-        t("validation.passwordRequiredTitle"),
-        t("validation.passwordRequiredText"),
-        t("confirm"),
-      );
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const valid = await validateForm();
-
-    if (!valid) {
+      setError(t("validation.emailInvalidText"));
       return;
     }
 
-    setLoading(true);
-
+    setPending(true);
     try {
-      await userLogin({
-        email: email.trim(),
-        password,
-      });
-
-      setSuccess(true);
-
-      const redirectTo =
-        new URLSearchParams(window.location.search).get("from") || `/${locale}`;
-
-      router.push(redirectTo);
-    } catch (err) {
-      setLoading(false);
-      await showError(
-        t("error.loginFailed"),
-        getErrorMessage(err, t("error.generic")),
-        t("confirm"),
-      );
+      const from = new URLSearchParams(window.location.search).get("from") ?? undefined;
+      const result = await requestMagicLink({ email: email.trim(), locale, from });
+      setDevMagicLink(result.devMagicLink ?? null);
+      setSent(true);
+    } catch {
+      setError(t("error.generic"));
+    } finally {
+      setPending(false);
     }
   };
-
-  if (loading || success) {
-    return (
-      <LoadingOverlay
-        message={success ? t("loadingLogin") : t("loadingChecking")}
-      />
-    );
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-brand px-4">
       <div className="w-full max-w-md">
-        {/* The app bar is hidden on auth screens, so this is the only way back out. */}
-        <Link
-          href={`/${locale}`}
-          className="play-underline play-focus mb-6 inline-flex items-center gap-2 text-sm font-semibold text-white"
-        >
+        <Link href={`/${locale}`} className="play-underline play-focus mb-6 inline-flex items-center gap-2 text-sm font-semibold text-white">
           <ArrowLeft className="size-4" />
           {t("backHome")}
         </Link>
 
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">{t("loginTitle")}</h1>
-          <p className="mt-2 text-sm text-white">{t("loginSubtitle")}</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-white">{t("magicTitle")}</h1>
+          <p className="mt-2 text-sm text-white">{t("magicSubtitle")}</p>
         </div>
 
-        <Card className="play-card rounded-[28px] border-0">
+        <Card className="play-sticker gap-0 rounded-[28px] border-0 [--tile-block:var(--ink)]">
           <CardContent className="pt-6">
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-4"
-              autoComplete="off"
-              noValidate
-            >
-              <div className="space-y-2">
-                <Label htmlFor="email">{t("email")}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="off"
-                  autoFocus
-                />
+            {sent ? (
+              <div className="space-y-5 text-center" data-testid="magic-link-sent">
+                <CheckCircle2 className="mx-auto size-12 text-success" />
+                <div>
+                  <h2 className="text-xl font-extrabold">{t("magicSentTitle")}</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">{t("magicSentBody", { email: email.trim() })}</p>
+                </div>
+                {devMagicLink && (
+                  <Button asChild className="play-key h-12 w-full rounded-2xl bg-brand font-extrabold text-white hover:bg-brand">
+                    <a href={devMagicLink} data-testid="dev-magic-link">{t("magicOpenDev")}</a>
+                  </Button>
+                )}
+                <Button variant="ghost" className="w-full" onClick={() => setSent(false)}>{t("magicTryAnother")}</Button>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">{t("password")}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                />
-              </div>
-
-              <Button type="submit" className="play-press h-12 w-full rounded-full bg-brand text-base font-semibold text-white hover:bg-brand">
-                {t("submit")}
-              </Button>
-
-              <p className="text-center text-sm text-muted-foreground">
-                {t("noAccount")}{" "}
-                <Link
-                  href={`/${locale}/auth/register`}
-                  className="play-focus font-semibold text-brand underline-offset-4 hover:underline"
-                >
-                  {t("register")}
-                </Link>
-              </p>
-            </form>
+            ) : (
+              <form onSubmit={submit} className="space-y-4" noValidate>
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t("email")}</Label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="pl-10" placeholder="you@example.com" autoComplete="email" autoFocus aria-invalid={!!error} />
+                  </div>
+                  {error && <p className="text-sm font-medium text-danger" role="alert">{error}</p>}
+                </div>
+                <Button type="submit" disabled={pending} className="play-key h-14 w-full rounded-2xl bg-brand text-base font-extrabold text-white hover:bg-brand">
+                  {pending ? t("magicSending") : t("magicSubmit")}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  {t("noAccount")} <Link href={`/${locale}/auth/register`} className="play-focus font-semibold text-brand underline-offset-4 hover:underline">{t("register")}</Link>
+                </p>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>

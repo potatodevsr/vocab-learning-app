@@ -4,6 +4,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { AppBar } from "@/components/app-bar";
+import { SiteFooter } from "@/components/site-footer";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { SITE_URL } from "@/lib/seo";
 import "../globals.css";
@@ -64,6 +65,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider>
           <AppBar locale={locale} />
           {children}
+          <SiteFooter />
         </NextIntlClientProvider>
       </body>
       <GoogleAnalytics />

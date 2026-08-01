@@ -100,6 +100,8 @@ export default function AdminDashboardPage() {
   );
 
   useEffect(() => {
+    // The request synchronizes this page with the remote vocabulary data source.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load(page, levelFilter, statusFilter, search);
   }, [page, levelFilter, statusFilter, search, load]);
 

@@ -182,15 +182,15 @@ export function LessonCardSession({
         <Confetti />
         <section className="mx-auto flex min-h-screen w-full max-w-4xl items-center px-6 py-10">
           <div className="play-card w-full p-8 sm:p-10">
-            <div className="play-pop flex size-16 items-center justify-center rounded-3xl bg-success text-white">
+            <div className="play-pop flex size-16 items-center justify-center rounded-3xl border-3 border-ink bg-success text-white">
               <ListChecks className="size-7" />
             </div>
 
-              <Badge className="mt-6 rounded-full bg-brand-soft text-brand hover:bg-brand-soft">
+              <Badge className="play-stamp mt-6 border-ink bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink hover:bg-accent-sun">
                 {tCommon("unitLabel", { level, unit })} · {tLesson("roundLabel", { round, total: roundCount })}
               </Badge>
 
-              <h1 className="mt-5 max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h1 className="play-display mt-6 max-w-2xl text-[clamp(2.25rem,6vw,3.5rem)]">
                 {tLesson("completeTitle", { count: words.length })}
               </h1>
 
@@ -199,15 +199,15 @@ export function LessonCardSession({
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl bg-brand-soft p-5">
-                  <p className="play-count text-3xl font-semibold">{words.length}</p>
+                <div className="play-sticker rounded-3xl bg-brand-soft p-5 [--tile-block:var(--brand)] [--lift:4px]">
+                  <p className="play-count text-4xl font-extrabold tracking-tight">{words.length}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {tLesson("statWordCards")}
                   </p>
                 </div>
 
-                <div className="rounded-3xl bg-success-soft p-5">
-                  <p className="play-count text-3xl font-semibold" data-testid="summary-known">
+                <div className="play-sticker rounded-3xl bg-success-soft p-5 [--tile-block:var(--success)] [--lift:4px]">
+                  <p className="play-count text-4xl font-extrabold tracking-tight" data-testid="summary-known">
                     {knownIds.length}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -215,8 +215,8 @@ export function LessonCardSession({
                   </p>
                 </div>
 
-                <div className="rounded-3xl bg-warn-soft p-5">
-                  <p className="play-count text-3xl font-semibold" data-testid="summary-review">
+                <div className="play-sticker rounded-3xl bg-warn-soft p-5 [--tile-block:var(--warn)] [--lift:4px]">
+                  <p className="play-count text-4xl font-extrabold tracking-tight" data-testid="summary-review">
                     {reviewIds.length}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -230,7 +230,7 @@ export function LessonCardSession({
                   <Button
                     asChild
                     size="lg"
-                    className="play-press h-12 rounded-full bg-brand px-6 text-white hover:bg-brand"
+                    className="play-key h-14 rounded-2xl bg-brand px-7 text-base font-extrabold text-white hover:bg-brand"
                   >
                     <Link
                       data-testid="next-round"
@@ -330,7 +330,7 @@ export function LessonCardSession({
       <section className="mx-auto grid w-full max-w-6xl gap-6 px-6 py-10 lg:grid-cols-[1fr_320px] lg:px-8">
         <div className="play-card p-6 sm:p-8">
           <div>
-            <article className="rounded-[28px] bg-brand-soft/60 p-6 sm:p-8">
+            <article className="play-sticker rounded-[28px] bg-brand-soft p-6 [--tile-block:var(--accent-sky)] sm:p-8">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className="rounded-full bg-brand text-white hover:bg-brand">
                   {currentWord.level}
@@ -357,15 +357,13 @@ export function LessonCardSession({
                 />
 
                 <div className="mt-4 flex flex-wrap items-center gap-4">
-                  <h2 className="text-6xl font-semibold tracking-tight">
-                    {getWordLabel(currentWord)}
-                  </h2>
+                  <h2 className="play-word">{getWordLabel(currentWord)}</h2>
 
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="play-press mt-3 size-12 rounded-full bg-white"
+                    className="play-key mt-3 size-12 rounded-full bg-white [--lift:4px]"
                     onClick={() => speak(currentWord.word, "en-US")}
                     aria-label="Listen to English pronunciation"
                   >
@@ -374,7 +372,7 @@ export function LessonCardSession({
                 </div>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-3xl border bg-white p-5">
+                  <div className="rounded-3xl border-3 border-ink bg-white p-5">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         {tLesson("thaiMeaning")}
@@ -401,7 +399,7 @@ export function LessonCardSession({
                     </p>
                   </div>
 
-                  <div className="rounded-3xl border bg-white p-5">
+                  <div className="rounded-3xl border-3 border-ink bg-white p-5">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       {tLesson("pronunciation")}
                     </p>
@@ -431,7 +429,7 @@ export function LessonCardSession({
               <Button
                 variant="outline"
                 data-testid="review-later"
-                className="play-press h-14 rounded-2xl border-2 border-warn/40 bg-warn-soft text-base font-semibold text-foreground hover:bg-warn-soft"
+                className="play-key h-16 rounded-2xl bg-warn text-base font-extrabold text-ink hover:bg-warn"
                 onClick={handleReview}
               >
                 <RotateCcw className="size-5" />
@@ -440,7 +438,7 @@ export function LessonCardSession({
 
               <Button
                 data-testid="i-know-this"
-                className="play-press h-14 rounded-2xl bg-success text-base font-semibold text-white hover:bg-success"
+                className="play-key h-16 rounded-2xl bg-success text-base font-extrabold text-white hover:bg-success"
                 onClick={handleKnown}
               >
                 <Check className="size-5" />

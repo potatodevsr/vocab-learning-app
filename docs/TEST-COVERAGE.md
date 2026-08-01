@@ -3,14 +3,35 @@
 Every handler and every branch, mapped to the test that covers it. If you add a handler or
 a condition, add its row here in the same change — an untracked branch is an untested one.
 
-Everything runs in one suite (`pnpm test:e2e`) against the real stack: real Next build,
-real Hono Worker on `wrangler dev --local`, real D1. There is no mocked network.
+The release gate runs Playwright (`pnpm test:e2e`) and then Cypress
+(`pnpm test:e2e:cypress`) sequentially through `pnpm test:release`. Each suite boots its
+own real Next build, Hono Worker on `wrangler dev --local`, and isolated D1 state. There is
+no mocked network, server reuse, retry, or concurrent suite execution.
 
 | Layer | Where | What it covers |
 | --- | --- | --- |
 | `e2e/unit/` | pure functions, no server | branch coverage that would be slow or impossible through the UI |
 | `e2e/api/` | Playwright `request` → the Worker | every route × every guard variant × every validation branch |
 | `e2e/*.spec.ts` | browser → Next → Worker → D1 | user-visible behaviour and cross-layer wiring |
+| `cypress/e2e/*.cy.ts` | Cypress browser → Next → Worker → D1 | independent release smoke, magic-link auth, and deterministic hero visual states |
+
+## E2E harness
+
+| Condition | Test |
+| --- | --- |
+| A fresh backend generates only the Prisma client with a fallback `DATABASE_URL` before migrate, seed and Worker startup | `unit/e2e-launcher`; every full-stack test also exercises the launcher |
+| Playwright owns ports 3100/4100 and `.wrangler/e2e-state`; Cypress owns 3200/4200 and `.wrangler/cypress-state` | both full-stack launchers reject occupied ports, create fresh state, and tear down their processes |
+
+## Cypress release coverage
+
+| Condition | Test |
+| --- | --- |
+| Real-stack registration, login cookie, authenticated UI, and API read-back | `cypress/e2e/full-stack.cy.ts` |
+| Magic-link request and redemption preserve the destination and establish a learner session | `cypress/e2e/magic-link-auth.cy.ts` |
+| Invalid/reused magic links render localized English and Thai recovery states | `cypress/e2e/magic-link-auth.cy.ts` |
+| Hero deck in `en` and `th`, at 390×844 and 1440×900, has three opaque cards, deterministic `improve`/`achieve`/`culture` front phases, containment, occlusion, contrast, no overflow, and no hero layout shift | `cypress/e2e/hero-word-cards.cy.ts` |
+| Reduced-motion hero in both locales and viewports is a stable, distinct static stack | `cypress/e2e/hero-word-cards.cy.ts` |
+| All 16 hero states are captured below `cypress/artifacts/screenshots/hero-cards/` for release review | `cypress/e2e/hero-word-cards.cy.ts` |
 
 ---
 
@@ -60,6 +81,20 @@ real Hono Worker on `wrangler dev --local`, real D1. There is no mocked network.
 | | unknown email → 401 | `api/auth.api` |
 | | wrong password → 401 | `api/auth.api`, `auth.spec` (UI) |
 | | success → httpOnly cookie | `api/auth.api` |
+| `GET /auth/openapi.json` | manual magic-link routes and response schemas are published; token hashes and mail secrets are absent | `api/auth.api` |
+| `POST /user/magic-link/request` | invalid email → 400 `INVALID_EMAIL` | `api/auth.api` |
+| | unknown account → indistinguishable 202 without a dev link | `api/auth.api` |
+| | success → localized `en` callback and natural English email | `api/auth.api` |
+| | success → localized `th` callback and natural Thai email | `api/auth.api` |
+| | cooldown → 202 without issuing another link | `api/auth.api` |
+| | newer request supersedes the prior unredeemed link | `api/auth.api` |
+| | missing mail config → 503 `MAGIC_LINK_UNAVAILABLE` | `api/auth.api` |
+| | provider failure → 503 `MAGIC_LINK_DELIVERY_FAILED` | `api/auth.api` |
+| `POST /user/magic-link/verify` | malformed token → 400 `INVALID_OR_EXPIRED_MAGIC_LINK` | `api/auth.api` |
+| | expired token → same stable 400 code | `api/auth.api` |
+| | success → learner session cookie | `api/auth.api` |
+| | replay → same stable 400 code | `api/auth.api` |
+| | simultaneous consume → exactly one winner and one loser | `api/auth.api` |
 | `GET /user/me` | anonymous → 401 | `api/auth.api` |
 | | success → includes `createdAt`, excludes hash | `api/auth.api`, `profile.spec` |
 | `POST /user/logout` | clears the cookie | `api/auth.api`, `auth.spec` |
@@ -119,6 +154,25 @@ real Hono Worker on `wrangler dev --local`, real D1. There is no mocked network.
 | | admin → no password hash | `api/vocab.api`, `admin.spec` |
 | `GET /user/paginated` | same, both variants | `api/vocab.api` |
 | Disabled operations | 11 routes that must 404 (create/delete/each/unique, unexposed models) | `api/vocab.api` (11 cases) |
+
+## The `/api/*` forwarder (`app/api/[...path]/route.ts`)
+
+Production shipped without this route: the browser was handed the web Worker's own `/api`
+path, nothing served it, and the locale middleware turned `POST /api/user/register` into
+`307 → /en/api/user/register`, a 404. Sign-up was dead while the suite was green, because
+the tests let the browser call the API's origin directly. These rows are what makes that
+impossible to repeat.
+
+| Condition | Test |
+| --- | --- |
+| `/api/*` is excluded from the locale middleware — no 307, no `location` | `api-forwarder.spec` |
+| a GET reaches the API and returns its JSON, not a Next page | `api-forwarder.spec` |
+| an unknown API path answers as the API (not Next's HTML 404) | `api-forwarder.spec` |
+| the query string survives the hop (`take=1` still means one row) | `api-forwarder.spec` |
+| register + login relay status, body and the `Set-Cookie` session to the web origin | `api-forwarder.spec` |
+| the relayed cookie is accepted on the way back (`/api/user/me`) | `api-forwarder.spec` |
+| an API error keeps its status **and** its Thai message (409, "ถูกใช้แล้ว") | `api-forwarder.spec` |
+| registering through the real form calls **only** the web origin — never `/en/api/…`, never the API's own origin | `api-forwarder.spec` |
 
 ## Pure functions
 
@@ -182,6 +236,7 @@ Running it found dead code: `backend/src/middleware/auth.ts` (the Express-era
 | Client wrappers | `getMe`/`getMeWithToken`/`getProgressSummaryWithToken` null branches; `userRegister`/`userLogin` rejections; `userLogout`; `reportLesson/QuizComplete` 401 branch **and** forced network-error branch; `fetchWordsPage`/`updateWord` throw branches | `unit/client-wrappers` |
 | `lib/oxford-words.ts` reads | unit words, empty unit, empty level, counts, preview take, slug found/draft/unknown | `unit/client-wrappers` |
 | `constants/config.ts` | API_URL resolves to the e2e API, never the dev one | `unit/client-wrappers` |
+| `constants/config.ts` | server-side `API_URL` is the API origin; the browser only ever sees `/api` | `api-forwarder.spec` |
 | Translations | both locales valid; key parity both ways; no empty values; Thai actually translated; placeholder parity | `unit/messages` |
 | `i18n/routing.ts` | locale list, default locale is one of them | `unit/messages` |
 | `proxy.ts` | 3 protected paths × anonymous redirect; `from` preserved; Thai locale; signed-in passthrough; tampered learner cookie; 5 public paths; unknown locale prefix; admin login reachable; 3 admin paths redirect; admin passthrough; tampered admin cookie | `proxy.spec` (16) |
@@ -235,7 +290,7 @@ Running it found dead code: `backend/src/middleware/auth.ts` (the Express-era
 `hover-states.spec` walks **every route the app has** — public, learner, in-session,
 admin, and a 390px phone pass — puts a real pointer on every link, button and field, and
 measures what the browser computes before and after. Each hover is photographed into
-`test-results/hover-states/<page>/`, so a state can be reviewed as a picture rather than
+`design-screens/<page>/`, so a state can be reviewed as a picture rather than
 as an assertion.
 
 | Rule | Test |

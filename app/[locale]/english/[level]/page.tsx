@@ -146,16 +146,16 @@ export default async function LevelPage({ params }: LevelPageProps) {
         })}
       />
     <main className="min-h-screen bg-background text-foreground">
-      <section className="bg-brand text-white">
+      <section className="border-b-3 border-ink bg-brand text-white">
         <div className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div className="space-y-6">
-              <Badge className="rounded-full bg-white text-sm font-bold text-brand hover:bg-white">
+              <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
                 {t("badge", { level, track: t(`track${level}`) })}
-              </Badge>
+              </span>
 
               <div className="space-y-4">
-                <h1 className="max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+                <h1 className="play-display max-w-3xl text-[clamp(2.25rem,6vw,3.75rem)]">
                   {t("title", { level })}
                 </h1>
 
@@ -166,13 +166,13 @@ export default async function LevelPage({ params }: LevelPageProps) {
 
               {/* Solid chips: small white text on a white/20 wash measured 3.7:1. */}
               <div className="flex flex-wrap gap-3 text-sm">
-                <div className="rounded-full border-3 border-ink bg-white px-4 py-2 font-bold text-ink">
+                <div className="play-sticker rounded-full px-4 py-2 font-bold text-ink [--tile-block:var(--ink)] [--lift:4px]">
                   {t("statEntries", { count: totalWords, level })}
                 </div>
-                <div className="rounded-full border-3 border-ink bg-white px-4 py-2 font-bold text-ink">
+                <div className="play-sticker rounded-full px-4 py-2 font-bold text-ink [--tile-block:var(--ink)] [--lift:4px]">
                   {t("statUnits", { count: units.length })}
                 </div>
-                <div className="rounded-full border-3 border-ink bg-white px-4 py-2 font-bold text-ink">
+                <div className="play-sticker rounded-full px-4 py-2 font-bold text-ink [--tile-block:var(--ink)] [--lift:4px]">
                   {t("statPerUnit", { size: unitSize })}
                 </div>
               </div>
@@ -182,7 +182,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
                   <Button
                     asChild
                     size="lg"
-                    className="play-press h-12 rounded-full bg-white px-6 font-semibold text-brand hover:bg-white"
+                    className="play-key h-14 rounded-2xl bg-accent-sun px-7 text-base font-extrabold text-ink hover:bg-accent-sun"
                   >
                     <Link href={firstUnit.href}>
                       <Play className="size-4" />
@@ -194,7 +194,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
                     asChild
                     size="lg"
                     variant="outline"
-                    className="play-press h-12 rounded-full border-2 border-white/60 bg-transparent px-6 text-white hover:bg-white/20 hover:text-white"
+                    className="play-key h-14 rounded-2xl border-white bg-transparent px-7 text-base font-extrabold text-white hover:bg-white/15 hover:text-white"
                   >
                     <Link href="#lesson-path">
                       {t("viewPath")}

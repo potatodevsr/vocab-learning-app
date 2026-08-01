@@ -46,7 +46,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="bg-warn text-ink">
+      <section className="border-b-3 border-ink bg-warn text-ink">
         <div className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
           <div className="flex size-14 items-center justify-center rounded-3xl border-3 border-ink bg-white">
             <Target className="size-7" />
@@ -60,7 +60,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             {t("subtitle")}
           </p>
 
-          <p className="mt-6 text-5xl font-semibold" data-testid="mistakes-count">
+          <p className="play-word mt-8" data-testid="mistakes-count">
             {rows.length}
           </p>
           <p className="text-sm font-medium text-ink">{t("wordsToPractise")}</p>
@@ -69,7 +69,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
       <section className="mx-auto w-full max-w-4xl px-6 py-10 lg:px-8">
         {rows.length === 0 ? (
-          <div className="play-card p-8 text-center" data-testid="mistakes-empty">
+          <div className="play-sticker p-8 text-center [--tile-block:var(--success)]" data-testid="mistakes-empty">
             <div className="mx-auto flex size-14 items-center justify-center rounded-3xl bg-success-soft">
               <Sparkles className="size-7 text-success" />
             </div>
@@ -81,7 +81,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
             <Button
               asChild
-              className="play-press mt-6 h-11 rounded-full bg-brand px-6 text-white hover:bg-brand"
+              className="play-key mt-8 h-14 rounded-2xl bg-brand px-7 text-base font-extrabold text-white hover:bg-brand"
             >
               <Link href="/learn?level=A1&unit=1">
                 {t("startLearning")}
@@ -130,7 +130,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               <Button
                 asChild
                 size="lg"
-                className="play-press mt-8 h-12 w-full rounded-full bg-brand px-6 text-white hover:bg-brand sm:w-auto"
+                className="play-key mt-8 h-14 w-full rounded-2xl bg-brand px-7 text-base font-extrabold text-white hover:bg-brand sm:w-auto"
               >
                 <Link
                   data-testid="practise-mistakes"

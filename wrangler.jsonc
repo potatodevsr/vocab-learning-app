@@ -16,7 +16,21 @@
       "binding": "WORKER_SELF_REFERENCE",
       "service": "vocab-learning-app"
     }
+    // The `/api/*` forwarder prefers this binding over API_ORIGIN below, which keeps the
+    // api Worker off the public internet (docs/SPEC.md §2.1, §3.3). Uncomment it once
+    // `vocab-api` has been deployed at least once — `wrangler deploy` refuses a binding
+    // to a service that does not exist yet, which would break this Worker's deploy too.
+    // ,{
+    //   "binding": "API",
+    //   "service": "vocab-api"
+    // }
   ],
+  "vars": {
+    // Fallback for the forwarder while the `API` binding above is commented out: the
+    // public origin of the deployed api Worker. Overridable per-deploy without a
+    // rebuild; ignored entirely once the binding exists.
+    "API_ORIGIN": "https://vocab-api.hoshiku1997.workers.dev"
+  },
   "images": {
     "binding": "IMAGES"
   },

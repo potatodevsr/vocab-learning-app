@@ -99,6 +99,8 @@ export default function AdminUsersPage() {
   }, []);
 
   useEffect(() => {
+    // The request synchronizes this page with the remote admin data source.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load(page, search);
   }, [page, search, load]);
 

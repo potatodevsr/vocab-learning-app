@@ -109,11 +109,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="bg-brand text-white">
+      <section className="border-b-3 border-ink bg-brand text-white">
         <div className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
-          <Badge className="rounded-full bg-white text-sm font-bold text-brand hover:bg-white">
+          <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
             {t("badge")}
-          </Badge>
+          </span>
 
           <div className="mt-6 flex flex-wrap items-center gap-5">
             <div
@@ -124,7 +124,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </div>
 
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              <h1 className="play-display text-[clamp(2rem,5vw,3rem)]">
                 {fullName || user.username}
               </h1>
               <p className="mt-1 text-sm text-white">{user.email}</p>
@@ -134,7 +134,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       </section>
 
       <section className="mx-auto grid w-full max-w-4xl gap-6 px-6 py-10 lg:px-8">
-        <Card className="play-card rounded-3xl">
+        <Card className="play-sticker rounded-3xl [--tile-block:var(--accent-sky)]">
           <CardContent className="p-6 sm:p-8">
             <h2 className="text-xl font-semibold">{t("accountTitle")}</h2>
 
@@ -193,13 +193,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </Link>
         )}
 
-        <Card
-          className={
-            hasProgress
-              ? "play-card rounded-3xl"
-              : "play-card rounded-3xl border-dashed"
-          }
-        >
+        <Card className="play-sticker rounded-3xl [--tile-block:var(--accent-mint)]">
           <CardContent className="p-6 sm:p-8">
             <h2 className="text-xl font-semibold">
               {hasProgress ? t("progressTitle") : t("progressEmptyTitle")}
@@ -279,7 +273,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
             <Button
               asChild
-              className="play-press mt-6 h-11 rounded-full bg-brand px-6 text-white hover:bg-brand"
+              className="play-key mt-8 h-14 rounded-2xl bg-brand px-7 text-base font-extrabold text-white hover:bg-brand"
             >
               <Link
                 href={

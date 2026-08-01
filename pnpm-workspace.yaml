@@ -4,6 +4,7 @@ packages:
 allowBuilds:
   '@parcel/watcher': false
   '@swc/core': false
+  cypress: true
   esbuild: false
   sharp: false
   unrs-resolver: false

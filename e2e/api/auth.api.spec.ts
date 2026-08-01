@@ -222,6 +222,188 @@ test.describe("POST /user/login", () => {
   });
 });
 
+test.describe("magic-link login", () => {
+  const requestLink = async (
+    ctx: Awaited<ReturnType<typeof newApiContext>>,
+    email: string,
+    options: { locale?: "en" | "th"; headers?: Record<string, string> } = {},
+  ) =>
+    ctx.post(`${API}/user/magic-link/request`, {
+      data: { email, locale: options.locale ?? "en" },
+      headers: options.headers,
+    });
+
+  const tokenFrom = async (response: Awaited<ReturnType<typeof requestLink>>) => {
+    const body = await response.json();
+    return new URL(body.devMagicLink).searchParams.get("token") as string;
+  };
+
+  test("publishes the manual magic-link contract without persistence secrets", async () => {
+    const ctx = await asAnonymous();
+    const res = await ctx.get(`${API}/auth/openapi.json`);
+    expect(res.status()).toBe(200);
+    const spec = await res.json();
+    expect(spec.paths["/user/magic-link/request"].post.operationId).toBe("requestMagicLink");
+    expect(spec.paths["/user/magic-link/verify"].post.operationId).toBe("verifyMagicLink");
+    const serialized = JSON.stringify(spec);
+    expect(serialized).not.toContain("tokenHash");
+    expect(serialized).not.toContain("RESEND_API_KEY");
+  });
+
+  test("rejects an invalid email with a stable code", async () => {
+    const ctx = await asAnonymous();
+    const res = await requestLink(ctx, "not-an-email");
+    expect(res.status()).toBe(400);
+    expect(await res.json()).toEqual({
+      code: "INVALID_EMAIL",
+      message: "A valid email is required",
+    });
+  });
+
+  test("does not reveal whether an email is registered", async () => {
+    const ctx = await asAnonymous();
+    const res = await ctx.post(`${API}/user/magic-link/request`, {
+      data: { email: "missing@example.com", locale: "en" },
+    });
+
+    expect(res.status()).toBe(202);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+
+  test("issues a single-use link that creates a learner session", async () => {
+    const ctx = await newApiContext();
+    const user = uniqueUser();
+    await ctx.post(`${API}/user/register`, { data: user });
+
+    const requested = await ctx.post(`${API}/user/magic-link/request`, {
+      data: { email: user.email, locale: "en", from: "/en/profile" },
+    });
+    expect(requested.status()).toBe(202);
+    const { devMagicLink } = await requested.json();
+    const link = new URL(devMagicLink);
+    expect(link.pathname).toBe("/en/auth/verify");
+    expect(link.searchParams.get("from")).toBe("/en/profile");
+    const token = link.searchParams.get("token");
+    expect(token).toMatch(/^[a-f0-9]{64}$/);
+
+    const throttled = await ctx.post(`${API}/user/magic-link/request`, {
+      data: { email: user.email, locale: "en" },
+    });
+    expect(throttled.status()).toBe(202);
+    expect(await throttled.json()).toEqual({ ok: true });
+
+    const verified = await ctx.post(`${API}/user/magic-link/verify`, {
+      data: { token },
+    });
+    expect(verified.status()).toBe(200);
+    const { cookies } = await ctx.storageState();
+    expect(cookies.find((cookie) => cookie.name === "user_token")?.httpOnly).toBe(true);
+
+    const replay = await ctx.post(`${API}/user/magic-link/verify`, {
+      data: { token },
+    });
+    expect(replay.status()).toBe(400);
+    expect((await replay.json()).code).toBe("INVALID_OR_EXPIRED_MAGIC_LINK");
+  });
+
+  test("rejects malformed and expired tokens with the same stable code", async () => {
+    const ctx = await newApiContext();
+    const malformed = await ctx.post(`${API}/user/magic-link/verify`, {
+      data: { token: "not-a-token" },
+    });
+    expect(malformed.status()).toBe(400);
+    expect((await malformed.json()).code).toBe("INVALID_OR_EXPIRED_MAGIC_LINK");
+
+    const user = uniqueUser();
+    await ctx.post(`${API}/user/register`, { data: user });
+    const issued = await requestLink(ctx, user.email, {
+      headers: { "x-magic-link-test-expired": "true" },
+    });
+    const expired = await ctx.post(`${API}/user/magic-link/verify`, {
+      data: { token: await tokenFrom(issued) },
+    });
+    expect(expired.status()).toBe(400);
+    expect((await expired.json()).code).toBe("INVALID_OR_EXPIRED_MAGIC_LINK");
+  });
+
+  test("allows exactly one simultaneous conditional consume", async () => {
+    const ctx = await newApiContext();
+    const user = uniqueUser();
+    await ctx.post(`${API}/user/register`, { data: user });
+    const token = await tokenFrom(await requestLink(ctx, user.email));
+
+    const contenders = await Promise.all([
+      newApiContext(),
+      newApiContext(),
+    ]);
+    const results = await Promise.all(
+      contenders.map((contender) =>
+        contender.post(`${API}/user/magic-link/verify`, { data: { token } }),
+      ),
+    );
+    expect(results.map((result) => result.status()).sort()).toEqual([200, 400]);
+    expect((await results.find((result) => result.status() === 400)!.json()).code).toBe(
+      "INVALID_OR_EXPIRED_MAGIC_LINK",
+    );
+  });
+
+  test("a newer link supersedes the prior unredeemed link", async () => {
+    const ctx = await newApiContext();
+    const user = uniqueUser();
+    await ctx.post(`${API}/user/register`, { data: user });
+    const first = await tokenFrom(await requestLink(ctx, user.email));
+    const second = await tokenFrom(
+      await requestLink(ctx, user.email, {
+        headers: { "x-magic-link-test-bypass-cooldown": "true" },
+      }),
+    );
+
+    const superseded = await ctx.post(`${API}/user/magic-link/verify`, { data: { token: first } });
+    const current = await ctx.post(`${API}/user/magic-link/verify`, { data: { token: second } });
+    expect(superseded.status()).toBe(400);
+    expect(current.status()).toBe(200);
+  });
+
+  test("reports missing mail configuration and delivery failure with stable codes", async () => {
+    const ctx = await newApiContext();
+    const user = uniqueUser();
+    await ctx.post(`${API}/user/register`, { data: user });
+
+    const missing = await requestLink(ctx, user.email, {
+      headers: { "x-magic-link-test-delivery": "missing-config" },
+    });
+    expect(missing.status()).toBe(503);
+    expect((await missing.json()).code).toBe("MAGIC_LINK_UNAVAILABLE");
+
+    const failed = await requestLink(ctx, user.email, {
+      headers: { "x-magic-link-test-delivery": "failure" },
+    });
+    expect(failed.status()).toBe(503);
+    expect((await failed.json()).code).toBe("MAGIC_LINK_DELIVERY_FAILED");
+  });
+
+  for (const locale of ["en", "th"] as const) {
+    test(`renders a natural ${locale} email with the localized callback`, async () => {
+      const ctx = await newApiContext();
+      const user = uniqueUser();
+      await ctx.post(`${API}/user/register`, { data: user });
+      const response = await requestLink(ctx, user.email, { locale });
+      const { devMagicLink, devEmail } = await response.json();
+
+      expect(new URL(devMagicLink).pathname).toBe(`/${locale}/auth/verify`);
+      expect(devEmail.to).toBe(user.email);
+      expect(devEmail.text).toContain(devMagicLink);
+      if (locale === "th") {
+        expect(devEmail.subject).toBe("ลิงก์เข้าสู่ระบบ Vocab Learning App ของคุณ");
+        expect(devEmail.text).toContain("ลิงก์นี้จะหมดอายุภายใน 15 นาที");
+      } else {
+        expect(devEmail.subject).toBe("Your Vocab Learning App sign-in link");
+        expect(devEmail.text).toContain("It expires in 15 minutes");
+      }
+    });
+  }
+});
+
 test.describe("GET /user/me", () => {
   test("anonymous is rejected", async () => {
     const ctx = await asAnonymous();

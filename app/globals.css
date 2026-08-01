@@ -128,6 +128,12 @@
   --ease-play: cubic-bezier(0.2, 0.9, 0.3, 1.2);
   --dur-fast: 150ms;
   --dur-slow: 400ms;
+
+  /* One depth language: a 3px ink outline and a 6px hard offset. Every card,
+     button, chip and node in the app is cut from these two numbers, which is
+     what makes a page of unrelated components look like one object. */
+  --rule: 3px;
+  --lift: 6px;
   --chart-1: oklch(0.55 0.23 295);
   --chart-2: oklch(0.68 0.15 230);
   --chart-3: oklch(0.72 0.14 165);
@@ -223,6 +229,13 @@
     font-size: clamp(1.6rem, 3.4vw, 2.4rem);
   }
 
+  /* Optical tracking: type tightens as it grows. A headline set at the body's
+     letter-spacing reads loose and cheap at 60px, and body copy set at a
+     headline's tracking reads cramped at 18px. Two rules, applied by size. */
+  h1 {
+    letter-spacing: -0.04em;
+  }
+
   button,
   input {
     font-size: 1rem;
@@ -249,53 +262,127 @@
   }
 }
 
+/* ── Display type ────────────────────────────────────────────────────────────
+   The one place the app is allowed to shout. `--display-step` drives size so a
+   headline and the word card beneath it stay in proportion at every width. */
+.play-display {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  font-size: clamp(2.75rem, 9vw, 5.5rem);
+  text-wrap: balance;
+}
+
+/* An outlined word, for the one accent in a headline. Flat by definition — it
+   is a stroke, not a fill, so it adds emphasis without adding a colour. */
+.play-outline-word {
+  color: transparent;
+  -webkit-text-stroke: 3px currentColor;
+  paint-order: stroke fill;
+}
+
+@supports not (-webkit-text-stroke: 1px #000) {
+  .play-outline-word {
+    color: inherit;
+  }
+}
+
+/* A highlighter block behind a phrase. This replaces the old approach of
+   colouring the accent words sun-yellow directly: yellow on the blue hero
+   measured 2.85:1, under the 3:1 that large text owes, and the fix is not a
+   darker yellow — it is putting the yellow *behind* ink text, where it is a
+   shape rather than a foreground. Reads louder, and passes. */
+.play-highlight {
+  display: inline-block;
+  padding: 0 0.28em 0.06em;
+  margin: 0 -0.06em;
+  border-radius: 0.4rem;
+  background: var(--highlight, var(--accent-sun));
+  color: var(--ink);
+  transform: rotate(-1.2deg);
+}
+
+/* The word itself, on a card. Big enough that a learner reads the word before
+   they read anything else on the screen. */
+.play-word {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-size: clamp(2.5rem, 7vw, 4rem);
+}
+
 .font-thai {
   font-family: var(--font-noto-sans-thai), var(--font-geist-sans), system-ui,
     sans-serif;
 }
 
-/* The card stack: one card is being read, the other two are the deck it came from.
-   They used to sit at 0.72/0.66 opacity, close enough that three sets of words
-   overlapped and the front card read as clipped rather than as topmost. Pushing the
-   back cards further out and further down in opacity makes the stack read as depth. */
-@keyframes heroCardCycle {
+/* The card stack: one opaque card is being read while two compact, solid cards create
+   deck depth behind it. The stage is locally isolated so the animated card layers can
+   never escape over the illustration labels or the rest of the hero. */
+.hero-card-stage {
+  left: 50%;
+  top: 64px;
+  bottom: 24px;
+  width: calc(100% - 32px);
+  max-width: 320px;
+  transform: translateX(-50%);
+  isolation: isolate;
+}
 
+@keyframes heroCardCycle {
   0%,
-  27% {
-    opacity: 1;
+  30% {
     z-index: 30;
     transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
 
-  33%,
-  60% {
-    opacity: 0.4;
+  33.333%,
+  63.333% {
     z-index: 20;
-    transform: translate3d(132px, 84px, 0) scale(0.84) rotate(7deg);
+    transform: translate3d(12px, 10px, 0) scale(0.97) rotate(1.5deg);
   }
 
-  66%,
-  93% {
-    opacity: 0.32;
+  66.666%,
+  96.666% {
     z-index: 10;
-    transform: translate3d(-128px, -66px, 0) scale(0.86) rotate(-7deg);
+    transform: translate3d(-12px, -8px, 0) scale(0.94) rotate(-1.5deg);
   }
 
   100% {
-    opacity: 1;
     z-index: 30;
     transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
 }
 
 .hero-card-cycle {
-  animation: heroCardCycle 12s ease-in-out infinite;
-  will-change: transform, opacity;
+  background: var(--card);
+  opacity: 1;
+  animation: heroCardCycle 12s var(--ease-play) infinite;
+  will-change: transform;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-card-cycle {
     animation: none;
+    opacity: 1;
+    will-change: auto;
+  }
+
+  .hero-card-cycle:nth-child(1) {
+    z-index: 30;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+
+  .hero-card-cycle:nth-child(2) {
+    z-index: 20;
+    transform: translate3d(12px, 10px, 0) scale(0.97) rotate(1.5deg);
+  }
+
+  .hero-card-cycle:nth-child(3) {
+    z-index: 10;
+    transform: translate3d(-12px, -8px, 0) scale(0.94) rotate(-1.5deg);
   }
 }
 .app-swal-popup {
@@ -330,34 +417,78 @@
   border-radius: 1.5rem;
 }
 
-/* Sticker tile: a solid block sits behind and slides out on hover. */
+/* Sticker tile: an ink outline with a solid block of colour sitting behind it,
+   offset. Hover lifts the sticker off the page and lets the block slide out —
+   the whole depth model of the app, in one shadow with zero blur.
+
+   This used to be a `::before` at `z-index: -1`, which fought every stacking
+   context it landed in (a tile inside a positioned parent lost its block
+   entirely). A hard box-shadow cannot be clipped, cannot restack, and costs one
+   paint instead of an extra element. */
 .play-tile {
   position: relative;
+  transform: rotate(var(--tile-tilt, 0deg));
   background: var(--card);
-  border: 3px solid var(--ink);
+  border: var(--rule) solid var(--ink);
   border-radius: 1.5rem;
-  transition: transform var(--dur-fast) var(--ease-play);
-}
-
-.play-tile::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--tile-block, var(--accent-sun));
-  transform: translate(6px, 6px);
-  transition: transform var(--dur-fast) var(--ease-play);
+  box-shadow: var(--lift) var(--lift) 0 0 var(--tile-block, var(--accent-sun));
+  transition: transform var(--dur-fast) var(--ease-play),
+    box-shadow var(--dur-fast) var(--ease-play);
 }
 
 .play-tile:hover,
 .play-tile:focus-within {
-  transform: translate(-2px, -2px);
+  transform: translate(calc(var(--lift) * -0.5), calc(var(--lift) * -0.5));
+  box-shadow: calc(var(--lift) * 1.6) calc(var(--lift) * 1.6) 0 0
+    var(--tile-block, var(--accent-sun));
 }
 
-.play-tile:hover::before,
-.play-tile:focus-within::before {
-  transform: translate(12px, 12px);
+/* The same sticker, without the interaction — for cards that are read, not clicked. */
+.play-sticker {
+  background: var(--card);
+  border: var(--rule) solid var(--ink);
+  border-radius: 1.5rem;
+  box-shadow: var(--lift) var(--lift) 0 0 var(--tile-block, var(--accent-sun));
+}
+
+/* A stamp: small, rotated, and never rotated far enough to hurt reading. */
+.play-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: var(--rule) solid var(--ink);
+  border-radius: 999px;
+  transform: rotate(var(--tilt, -2.5deg));
+  transition: transform var(--dur-fast) var(--ease-play);
+}
+
+.play-stamp:hover {
+  transform: rotate(0deg) scale(1.04);
+}
+
+/* The word ticker. Two identical tracks side by side, the pair translated by
+   exactly half its width, so the loop has no seam. Content, not decoration:
+   it is the product's actual vocabulary going past. */
+@keyframes play-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+.play-marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.play-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: play-marquee var(--marquee-dur, 44s) linear infinite;
+  will-change: transform;
+}
+
+.play-marquee:hover .play-marquee-track {
+  animation-play-state: paused;
 }
 
 /* Colour swipe: a solid block wipes across the button from the left. */
@@ -386,6 +517,28 @@
 
 .play-press:active:not(:disabled) {
   transform: translateY(2px);
+}
+
+/* A button built as a sticker: it sits on a hard shadow, lifts under the
+   pointer, and is pushed flat onto the page when pressed — the shadow shrinks
+   to nothing as the button travels the same distance. Physics people already
+   understand, in two transitions. */
+.play-key {
+  border: var(--rule) solid var(--ink);
+  box-shadow: var(--lift) var(--lift) 0 0 var(--ink);
+  transition: transform var(--dur-fast) var(--ease-play),
+    box-shadow var(--dur-fast) var(--ease-play),
+    background-color var(--dur-fast) var(--ease-play);
+}
+
+.play-key:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: calc(var(--lift) + 1px) calc(var(--lift) + 1px) 0 0 var(--ink);
+}
+
+.play-key:active:not(:disabled) {
+  transform: translate(var(--lift), var(--lift));
+  box-shadow: 0 0 0 0 var(--ink);
 }
 
 /* ── Fields answer the pointer too ───────────────────────────────────────────
@@ -543,15 +696,23 @@ select:not(:disabled):hover,
 
 @media (prefers-reduced-motion: reduce) {
   .play-tile,
-  .play-tile::before,
   .play-press,
   .play-press::after,
   .play-wiggle,
   .play-underline::after,
+  .play-key,
+  .play-stamp,
   input,
   textarea,
   select {
     transition: none !important;
+  }
+
+  /* The ticker stops dead rather than easing: it is decoration made of content,
+     and there is no version of "reduced" scrolling that is still scrolling. */
+  .play-marquee-track {
+    animation: none !important;
+    transform: none !important;
   }
 
   .play-lift {
@@ -561,7 +722,10 @@ select:not(:disabled):hover,
   .play-tile:hover,
   .play-tile:focus-within,
   .play-press:active:not(:disabled),
-  .play-wiggle:hover {
+  .play-wiggle:hover,
+  .play-key:hover:not(:disabled),
+  .play-key:active:not(:disabled),
+  .play-stamp:hover {
     transform: none;
   }
 

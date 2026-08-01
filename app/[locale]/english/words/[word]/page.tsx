@@ -119,7 +119,7 @@ export default async function WordPage({ params }: WordPageProps) {
         })}
       />
     <main className="min-h-screen bg-background text-foreground">
-      <section className="bg-brand text-white">
+      <section className="border-b-3 border-ink bg-brand text-white">
         <div className="mx-auto w-full max-w-4xl px-6 py-10 lg:px-8">
           {/*
             A crawl path back up the hierarchy. Every word page previously linked to the
@@ -155,14 +155,12 @@ export default async function WordPage({ params }: WordPageProps) {
             <span className="text-white">{head.displayWord}</span>
           </nav>
 
-          <h1 className="mt-8 text-6xl font-semibold tracking-tight">
-            {head.displayWord}
-          </h1>
+          <h1 className="play-word mt-8">{head.displayWord}</h1>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Badge className="rounded-full bg-white text-sm font-bold text-brand hover:bg-white">
+            <span className="play-stamp bg-accent-sun px-4 py-1 text-sm font-extrabold text-ink">
               {head.level}
-            </Badge>
+            </span>
 
             <Badge
               variant="outline"

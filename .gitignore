@@ -15,9 +15,12 @@
 # testing
 /coverage
 /test-results/
+# Hover-state photographs from e2e/hover-states.spec.ts — regenerated every run.
+/design-screens/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/cypress/artifacts/
 
 # next.js
 /.next/

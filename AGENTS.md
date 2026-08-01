@@ -78,7 +78,7 @@ pnpm test:e2e:ui          # interactive runner
 hovers **every** link, button and field, and fails on a control that answers the pointer
 with nothing, shows the wrong cursor, sits under something else, or whose label misses
 WCAG AA against its composited backdrop. Every hover is photographed to
-`test-results/hover-states/<page>/` (gitignored, and rebuilt from scratch on each run),
+`design-screens/<page>/` (gitignored, and rebuilt from scratch on each run),
 so states can be reviewed as pictures. **A new page
 needs an entry in that file** — a route missing from it is a route whose interaction
 states nobody has looked at.
@@ -126,7 +126,10 @@ docs/SPEC.md        goal, architecture, audit, roadmap
 ## State of play
 
 P0 is cleared and P1 is largely done: the build and typecheck are green, the API runs on
-Hono + D1 under Workers, guard shapes are enforced, and 28 e2e tests pass. What has *not*
-happened yet: the `/api/*` service-binding forwarder (the API still needs CORS in dev),
-`@opennextjs/cloudflare` (needs `next@^16.2.11`), and everything from P3 onward — no
-progress is persisted yet. See `docs/SPEC.md` §7.
+Hono + D1 under Workers, guard shapes are enforced, and the e2e suite passes. The browser
+now talks to one origin only — `app/api/[...path]/route.ts` forwards `/api/*` to the api
+Worker (service binding when bound, `API_ORIGIN` otherwise), and `/api` is excluded from
+the locale middleware. What has *not* happened yet: deploying the api Worker (its D1
+`database_id` is a placeholder, and it has no CI), so `API` in `wrangler.jsonc` stays
+commented out until it exists; retiring the API's dev-only CORS middleware; and
+everything from P3 onward. See `docs/SPEC.md` §7.

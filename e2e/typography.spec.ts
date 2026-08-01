@@ -41,6 +41,24 @@ test.describe("typography", () => {
     expect(bodyFont).toContain("Noto");
   });
 
+  test("Thai text inside the hero cards keeps the Thai face in both locales", async ({
+    page,
+  }) => {
+    for (const locale of ["en", "th"]) {
+      await page.goto(`/${locale}`);
+
+      const thaiNodes = page.locator(
+        '[data-testid="hero-word-illustration"] [lang="th"]',
+      );
+      expect(await thaiNodes.count()).toBeGreaterThan(0);
+
+      const fonts = await thaiNodes.evaluateAll((nodes) =>
+        nodes.map((node) => getComputedStyle(node).fontFamily),
+      );
+      expect(fonts.every((font) => font.includes("Noto"))).toBe(true);
+    }
+  });
+
   test("Thai word content uses the Thai face", async ({ page }) => {
     await page.goto(`/en/english/words/${SEED.unit1.firstWord}`);
 

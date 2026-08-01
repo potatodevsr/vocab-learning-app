@@ -16,6 +16,10 @@ cd "$(dirname "$0")/../../backend"
 STATE_DIR=".wrangler/e2e-state"
 PERSIST=(--persist-to "$STATE_DIR")
 
+echo "[e2e] generating Prisma client runtime"
+DATABASE_URL="${DATABASE_URL:-file:./dev.db}" \
+  pnpm exec prisma generate --generator client >/dev/null
+
 echo "[e2e] resetting isolated D1 state at $STATE_DIR"
 rm -rf "$STATE_DIR"
 
@@ -28,4 +32,6 @@ pnpm exec wrangler d1 execute vocab --local "${PERSIST[@]}" --file=seed/e2e.sql 
 echo "[e2e] starting worker on :4100"
 exec pnpm exec wrangler dev --local "${PERSIST[@]}" \
   --port 4100 \
-  --var FRONTEND_URL:http://localhost:3100
+  --var FRONTEND_URL:http://localhost:3100 \
+  --var APP_URL:http://localhost:3100 \
+  --var MAGIC_LINK_DEV_MODE:true

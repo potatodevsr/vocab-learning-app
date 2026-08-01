@@ -114,7 +114,7 @@ export default function RegisterPage() {
           <p className="mt-2 text-sm text-white">{t("registerSubtitle")}</p>
         </div>
 
-        <Card className="play-card rounded-[28px] border-0">
+        <Card className="play-sticker gap-0 rounded-[28px] border-0 [--tile-block:var(--ink)]">
           <CardContent className="pt-6">
             <form
               onSubmit={handleSubmit}
@@ -211,7 +211,7 @@ export default function RegisterPage() {
                 </Alert>
               )}
 
-              <Button type="submit" className="play-press h-12 w-full rounded-full bg-brand text-base font-semibold text-white hover:bg-brand" disabled={!isFormValid}>
+              <Button type="submit" className="play-key h-14 w-full rounded-2xl bg-brand text-base font-extrabold text-white hover:bg-brand" disabled={!isFormValid}>
                 {t("submit")}
               </Button>
 

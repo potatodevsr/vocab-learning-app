@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 
 import type { Page } from "@playwright/test";
 
@@ -12,12 +12,15 @@ import type { Page } from "@playwright/test";
  * interactive element on a page, measures what the browser computes before and after the
  * pointer arrives, and photographs each one mid-hover.
  *
- * Screenshots land in `test-results/hover-states/<page>/` — one rest shot of the whole
- * page, then one viewport shot per element while it is hovered. That directory is
- * Playwright's own output root, so it is gitignored and cleared at the start of every
- * run: the pictures are always from the run you just did.
+ * Screenshots land in `design-screens/<page>/` — one full-page shot at rest, then one
+ * viewport shot per element while it is hovered.
+ *
+ * Deliberately *not* under `test-results/`: that is Playwright's output root, which it
+ * empties per run and per test, so half of a page's shots would vanish while the sweep
+ * was still writing the other half. Each page clears its own folder as it starts, so
+ * what you are looking at is always from the current run.
  */
-export const SHOT_DIR = "test-results/hover-states";
+export const SHOT_DIR = "design-screens";
 
 /** Everything a pointer can meaningfully land on. */
 export const INTERACTIVE_SELECTOR = [
@@ -197,6 +200,11 @@ export const sweepHoverStates = async (
   root = ":root",
 ): Promise<Finding[]> => {
   const findings: Finding[] = [];
+
+  // This page's shots, and only this page's: a renamed or removed control would
+  // otherwise leave a stale photograph behind to be reviewed as if it were current.
+  rmSync(`${SHOT_DIR}/${name}`, { recursive: true, force: true });
+  mkdirSync(`${SHOT_DIR}/${name}`, { recursive: true });
 
   // Park the pointer off every control first: a leftover hover from the previous action
   // would be measured as the rest state.

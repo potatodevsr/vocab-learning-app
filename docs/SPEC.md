@@ -155,6 +155,71 @@ their `user_token` into an `admin_token` cookie and reach `/admin`.
 
 Each spike is a throwaway branch with a written yes/no. Do not build P3+ on an unspiked S1/S2.
 
+### 3.5 Live review environment
+
+`http://localhost:3000/` is the **always-available human review URL**. It serves the latest
+changes intentionally integrated into the primary review checkout, with Next.js HMR kept
+running. An unmerged worker branch is not part of the "latest integrated changes" until
+someone deliberately applies it to that checkout. If the checkout is dirty because it is
+integrating several handoffs, report that dirty integration state instead of implying the
+URL represents a clean commit.
+
+The review environment is full-stack. The api Worker must be healthy at
+`http://localhost:4000/health`, and the web Worker's forwarder must expose the same health
+check at `http://localhost:3000/api/health`. A page shell that renders while either health
+check fails is not a usable review environment.
+
+These environments are isolated by port and D1 state:
+
+| Environment | Web | API | D1 state |
+| --- | --- | --- | --- |
+| Live development review | 3000 | 4000 | `backend/.wrangler/state` |
+| Playwright | 3100 | 4100 | `backend/.wrangler/e2e-state` |
+| Cypress | 3200 | 4200 | `backend/.wrangler/cypress-state` |
+
+Never share, reuse, or wipe another environment's ports or state directory. Tests must
+never reuse `:3000` or `:4000`, and a pass observed against the live review preview is
+never gate evidence: Playwright and Cypress must boot and verify their own isolated
+stacks.
+
+After every frontend or backend handoff is integrated, the responsible implementation
+worker must:
+
+1. Rebuild or restart the affected review process when needed, then verify both
+   `http://localhost:4000/health` and `http://localhost:3000/api/health`.
+2. Open or reload `http://localhost:3000/`, exercise the handed-off path, and check the
+   browser console and rendered error state for failures.
+3. Report the branch and commit being shown, or describe the primary checkout's dirty
+   integration state, and leave both processes running and usable for the next reviewer.
+
+The lead/orchestrator owns continuity of the shared review runtime. That does not transfer
+restart work away from implementation workers: after their integrated changes, they own
+rebuilding or restarting what they changed. A dead or stale review runtime is a
+release-process defect.
+
+Diagnose before restarting so one worker does not kill another worker's runtime:
+
+```bash
+curl --fail --silent --show-error http://localhost:4000/health
+curl --fail --silent --show-error http://localhost:3000/api/health
+curl --fail --silent --show-error --output /dev/null http://localhost:3000/
+lsof -nP -iTCP:3000 -sTCP:LISTEN
+lsof -nP -iTCP:4000 -sTCP:LISTEN
+```
+
+If a process that you own needs restarting, stop that process in its own terminal with
+Ctrl-C and rerun the existing development commands from the primary review checkout; do
+not use a broad `pkill`, invent a process manager, or add a launch configuration:
+
+```bash
+# Terminal 1, from the primary review checkout
+cd backend
+pnpm dev
+
+# Terminal 2, from the primary review checkout root
+pnpm dev
+```
+
 ---
 
 ## 4. Current state (audit, 2026-07-25)
@@ -599,9 +664,16 @@ a baseline migration applied with `wrangler d1 migrations apply` (it also restor
 three progress tables the old Prisma migration history never created). **S1 and S2 came
 back positive** — the generated Hono routers and prisma-guard both run on workerd, with
 guard context supplied by a per-request client rather than `AsyncLocalStorage`.
-Still open: `next@^16.2.11` + `@opennextjs/cloudflare` for the web Worker (S3), the
-`/api/*` service-binding forwarder (until then the API carries a dev-only CORS
-middleware), and a staging deploy.
+The **`/api/*` forwarder now exists** (`app/api/[...path]/route.ts`): the browser calls
+the web origin only, and the route relays to the api Worker over the `API` service
+binding when one is bound, over `API_ORIGIN` otherwise. `/api` is excluded from the
+locale middleware — without that, `POST /api/user/register` was answered with
+`307 → /en/api/user/register`, which is why sign-up 404'd in the first deploy.
+Still open: binding `API` in `wrangler.jsonc` (it is commented out until `vocab-api` has
+been deployed once — `wrangler deploy` refuses a binding to a service that does not
+exist), deploying the api Worker at all (its `d1_databases.database_id` is still the
+placeholder and it has no CI), retiring the API's dev-only CORS middleware once nothing
+but the forwarder calls it, and a staging deploy.
 
 **P2 — Security + content.** Guard shapes on every operation (§5.2), each with a
 `resolveVariant` that never returns `undefined`; `@scope-root` on `User` *plus* an explicit
@@ -678,6 +750,12 @@ words — is exactly what people search for ("about แปลว่า", "oxford
 searches are the cheapest acquisition channel this product has, and today none of it is
 reachable: the app renders one `<title>` for every page, has no sitemap, no robots rules,
 and no structured data.
+
+The plumbing below has since landed (`lib/seo.ts`, `app/sitemap.ts`, `app/robots.ts`).
+**The page inventory built on top of it lives in [`SEO-CONTENT.md`](SEO-CONTENT.md)** —
+every page family, its data prerequisites, its substance floor, and the build order. This
+section stays the authority on the *rules*; that document is the authority on the *pages*,
+and it amends §9.7 (see its §0.1).
 
 ### 9.1 The rule that governs everything here
 

@@ -1,4 +1,10 @@
 import { API_URL } from "@/constants/config";
+import type { operations } from "@/lib/api-types";
+
+type MagicLinkRequestAccepted =
+    operations["requestMagicLink"]["responses"][202]["content"]["application/json"];
+type MagicLinkVerifiedUser =
+    operations["verifyMagicLink"]["responses"][200]["content"]["application/json"];
 
 export type User = {
     id: string;
@@ -52,6 +58,34 @@ export const userLogin = async (data: {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message);
+    return json;
+};
+
+export const requestMagicLink = async (data: {
+    email: string;
+    locale: string;
+    from?: string;
+}): Promise<MagicLinkRequestAccepted> => {
+    const res = await fetch(`${API_URL}/user/magic-link/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message);
+    return json;
+};
+
+export const verifyMagicLink = async (token: string): Promise<MagicLinkVerifiedUser> => {
+    const res = await fetch(`${API_URL}/user/magic-link/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ token }),
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.message);

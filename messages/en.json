@@ -32,7 +32,21 @@
     "flowStep3": "Practice with short quizzes",
     "flowStep4": "Review difficult words regularly",
     "illustrationPreview": "UI preview",
-    "illustrationCards": "Word cards"
+    "illustrationCards": "Word cards",
+    "tickerLabel": "A sample of the vocabulary you will learn",
+    "heroKicker": "Oxford 3000 · A1 to B2",
+    "heroLead": "Learn the",
+    "heroHighlight": "Oxford 3000",
+    "heroTrail": "with Thai meaning and pronunciation.",
+    "proofWords": "3,000",
+    "proofWordsLabel": "words with Thai meanings",
+    "proofMinutes": "3 min",
+    "proofMinutesLabel": "a lesson, not an evening",
+    "proofFree": "Free",
+    "proofFreeLabel": "account saves your progress",
+    "pathBadge": "How a day looks",
+    "pathTitle": "Four steps, then again tomorrow.",
+    "pathBody": "The loop is the product: a short lesson, immediate feedback, and the words you missed coming back on their own."
   },
   "Common": {
     "backToPath": "Back to path",
@@ -107,6 +121,21 @@
     "check": "Check answer"
   },
   "Auth": {
+    "magicTitle": "Sign in with email",
+    "magicSubtitle": "No password needed — we’ll email you a secure sign-in link.",
+    "magicSubmit": "Email me a sign-in link",
+    "magicSending": "Sending link...",
+    "magicSentTitle": "Check your inbox",
+    "magicSentBody": "If an account exists for {email}, a sign-in link is on its way. It expires in 15 minutes.",
+    "magicOpenDev": "Open local sign-in link",
+    "magicTryAnother": "Use a different email",
+    "magicVerifying": "Signing you in...",
+    "magicInvalidTitle": "This link can’t be used",
+    "magicInvalidBody": "It may have expired or already been used. Request a new sign-in link to continue.",
+    "magicRequestAgain": "Request a new link",
+    "magicErrorTitle": "We couldn’t check this link",
+    "magicErrorBody": "Something interrupted sign-in. Try checking the link again.",
+    "magicErrorRetry": "Try again",
     "loginTitle": "Log in",
     "loginSubtitle": "Start learning Oxford 3000 vocabulary",
     "email": "Email",
@@ -291,5 +320,13 @@
     "account": "Account",
     "faqTitle": "Frequently asked questions — Oxford 3000 English vocabulary",
     "faqDescription": "What the Oxford 3000 is, how many words to learn a day, how A1/A2/B1/B2 differ, and how the review system works."
+  },
+  "Footer": {
+    "blurb": "Learn the Oxford 3000 — the 3,000 English words that carry most of the language — with Thai meanings, pronunciation and short daily lessons.",
+    "levelsHeading": "Levels",
+    "levelLink": "{level} vocabulary",
+    "appHeading": "The app",
+    "faq": "Questions",
+    "credit": "Built on the Oxford 3000 word list. Vocabulary data is used for study purposes."
   }
 }

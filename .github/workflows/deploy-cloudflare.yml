@@ -54,11 +54,16 @@ jobs:
         run: pnpm cf:build
         env:
           NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
-          # Use the known workers.dev origin until a custom domain and the API service
-          # binding are configured. Never ship localhost: Chrome treats that as an
-          # attempt to access services on the visitor's private network.
+          # Use the known workers.dev origin until a custom domain is configured. Never
+          # ship localhost: Chrome treats that as an attempt to access services on the
+          # visitor's private network.
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'https://vocab-learning-app.hoshiku1997.workers.dev' }}
-          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://vocab-learning-app.hoshiku1997.workers.dev/api' }}
+          # The api Worker's own origin — never this Worker's `/api` path. The browser
+          # does not use this value at all (it calls same-origin `/api/*`, which the
+          # forwarder relays); server rendering and the forwarder do. Pointing it back at
+          # the web origin is what made sign-up 404 — the forwarder now answers that
+          # misconfiguration with a 502 that says so, instead of proxying to itself.
+          NEXT_PUBLIC_API_URL: ${{ vars.API_ORIGIN || 'https://vocab-api.hoshiku1997.workers.dev' }}
 
       - name: Create or update Worker
         run: pnpm exec wrangler deploy

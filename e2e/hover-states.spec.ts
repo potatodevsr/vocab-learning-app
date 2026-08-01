@@ -19,7 +19,7 @@ import {
  * every link, button and field of every route, and fails when one of them answers with
  * nothing.
  *
- * It also photographs each hover into `test-results/hover-states/<page>/` so the states
+ * It also photographs each hover into `design-screens/<page>/` so the states
  * can be reviewed as pictures rather than as assertions.
  *
  * Adding a page? Add it here. A route with no entry in this file is a route whose
@@ -30,8 +30,29 @@ test.describe.configure({ timeout: 300_000 });
 const report = (findings: Finding[]) =>
   findings.map((f) => `  · ${f.element} — ${f.reason}`).join("\n");
 
+const freezeHeroAt = async (page: Page, time = 1000) => {
+  const cards = page.locator('[data-testid="hero-word-illustration"] .hero-card-cycle');
+  if ((await cards.count()) !== 3) return;
+
+  await cards.evaluateAll((elements, currentTime) => {
+    elements.forEach((element) => {
+      element.getAnimations().forEach((animation) => {
+        animation.pause();
+        animation.currentTime = currentTime;
+      });
+    });
+  }, time);
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
+};
+
 /** One sweep + its two assertions, so every page test reads the same way. */
 const checkPage = async (page: Page, name: string, root?: string) => {
+  if (["home-en", "home-th", "home-signed-in", "phone-home"].includes(name)) {
+    await freezeHeroAt(page);
+  }
+
   const hover = await sweepHoverStates(page, name, root);
 
   // Park the pointer before measuring contrast. The sweep ends with the mouse still on
@@ -61,6 +82,8 @@ test.describe("hover states — public pages", () => {
     { name: "home-th", path: "/th" },
     { name: "faq", path: "/en/faq" },
     { name: "login", path: "/en/auth/login" },
+    { name: "magic-link-invalid", path: "/en/auth/verify" },
+    { name: "magic-link-invalid-th", path: "/th/auth/verify" },
     { name: "register", path: "/en/auth/register" },
     { name: "level-a1", path: "/en/english/a1" },
     { name: "level-a1-th", path: "/th/english/a1" },

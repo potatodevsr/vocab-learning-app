@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { registerThroughUi } from "./support/actions";
 
@@ -31,7 +31,185 @@ const TO_RGB = `(colour) => {
   return Array.from(ctx.getImageData(0, 0, 1, 1).data).slice(0, 3);
 }`;
 
+type HeroPhase = {
+  root: { top: number; height: number };
+  followingTop: number;
+  frontWord: string;
+  frontMatrix: number[];
+  rearTransforms: string[];
+  zIndices: number[];
+  opacities: string[];
+  backgrounds: number[][];
+  cardSurface: number[];
+  frontContained: boolean;
+  frontContentContained: boolean;
+  maxRearOverflow: number;
+  rearHeadingsOccluded: boolean;
+  overflow: number;
+  contrast: Array<{ label: string; ratio: number }>;
+};
+
+const seekHeroAt = async (page: Page, time: number) => {
+  const illustration = page.getByTestId("hero-word-illustration");
+  await illustration.scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("hero-card-stage")).toBeVisible();
+  await illustration.locator(".hero-card-cycle").evaluateAll((cards, currentTime) => {
+    cards.forEach((card) => {
+      card.getAnimations().forEach((animation) => {
+        animation.pause();
+        animation.currentTime = currentTime;
+      });
+    });
+  }, time);
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
+};
+
+const readHeroPhase = async (page: Page): Promise<HeroPhase> =>
+  page.evaluate(() => {
+    const root = document.querySelector<HTMLElement>(
+      '[data-testid="hero-word-illustration"]',
+    );
+    const cards = [...document.querySelectorAll<HTMLElement>(
+      '[data-testid="hero-word-illustration"] .hero-card-cycle',
+    )];
+    if (!root || cards.length !== 3) throw new Error("Hero deck is incomplete");
+
+    const rgba = (colour: string) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 1;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Canvas colour conversion unavailable");
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = colour;
+      context.fillRect(0, 0, 1, 1);
+      return [...context.getImageData(0, 0, 1, 1).data];
+    };
+    const luminance = ([r, g, b]: number[]) => {
+      const channel = (value: number) => {
+        const normal = value / 255;
+        return normal <= 0.03928
+          ? normal / 12.92
+          : ((normal + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+    const ratio = (a: number[], b: number[]) => {
+      const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (light + 0.05) / (dark + 0.05);
+    };
+    const rootRect = root.getBoundingClientRect();
+    const front = cards.find((card) => getComputedStyle(card).zIndex === "30");
+    if (!front) throw new Error("Hero deck has no front card");
+    const frontRect = front.getBoundingClientRect();
+    const inside = (rect: DOMRect, container: DOMRect, tolerance = 1) =>
+      rect.left >= container.left - tolerance &&
+      rect.top >= container.top - tolerance &&
+      rect.right <= container.right + tolerance &&
+      rect.bottom <= container.bottom + tolerance;
+    const matrix = new DOMMatrix(getComputedStyle(front).transform);
+    const rear = cards.filter((card) => card !== front);
+    const maxRearOverflow = Math.max(
+      0,
+      ...rear.flatMap((card) => {
+        const rect = card.getBoundingClientRect();
+        return [
+          rootRect.left - rect.left,
+          rootRect.top - rect.top,
+          rect.right - rootRect.right,
+          rect.bottom - rootRect.bottom,
+        ];
+      }),
+    );
+    const contrast = [...front.querySelectorAll<HTMLElement>("h3, p, span")]
+      .filter((node) => node.textContent?.trim())
+      .map((node) => {
+        let ancestor: HTMLElement | null = node;
+        let background = rgba("transparent");
+        while (ancestor) {
+          background = rgba(getComputedStyle(ancestor).backgroundColor);
+          if (background[3] === 255) break;
+          ancestor = ancestor.parentElement;
+        }
+        return {
+          label: node.textContent?.trim().replace(/\s+/g, " ") ?? node.tagName,
+          ratio: ratio(rgba(getComputedStyle(node).color), background),
+        };
+      });
+    const section = root.closest("section");
+    const followingTop = section?.nextElementSibling?.getBoundingClientRect().top;
+    if (followingTop === undefined) throw new Error("Hero following section is missing");
+
+    return {
+      root: { top: rootRect.top, height: rootRect.height },
+      followingTop,
+      frontWord: front.dataset.heroWord ?? "",
+      frontMatrix: [matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f],
+      rearTransforms: rear.map((card) => getComputedStyle(card).transform),
+      zIndices: cards.map((card) => Number(getComputedStyle(card).zIndex)).sort((a, b) => a - b),
+      opacities: cards.map((card) => getComputedStyle(card).opacity),
+      backgrounds: cards.map((card) => rgba(getComputedStyle(card).backgroundColor)),
+      cardSurface: rgba(
+        getComputedStyle(document.documentElement).getPropertyValue("--card"),
+      ),
+      frontContained: inside(frontRect, rootRect),
+      frontContentContained: [...front.querySelectorAll<HTMLElement>("*")]
+        .filter((node) => node.getBoundingClientRect().width > 0)
+        .every((node) => inside(node.getBoundingClientRect(), frontRect) &&
+          inside(node.getBoundingClientRect(), rootRect)),
+      maxRearOverflow,
+      rearHeadingsOccluded: rear.every((card) => {
+        const heading = card.querySelector("h3");
+        if (!heading) return false;
+        const rect = heading.getBoundingClientRect();
+        const stack = document.elementsFromPoint(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+        );
+        return stack.indexOf(front) >= 0 && stack.indexOf(front) < stack.indexOf(card);
+      }),
+      overflow: document.documentElement.scrollWidth - innerWidth,
+      contrast,
+    };
+  });
+
+const expectValidHeroPhase = (phase: HeroPhase) => {
+  expect(phase.zIndices).toEqual([10, 20, 30]);
+  expect(phase.opacities).toEqual(["1", "1", "1"]);
+  phase.backgrounds.forEach((background) => {
+    expect(background).toEqual(phase.cardSurface);
+    expect(background[3]).toBe(255);
+  });
+  phase.frontMatrix.forEach((value, index) => {
+    expect(value).toBeCloseTo(index === 0 || index === 3 ? 1 : 0, 3);
+  });
+  expect(new Set(phase.rearTransforms).size).toBe(2);
+  expect(phase.frontContained).toBe(true);
+  expect(phase.frontContentContained).toBe(true);
+  expect(phase.maxRearOverflow).toBeLessThanOrEqual(8);
+  expect(phase.rearHeadingsOccluded).toBe(true);
+  expect(phase.overflow).toBeLessThanOrEqual(1);
+  phase.contrast.forEach(({ label, ratio }) =>
+    expect(ratio, `${label} contrast`).toBeGreaterThanOrEqual(4.5),
+  );
+};
+
 test.describe("the play palette", () => {
+  test("magic-link recovery stays inside a 390px viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    for (const locale of ["en", "th"]) {
+      await page.goto(`/${locale}/auth/verify`);
+      const boundary = page.getByTestId("magic-verify-invalid");
+      await expect(boundary).toBeVisible();
+      await expect(boundary.locator("h1")).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        390,
+      );
+    }
+  });
+
   test("the canvas is bright, not near-black", async ({ page }) => {
     await page.goto("/en/english/a1");
 
@@ -283,6 +461,7 @@ test.describe("flat style", () => {
   });
 
   test("hover changes transform, not a shadow", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto("/en");
 
     const tile = page.locator(".play-tile").first();
@@ -290,23 +469,106 @@ test.describe("flat style", () => {
 
     const before = await tile.evaluate((el) => getComputedStyle(el).transform);
     await tile.hover();
-    const after = await tile.evaluate((el) => getComputedStyle(el).transform);
-
-    expect(after).not.toBe(before);
+    await expect
+      .poll(() => tile.evaluate((el) => getComputedStyle(el).transform))
+      .not.toBe(before);
   });
 
-  test("the hero word cards still cycle", async ({ page }) => {
+  test("the hero word deck cycles three opaque, contained fronts", async ({ page }) => {
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 1440, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+
+      for (const locale of ["en", "th"]) {
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+        await page.goto(`/${locale}`);
+
+        const cards = page.getByTestId("hero-word-illustration").locator(".hero-card-cycle");
+        await expect(cards).toHaveCount(3);
+        const animation = await cards.evaluateAll((elements) =>
+          elements.map((element) => {
+            const style = getComputedStyle(element);
+            return {
+              name: style.animationName,
+              duration: style.animationDuration,
+              iterations: style.animationIterationCount,
+              state: style.animationPlayState,
+              willChange: style.willChange,
+            };
+          }),
+        );
+        animation.forEach((card) => {
+          expect(card.name).toContain("heroCardCycle");
+          expect(card.duration).toBe("12s");
+          expect(card.iterations).toBe("infinite");
+          expect(card.state).toBe("running");
+          expect(card.willChange).toContain("transform");
+          expect(card.willChange).not.toContain("opacity");
+        });
+
+        const fronts = new Set<string>();
+        let baseline: HeroPhase | undefined;
+        for (const time of [1000, 5000, 9000]) {
+          await seekHeroAt(page, time);
+          const phase = await readHeroPhase(page);
+          expectValidHeroPhase(phase);
+          fronts.add(phase.frontWord);
+
+          if (!baseline) baseline = phase;
+          else {
+            expect(phase.root.top).toBeCloseTo(baseline.root.top, 1);
+            expect(phase.root.height).toBeCloseTo(baseline.root.height, 1);
+            expect(phase.followingTop).toBeCloseTo(baseline.followingTop, 1);
+          }
+        }
+        expect(fronts.size).toBe(3);
+      }
+    }
+  });
+
+  test("the reduced-motion hero is a deliberate static three-card deck", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/en");
 
-    const cards = page.locator(".hero-card-cycle");
-    await expect(cards.first()).toBeVisible();
-    expect(await cards.count()).toBeGreaterThan(1);
+    const illustration = page.getByTestId("hero-word-illustration");
+    await illustration.scrollIntoViewIfNeeded();
+    const contract = await illustration.locator(".hero-card-cycle").evaluateAll((cards) =>
+      cards.map((card) => {
+        const style = getComputedStyle(card);
+        return {
+          animation: style.animationName,
+          opacity: style.opacity,
+          transform: style.transform,
+          willChange: style.willChange,
+          zIndex: Number(style.zIndex),
+        };
+      }),
+    );
+    expect(contract.map(({ zIndex }) => zIndex).sort((a, b) => a - b)).toEqual([
+      10, 20, 30,
+    ]);
+    expect(new Set(contract.map(({ transform }) => transform)).size).toBe(3);
+    contract.forEach((card) => {
+      expect(card.animation).toBe("none");
+      expect(card.opacity).toBe("1");
+      expect(card.willChange).toBe("auto");
+    });
 
-    const animation = await cards
-      .first()
-      .evaluate((el) => getComputedStyle(el).animationName);
-
-    expect(animation).toContain("heroCardCycle");
+    const before = await readHeroPhase(page);
+    expectValidHeroPhase(before);
+    await page.waitForTimeout(1000);
+    const after = await readHeroPhase(page);
+    expectValidHeroPhase(after);
+    expect(after.frontWord).toBe(before.frontWord);
+    expect(after.rearTransforms).toEqual(before.rearTransforms);
+    expect(after.root.top).toBeCloseTo(before.root.top, 1);
+    expect(after.root.height).toBeCloseTo(before.root.height, 1);
+    expect(after.followingTop).toBeCloseTo(before.followingTop, 1);
   });
 });
 

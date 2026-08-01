@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { registerThroughUi } from "./support/actions";
+import { loginThroughUi, registerThroughUi } from "./support/actions";
 import { SEED } from "./support/fixtures";
 
 /**
@@ -84,11 +84,7 @@ test.describe("progress persistence", () => {
 
     await context.clearCookies();
 
-    await page.goto("/en/auth/login");
-    await page.fill("#email", user.email);
-    await page.fill("#password", user.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL((url) => !url.pathname.includes("/auth/login"));
+    await loginThroughUi(page, user);
 
     await page.goto("/en/profile");
     await expect(page.getByTestId("stat-lessons")).toHaveText("1");

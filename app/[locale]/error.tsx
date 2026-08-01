@@ -26,7 +26,7 @@ export default function LocaleError({
   return (
     <main className="flex min-h-screen items-center justify-center bg-brand px-6 text-white">
       <div className="w-full max-w-md text-center">
-        <div className="mx-auto flex size-16 items-center justify-center rounded-3xl bg-white/25">
+        <div className="mx-auto flex size-16 items-center justify-center rounded-3xl border-3 border-white bg-danger">
           <TriangleAlert className="size-6" />
         </div>
 
@@ -36,7 +36,7 @@ export default function LocaleError({
 
         <Button
           onClick={reset}
-          className="play-press mt-6 h-11 rounded-full bg-white px-6 font-semibold text-brand hover:bg-white"
+          className="play-key mt-8 h-14 rounded-2xl bg-accent-sun px-7 text-base font-extrabold text-ink hover:bg-accent-sun"
         >
           <RotateCcw className="size-4" />
           {t("retry")}

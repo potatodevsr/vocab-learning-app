@@ -115,7 +115,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
       />
     <main className="min-h-screen bg-background text-foreground">
 
-      <section className="bg-brand text-white">
+      <section className="border-b-3 border-ink bg-brand text-white">
         <div className="mx-auto w-full max-w-5xl px-6 py-10 lg:px-8">
           {/* Two inline-level elements with a top margin sat on the same line and read
               as one cramped row; the back link is its own step in the hierarchy. */}
@@ -132,11 +132,13 @@ export default async function UnitPage({ params }: UnitPageProps) {
             </Button>
           </div>
 
-          <Badge className="mt-8 rounded-full bg-white text-sm font-bold text-brand hover:bg-white">
+          <span className="play-stamp mt-8 bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
             {t("badge", { level })}
-          </Badge>
+          </span>
 
-          <h1 className="mt-4 max-w-3xl">{t("title", { level, unit })}</h1>
+          <h1 className="play-display mt-5 max-w-3xl text-[clamp(2.25rem,6vw,3.75rem)]">
+            {t("title", { level, unit })}
+          </h1>
 
           <p className="mt-3 max-w-2xl text-base leading-7 text-white">
             {t("subtitle", { count: words.length, unit, total: unitCount })}
@@ -145,7 +147,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
           <Button
             asChild
             size="lg"
-            className="play-press mt-6 h-12 rounded-full bg-white px-6 font-semibold text-brand hover:bg-white"
+            className="play-key mt-8 h-14 rounded-2xl bg-accent-sun px-7 text-base font-extrabold text-ink hover:bg-accent-sun"
           >
             <Link href={`/learn?level=${level}&unit=${unit}`}>
               {t("startLesson")}
@@ -164,7 +166,9 @@ export default async function UnitPage({ params }: UnitPageProps) {
                 className="play-tile flex flex-wrap items-center justify-between gap-4 p-5 [--tile-block:var(--accent-sky)]"
               >
                 <div className="min-w-0">
-                  <p className="text-2xl font-bold">{word.displayWord}</p>
+                  <p className="text-2xl font-extrabold tracking-tight">
+                    {word.displayWord}
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {word.partOfSpeech}
                     {word.pronunciationTh ? ` · ${word.pronunciationTh}` : ""}

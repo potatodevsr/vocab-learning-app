@@ -182,7 +182,7 @@ export function QuizSession({
   if (!started) {
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <section className="bg-accent-deep-sky text-white">
+        <section className="border-b-3 border-ink bg-accent-deep-sky text-white">
           <div className="mx-auto w-full max-w-5xl px-6 py-8 lg:px-8">
             <div className="flex items-center justify-between gap-4">
               <Button
@@ -203,7 +203,7 @@ export function QuizSession({
                 {tQuiz("introBadge", { level, unit })}
               </Badge>
 
-              <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h1 className="play-display mt-6 max-w-3xl text-[clamp(2.25rem,6vw,3.75rem)]">
                 {tQuiz("introTitle")}
               </h1>
 
@@ -232,7 +232,7 @@ export function QuizSession({
 
               <Button
                 size="lg"
-                className="play-press mt-8 h-12 rounded-full bg-white px-6 font-semibold text-brand hover:bg-white"
+                className="play-key mt-10 h-14 rounded-2xl bg-accent-sun px-7 text-base font-extrabold text-ink hover:bg-accent-sun"
                 onClick={() => setStarted(true)}
               >
                 {tQuiz("startQuiz")}
@@ -368,7 +368,7 @@ export function QuizSession({
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="bg-accent-deep-sky text-white">
+      <section className="border-b-3 border-ink bg-accent-deep-sky text-white">
         <div className="mx-auto w-full max-w-5xl px-6 py-8 lg:px-8">
           <div className="flex items-center justify-between gap-4">
             <Button
@@ -459,13 +459,15 @@ export function QuizSession({
                       disabled={Boolean(checkedResult)}
                       onClick={() => setSelectedAnswer(option)}
                       className={
+                        // One shape, four states. The answered states keep the ink rule
+                        // and swap the fill, so the row never reflows when it resolves.
                         isCorrectOption
-                          ? "play-press rounded-3xl border-2 border-success bg-success-soft p-5 text-left font-semibold text-foreground"
+                          ? "play-key rounded-2xl bg-success-soft p-5 text-left text-lg font-bold text-foreground [--lift:4px]"
                           : isWrongSelected
-                            ? "play-press play-shake rounded-3xl border-2 border-danger bg-danger-soft p-5 text-left font-semibold text-foreground"
+                            ? "play-key play-shake rounded-2xl bg-danger-soft p-5 text-left text-lg font-bold text-foreground [--lift:4px]"
                             : isSelected
-                              ? "play-press rounded-3xl border-2 border-brand bg-brand p-5 text-left font-semibold text-white"
-                              : "play-press rounded-3xl border-2 border-border bg-white p-5 text-left font-semibold hover:border-brand"
+                              ? "play-key rounded-2xl bg-brand p-5 text-left text-lg font-bold text-white [--lift:4px]"
+                              : "play-key rounded-2xl bg-white p-5 text-left text-lg font-bold hover:bg-brand-soft [--lift:4px]"
                       }
                     >
                       {option}
@@ -479,8 +481,8 @@ export function QuizSession({
               <div
                 className={
                   checkedResult.isCorrect
-                    ? "play-pop mt-8 rounded-3xl bg-success-soft p-5 text-foreground"
-                    : "play-pop mt-8 rounded-3xl bg-danger-soft p-5 text-foreground"
+                    ? "play-pop play-sticker mt-8 rounded-2xl bg-success-soft p-5 text-foreground [--tile-block:var(--success)]"
+                    : "play-pop play-sticker mt-8 rounded-2xl bg-danger-soft p-5 text-foreground [--tile-block:var(--danger)]"
                 }
               >
                 <div className="flex items-center gap-3">

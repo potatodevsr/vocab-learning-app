@@ -80,8 +80,12 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
+    // `api` is excluded deliberately: the forwarder in `app/api/[...path]/route.ts` is
+    // not a page and has no locale. Letting the intl middleware see it turned
+    // `POST /api/user/register` into a 307 to `/en/api/user/register`, i.e. a 404 —
+    // and a redirected POST is not something a fetch caller can recover from.
     matcher: [
-        "/((?!admin|_next|.*\\..*).*)",
+        "/((?!admin|api|_next|.*\\..*).*)",
         "/admin/:path*",
     ],
 };
