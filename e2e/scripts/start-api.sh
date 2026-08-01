@@ -16,6 +16,10 @@ cd "$(dirname "$0")/../../backend"
 STATE_DIR=".wrangler/e2e-state"
 PERSIST=(--persist-to "$STATE_DIR")
 
+echo "[e2e] generating Prisma client runtime"
+DATABASE_URL="${DATABASE_URL:-file:./dev.db}" \
+  pnpm exec prisma generate --generator client >/dev/null
+
 echo "[e2e] resetting isolated D1 state at $STATE_DIR"
 rm -rf "$STATE_DIR"
 

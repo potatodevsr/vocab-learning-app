@@ -12,6 +12,12 @@ real Hono Worker on `wrangler dev --local`, real D1. There is no mocked network.
 | `e2e/api/` | Playwright `request` → the Worker | every route × every guard variant × every validation branch |
 | `e2e/*.spec.ts` | browser → Next → Worker → D1 | user-visible behaviour and cross-layer wiring |
 
+## E2E harness
+
+| Condition | Test |
+| --- | --- |
+| A fresh backend generates only the Prisma client with a fallback `DATABASE_URL` before migrate, seed and Worker startup | `unit/e2e-launcher`; every full-stack test also exercises the launcher |
+
 ---
 
 ## Middleware (`backend/src/index.ts`)
