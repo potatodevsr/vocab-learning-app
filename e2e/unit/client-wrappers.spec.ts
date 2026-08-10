@@ -100,7 +100,7 @@ test.describe("progress-api", () => {
       quizId: newSessionId(),
       level: "A1",
       unit: 1,
-      answers: [{ wordId: "e2e-a1-0001", isCorrect: true }],
+      answers: [{ wordId: "e2e-a1-0001", type: "meaning-choice", answer: "ความหมาย1" }],
     });
 
     expect(ok).toBe(false);

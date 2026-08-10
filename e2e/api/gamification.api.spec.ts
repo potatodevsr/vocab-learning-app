@@ -5,7 +5,22 @@ import { API, asAnonymous, asNewUser } from "../support/api";
 const WORD_A = "e2e-a1-0001";
 const WORD_B = "e2e-a1-0002";
 
-const quiz = (answers: { wordId: string; isCorrect: boolean }[]) => ({
+// e2e seed convention (backend/scripts/generate-e2e-seed.mjs): wordN's meaning is
+// "ความหมายN". `/progress/quiz` now derives correctness from the real word instead of a
+// client-asserted `isCorrect` (backend/src/progress.ts, §8 L2) — `qa` submits a real
+// meaning to grade correct instead of asserting one.
+const MEANING_OF: Record<string, string> = {
+  [WORD_A]: "ความหมาย1",
+  [WORD_B]: "ความหมาย2",
+};
+
+const qa = (wordId: string, correct: boolean) => ({
+  wordId,
+  type: "meaning-choice" as const,
+  answer: correct ? MEANING_OF[wordId] : "definitely-the-wrong-meaning",
+});
+
+const quiz = (answers: { wordId: string; type: "meaning-choice"; answer: string }[]) => ({
   quizId: `gq-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   level: "A1",
   unit: 1,
@@ -46,7 +61,7 @@ test.describe("GET /progress/words", () => {
     const { ctx } = await asNewUser();
 
     await ctx.post(`${API}/progress/quiz`, {
-      data: quiz([{ wordId: WORD_A, isCorrect: true }]),
+      data: quiz([qa(WORD_A, true)]),
     });
 
     const res = await ctx.get(`${API}/progress/words?ids=${WORD_A}`);
@@ -66,7 +81,7 @@ test.describe("GET /progress/words", () => {
 
     for (let round = 0; round < 7; round += 1) {
       await ctx.post(`${API}/progress/quiz`, {
-        data: quiz([{ wordId: WORD_A, isCorrect: true }]),
+        data: quiz([qa(WORD_A, true)]),
       });
     }
 
@@ -81,12 +96,12 @@ test.describe("GET /progress/words", () => {
     const { ctx } = await asNewUser();
 
     await ctx.post(`${API}/progress/quiz`, {
-      data: quiz([{ wordId: WORD_A, isCorrect: true }]),
+      data: quiz([qa(WORD_A, true)]),
     });
 
     for (let round = 0; round < 3; round += 1) {
       await ctx.post(`${API}/progress/quiz`, {
-        data: quiz([{ wordId: WORD_A, isCorrect: false }]),
+        data: quiz([qa(WORD_A, false)]),
       });
     }
 
@@ -103,7 +118,7 @@ test.describe("GET /progress/words", () => {
     const second = await asNewUser();
 
     await first.ctx.post(`${API}/progress/quiz`, {
-      data: quiz([{ wordId: WORD_A, isCorrect: true }]),
+      data: quiz([qa(WORD_A, true)]),
     });
 
     const { words } = await (
@@ -141,7 +156,7 @@ test.describe("GET /progress/mistakes", () => {
     const { ctx } = await asNewUser();
 
     await ctx.post(`${API}/progress/quiz`, {
-      data: quiz([{ wordId: WORD_A, isCorrect: false }]),
+      data: quiz([qa(WORD_A, false)]),
     });
 
     const body = await (await ctx.get(`${API}/progress/mistakes`)).json();
@@ -154,7 +169,7 @@ test.describe("GET /progress/mistakes", () => {
     const { ctx } = await asNewUser();
 
     await ctx.post(`${API}/progress/quiz`, {
-      data: quiz([{ wordId: WORD_A, isCorrect: true }]),
+      data: quiz([qa(WORD_A, true)]),
     });
 
     expect((await (await ctx.get(`${API}/progress/mistakes`)).json()).total).toBe(0);
@@ -183,14 +198,13 @@ test.describe("GET /progress/mistakes", () => {
     const { ctx } = await asNewUser();
 
     await ctx.post(`${API}/progress/quiz`, {
-      data: quiz([{ wordId: WORD_A, isCorrect: false }]),
+      data: quiz([qa(WORD_A, false)]),
     });
-    await ctx.post(`${API}/progress/quiz`, {
-      data: quiz([
-        { wordId: WORD_B, isCorrect: false },
-        { wordId: WORD_B, isCorrect: false },
-      ]),
-    });
+    // WORD_B is answered wrong twice — but across two submissions, because a single quiz
+    // may not repeat a wordId (backend/src/progress.ts rejects a duplicate wordId in a
+    // batch). Two misses put it above WORD_A's single miss, so it must sort first.
+    await ctx.post(`${API}/progress/quiz`, { data: quiz([qa(WORD_B, false)]) });
+    await ctx.post(`${API}/progress/quiz`, { data: quiz([qa(WORD_B, false)]) });
 
     const body = await (await ctx.get(`${API}/progress/mistakes`)).json();
 
@@ -202,7 +216,7 @@ test.describe("GET /progress/mistakes", () => {
     const second = await asNewUser();
 
     await first.ctx.post(`${API}/progress/quiz`, {
-      data: quiz([{ wordId: WORD_A, isCorrect: false }]),
+      data: quiz([qa(WORD_A, false)]),
     });
 
     expect(
@@ -284,7 +298,7 @@ test.describe("mistakes carry their word", () => {
     const { ctx } = await asNewUser();
 
     await ctx.post(`${API}/progress/quiz`, {
-      data: quiz([{ wordId: WORD_A, isCorrect: false }]),
+      data: quiz([qa(WORD_A, false)]),
     });
 
     const body = await (await ctx.get(`${API}/progress/mistakes`)).json();
@@ -296,16 +310,18 @@ test.describe("mistakes carry their word", () => {
     });
   });
 
-  test("a draft word never appears in the bank", async () => {
+  test("a draft word cannot be graded at all — rejected, not silently ignored", async () => {
     const { ctx } = await asNewUser();
 
-    // word41 is seeded as draft; recording progress against it must not surface it.
-    await ctx.post(`${API}/progress/quiz`, {
-      data: quiz([{ wordId: "e2e-a1-0041", isCorrect: false }]),
+    // word41 is seeded as draft. §8 L2 hardening requires every submitted word to be
+    // published in the requested level/unit, so this now 400s outright rather than
+    // silently accepting the attempt and merely keeping the draft out of the bank.
+    const res = await ctx.post(`${API}/progress/quiz`, {
+      data: quiz([qa("e2e-a1-0041", false)]),
     });
+    expect(res.status()).toBe(400);
 
     const body = await (await ctx.get(`${API}/progress/mistakes`)).json();
-
     expect(body.words.every((w: { wordId: string }) => w.wordId !== "e2e-a1-0041")).toBe(
       true,
     );
@@ -326,7 +342,7 @@ test.describe("summary gamification counters", () => {
     // Four correct answers is mastery 4 — strong, but not yet mastered.
     for (let round = 0; round < 4; round += 1) {
       await ctx.post(`${API}/progress/quiz`, {
-        data: quiz([{ wordId: WORD_A, isCorrect: true }]),
+        data: quiz([qa(WORD_A, true)]),
       });
     }
 
@@ -334,7 +350,7 @@ test.describe("summary gamification counters", () => {
     expect(summary.wordsMastered).toBe(0);
 
     await ctx.post(`${API}/progress/quiz`, {
-      data: quiz([{ wordId: WORD_A, isCorrect: true }]),
+      data: quiz([qa(WORD_A, true)]),
     });
 
     summary = await (await ctx.get(`${API}/progress/summary`)).json();
@@ -346,8 +362,8 @@ test.describe("summary gamification counters", () => {
 
     await ctx.post(`${API}/progress/quiz`, {
       data: quiz([
-        { wordId: WORD_A, isCorrect: false },
-        { wordId: WORD_B, isCorrect: false },
+        qa(WORD_A, false),
+        qa(WORD_B, false),
       ]),
     });
 

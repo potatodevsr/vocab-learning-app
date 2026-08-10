@@ -6,6 +6,23 @@ import { SEED } from "../support/fixtures";
 const WORD_A = "e2e-a1-0001";
 const WORD_B = "e2e-a1-0002";
 
+// e2e seed convention (backend/scripts/generate-e2e-seed.mjs): wordN's meaning is
+// "ความหมายN". §8 L2 fixed `/progress/quiz` to derive correctness from the real word
+// instead of a client-asserted `isCorrect` (backend/src/progress.ts), so these tests now
+// have to submit a real meaning to grade correct — a lesson in exactly the gap the fix
+// closed. `qa` keeps every call site below as small as the old `{ wordId, isCorrect }`
+// literal it replaces.
+const MEANING_OF: Record<string, string> = {
+  [WORD_A]: "ความหมาย1",
+  [WORD_B]: "ความหมาย2",
+};
+
+const qa = (wordId: string, correct: boolean) => ({
+  wordId,
+  type: "meaning-choice" as const,
+  answer: correct ? MEANING_OF[wordId] : "definitely-the-wrong-meaning",
+});
+
 const lessonBody = (overrides: Record<string, unknown> = {}) => ({
   sessionId: `sess-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   level: "A1",
@@ -19,10 +36,7 @@ const quizBody = (overrides: Record<string, unknown> = {}) => ({
   quizId: `quiz-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   level: "A1",
   unit: 1,
-  answers: [
-    { wordId: WORD_A, isCorrect: true, answer: "a", correctAnswer: "a" },
-    { wordId: WORD_B, isCorrect: false, answer: "x", correctAnswer: "b" },
-  ],
+  answers: [qa(WORD_A, true), qa(WORD_B, false)],
   ...overrides,
 });
 
@@ -215,32 +229,56 @@ test.describe("POST /progress/quiz", () => {
     expect(res.status()).toBe(403);
   });
 
-  test("malformed answer entries are dropped", async () => {
-    const { ctx } = await asNewUser();
-
-    const res = await ctx.post(`${API}/progress/quiz`, {
-      data: quizBody({
-        answers: [
-          { wordId: WORD_A, isCorrect: true },
-          { wordId: 5, isCorrect: true },
-          { isCorrect: true },
-          { wordId: WORD_B, isCorrect: "yes" },
-          null,
-        ],
-      }),
+  // A malformed entry is rejected outright rather than silently dropped: a client sending
+  // garbage deserves a 400 telling it so, not a quietly-shorter quiz that could also be
+  // used to make an otherwise-invalid word disappear from validation.
+  for (const [name, answers] of [
+    ["a non-string wordId", [{ wordId: 5, type: "meaning-choice", answer: "x" }]],
+    ["a missing wordId", [{ type: "meaning-choice", answer: "x" }]],
+    ["an unrecognised type", [{ wordId: WORD_B, type: "not-a-real-type", answer: "x" }]],
+    ["a non-string answer", [{ wordId: WORD_B, type: "meaning-choice", answer: 5 }]],
+    ["a null entry", [null]],
+  ] as const) {
+    test(`rejects a batch containing ${name}`, async () => {
+      const { ctx } = await asNewUser();
+      const res = await ctx.post(`${API}/progress/quiz`, {
+        data: quizBody({ answers: [qa(WORD_A, true), ...answers] }),
+      });
+      expect(res.status()).toBe(400);
     });
+  }
 
-    expect(await res.json()).toMatchObject({ score: 1, total: 1 });
+  test("rejects a duplicate wordId within the same submission", async () => {
+    const { ctx } = await asNewUser();
+    const res = await ctx.post(`${API}/progress/quiz`, {
+      data: quizBody({ answers: [qa(WORD_A, true), qa(WORD_A, false)] }),
+    });
+    expect(res.status()).toBe(400);
   });
 
-  test("an empty answer list records a zero-length quiz", async () => {
+  test("rejects a word that is not published in the requested level/unit", async () => {
+    const { ctx } = await asNewUser();
+    const res = await ctx.post(`${API}/progress/quiz`, {
+      data: quizBody({ level: "A1", unit: 2, answers: [qa(WORD_A, true)] }),
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test("rejects a batch over the answer cap", async () => {
+    const { ctx } = await asNewUser();
+    const answers = Array.from({ length: 51 }, () => qa(WORD_A, true));
+    const res = await ctx.post(`${API}/progress/quiz`, { data: quizBody({ answers }) });
+    expect(res.status()).toBe(400);
+  });
+
+  test("an empty answer list is rejected rather than recording a zero-length quiz", async () => {
     const { ctx } = await asNewUser();
 
     const res = await ctx.post(`${API}/progress/quiz`, {
       data: quizBody({ answers: [] }),
     });
 
-    expect(await res.json()).toMatchObject({ score: 0, total: 0 });
+    expect(res.status()).toBe(400);
   });
 
   test("mastery climbs with correct answers and is capped", async () => {
@@ -249,7 +287,7 @@ test.describe("POST /progress/quiz", () => {
     for (let round = 0; round < 7; round += 1) {
       await ctx.post(`${API}/progress/quiz`, {
         data: quizBody({
-          answers: [{ wordId: WORD_A, isCorrect: true }],
+          answers: [qa(WORD_A, true)],
         }),
       });
     }
@@ -265,14 +303,14 @@ test.describe("POST /progress/quiz", () => {
     const { ctx } = await asNewUser();
 
     await ctx.post(`${API}/progress/quiz`, {
-      data: quizBody({ answers: [{ wordId: WORD_A, isCorrect: true }] }),
+      data: quizBody({ answers: [qa(WORD_A, true)] }),
     });
 
     let summary = await (await ctx.get(`${API}/progress/summary`)).json();
     expect(summary.wordsKnown).toBe(1);
 
     await ctx.post(`${API}/progress/quiz`, {
-      data: quizBody({ answers: [{ wordId: WORD_A, isCorrect: false }] }),
+      data: quizBody({ answers: [qa(WORD_A, false)] }),
     });
 
     summary = await (await ctx.get(`${API}/progress/summary`)).json();
@@ -306,15 +344,14 @@ test.describe("GET /progress/summary", () => {
   test("accuracy is a percentage of the recent quizzes", async () => {
     const { ctx } = await asNewUser();
 
+    // One quiz answered right, one answered wrong — 2 of 4 across the recent set is 50%.
+    // A single batch can't carry the same word both right and wrong (duplicate wordIds are
+    // rejected by backend/src/progress.ts), so the two verdicts live in two submissions.
     await ctx.post(`${API}/progress/quiz`, {
-      data: quizBody({
-        answers: [
-          { wordId: WORD_A, isCorrect: true },
-          { wordId: WORD_B, isCorrect: true },
-          { wordId: WORD_A, isCorrect: false },
-          { wordId: WORD_B, isCorrect: false },
-        ],
-      }),
+      data: quizBody({ answers: [qa(WORD_A, true), qa(WORD_B, true)] }),
+    });
+    await ctx.post(`${API}/progress/quiz`, {
+      data: quizBody({ answers: [qa(WORD_A, false), qa(WORD_B, false)] }),
     });
 
     const summary = await (await ctx.get(`${API}/progress/summary`)).json();
@@ -326,7 +363,7 @@ test.describe("GET /progress/summary", () => {
 
     for (let index = 0; index < 6; index += 1) {
       await ctx.post(`${API}/progress/quiz`, {
-        data: quizBody({ answers: [{ wordId: WORD_A, isCorrect: true }] }),
+        data: quizBody({ answers: [qa(WORD_A, true)] }),
       });
     }
 

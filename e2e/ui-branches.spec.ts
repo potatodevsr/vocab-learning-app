@@ -16,73 +16,40 @@ test.describe("learn page branches", () => {
   test("an unknown level falls back to A1", async ({ page }) => {
     await page.goto("/en/learn?level=Z9&unit=1");
 
-    await expect(page.getByText("A1 · Unit 1")).toBeVisible();
+    await expect(page.getByTestId("session-prompt")).toHaveText("word1");
   });
 
   test("a missing level falls back to A1", async ({ page }) => {
     await page.goto("/en/learn");
 
-    await expect(page.getByText("A1 · Unit 1")).toBeVisible();
+    await expect(page.getByTestId("session-prompt")).toHaveText("word1");
   });
 
   test("a zero or negative unit falls back to unit 1", async ({ page }) => {
     await page.goto("/en/learn?level=A1&unit=0");
-    await expect(page.getByText("A1 · Unit 1")).toBeVisible();
+    await expect(page.getByTestId("session-prompt")).toHaveText("word1");
 
     await page.goto("/en/learn?level=A1&unit=-4");
-    await expect(page.getByText("A1 · Unit 1")).toBeVisible();
+    await expect(page.getByTestId("session-prompt")).toHaveText("word1");
   });
 
   test("a non-numeric unit falls back to unit 1", async ({ page }) => {
     await page.goto("/en/learn?level=A1&unit=abc");
 
-    await expect(page.getByText("A1 · Unit 1")).toBeVisible();
+    await expect(page.getByTestId("session-prompt")).toHaveText("word1");
   });
 
   test("a lowercase level is accepted", async ({ page }) => {
     await page.goto("/en/learn?level=a1&unit=2");
 
-    await expect(page.getByText("A1 · Unit 2")).toBeVisible();
+    await expect(page.getByTestId("session-prompt")).toHaveText("word21");
   });
 
-  test("the last card says so instead of listing what is next", async ({
-    page,
-  }) => {
+  test("the mixed session exposes all eight progress slots without leaking answers", async ({ page }) => {
     await page.goto("/en/learn?level=A1&unit=1");
-
-    for (let index = 0; index < SEED.unit1.roundSizes[0] - 1; index += 1) {
-      await page.getByRole("button", { name: "I know this" }).click();
-    }
-
-    await expect(page.getByText("Card 8 of 8")).toBeVisible();
-    await expect(
-      page.getByText("This is the last card in the unit."),
-    ).toBeVisible();
-  });
-
-  test("progress reaches 100% only after the final card", async ({ page }) => {
-    await page.goto("/en/learn?level=A1&unit=1");
-
-    await expect(page.getByTestId("stat-progress")).toHaveText("0%");
-
-    for (let index = 0; index < SEED.unit1.roundSizes[0] - 1; index += 1) {
-      await page.getByRole("button", { name: "I know this" }).click();
-    }
-
-    await expect(page.getByTestId("stat-progress")).toHaveText("87%");
-  });
-
-  test("review-later words are tallied separately from known ones", async ({
-    page,
-  }) => {
-    await page.goto("/en/learn?level=A1&unit=1");
-
-    await page.getByRole("button", { name: "Review later" }).click();
-    await page.getByRole("button", { name: "Review later" }).click();
-    await page.getByRole("button", { name: "I know this" }).click();
-
-    await expect(page.getByTestId("stat-review")).toHaveText("2");
-    await expect(page.getByTestId("stat-known")).toHaveText("1");
+    await expect(page.getByTestId("session-pip")).toHaveCount(8);
+    await expect(page.getByTestId("session-counter")).toHaveText("1 of 8");
+    await expect(page.getByTestId("session-card")).not.toHaveAttribute("data-correct", /.+/);
   });
 });
 

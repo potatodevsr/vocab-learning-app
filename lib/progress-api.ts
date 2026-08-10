@@ -9,11 +9,16 @@ import { API_URL } from "@/constants/config";
  * transactions, so idempotency is the only safety net there is.
  */
 
+/**
+ * What the client reports for one quiz answer: what question type it asked and what the
+ * learner typed/picked — never a verdict. The server looks up the real word and decides
+ * `isCorrect` itself (backend/src/progress.ts); a client-asserted `isCorrect` is no longer
+ * accepted.
+ */
 export type QuizAnswerReport = {
     wordId: string;
-    isCorrect: boolean;
-    answer?: string;
-    correctAnswer?: string;
+    type: "meaning-choice" | "reverse-choice" | "spelling";
+    answer: string;
 };
 
 export type WordProgress = {

@@ -14,7 +14,10 @@ import type { CefrLevel } from "@/lib/types";
  */
 export const dynamic = "force-dynamic";
 
-const STATIC_PATHS = ["", "faq"];
+const STATIC_PATHS = [
+  "", "faq", "english", "english/words", "thai-alphabet", "about",
+  "how-it-works", "privacy", "terms", "contact", "sitemap",
+];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const words = await getAllPublishedWords();
@@ -71,12 +74,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // The level hub only exists for levels that have published content.
     push(`english/${slug}`, 0.8, levelUpdated);
 
+    // Indexed (docs/LEARNER-LIFECYCLE.md §5.1): the level-scoped practice trial is one of
+    // the four public-practice acquisition pages. The unit-scoped trial is deliberately
+    // `noindex, follow` and absent here — see its page metadata.
+    push(`english/${slug}/practice`, 0.75, levelUpdated);
+
     const units = Math.max(Math.ceil(count / UNIT_SIZE), 1);
 
     for (let unit = 1; unit <= units; unit += 1) {
       // One URL per unit, not per round: rounds are a session device, not content.
       push(`english/${slug}/unit/${unit}`, 0.7, levelUpdated);
     }
+  }
+
+  const letters = new Set(
+    words
+      .map((word) => (word.displayWord || word.slug).trim().charAt(0).toLowerCase())
+      .filter((letter) => /^[a-z]$/.test(letter)),
+  );
+  const newestWord = words.reduce<Date | undefined>((latest, word) => {
+    if (!word.updatedAt) return latest;
+    const updated = new Date(word.updatedAt);
+    if (Number.isNaN(updated.getTime())) return latest;
+    return !latest || updated > latest ? updated : latest;
+  }, undefined);
+  for (const letter of [...letters].sort()) {
+    push(`english/words/letter/${letter}`, 0.65, newestWord);
   }
 
   // The long tail: one URL per published word.

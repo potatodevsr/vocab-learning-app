@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { safeReturnPath } from "@/lib/return-path";
 import { verifyMagicLink } from "@/lib/user-api";
 
 export default function VerifyMagicLinkPage() {
@@ -22,8 +23,7 @@ export default function VerifyMagicLinkPage() {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    const requestedFrom = searchParams.get("from");
-    const from = requestedFrom?.startsWith("/") && !requestedFrom.startsWith("//") ? requestedFrom : `/${locale}`;
+    const from = safeReturnPath(searchParams.get("from"), locale);
 
     if (!token) return;
 

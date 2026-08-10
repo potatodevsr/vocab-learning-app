@@ -1,0 +1,1 @@
+export default function Loading() { return <main className="mx-auto min-h-screen max-w-6xl animate-pulse px-6 py-12"><div className="h-12 w-64 rounded-xl bg-muted" /><div className="mt-8 grid gap-6 lg:grid-cols-2"><div className="h-64 rounded-3xl bg-muted" /><div className="h-64 rounded-3xl bg-muted" /></div></main>; }

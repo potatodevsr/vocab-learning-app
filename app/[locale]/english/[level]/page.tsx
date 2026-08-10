@@ -15,6 +15,7 @@ import {
   UNIT_SIZE,
 } from "@/lib/oxford-words";
 import { jsonLd, publicMetadata } from "@/lib/seo";
+import { TrackPageView } from "@/components/track-page-view";
 
 type LessonUnit = {
   id: string;
@@ -60,7 +61,9 @@ const createLessonUnits = (
         firstWord && lastWord
           ? `${firstWord.displayWord} → ${lastWord.displayWord}`
           : `${unitSize} words`,
-      href: `/learn?level=${level}&unit=${number}`,
+      // Public and playable logged out (docs/LEARNER-LIFECYCLE.md §3.1) — `/learn` is
+      // behind auth and was the funnel's highest-leverage acquisition defect.
+      href: `/english/${level.toLowerCase()}/unit/${number}/practice`,
     };
   });
 };
@@ -100,20 +103,16 @@ export async function generateMetadata({
   const total = await getLevelWordCount(level);
   const t = await getTranslations({ locale, namespace: "Level" });
 
-  const isThai = locale === "th";
-
   return publicMetadata({
     locale,
     path: `english/${level.toLowerCase()}`,
-    title: isThai
-      ? `คำศัพท์ภาษาอังกฤษ ${level} — Oxford 3000 ${total} คำ พร้อมคำแปลไทย`
-      : `Oxford 3000 ${level} vocabulary — ${total} English words with Thai meanings`,
+    title: t("metaTitle", { count: total, level }),
     description: t(`blurb${level}`),
   });
 }
 
 export default async function LevelPage({ params }: LevelPageProps) {
-  const { level: raw } = await params;
+  const { locale, level: raw } = await params;
   const level = parseLevel(raw);
 
   if (!level) notFound();
@@ -131,12 +130,13 @@ export default async function LevelPage({ params }: LevelPageProps) {
 
   return (
     <>
+      <TrackPageView family="level" locale={locale} level={level} />
       {/* ItemList: tells Google this page is a curated list, not a landing page. */}
       <script
         {...jsonLd({
           "@context": "https://schema.org",
           "@type": "ItemList",
-          name: `Oxford 3000 ${level} word list`,
+          name: `Oxford 3000 ${level} Thai learning path`,
           numberOfItems: totalWords,
           itemListElement: visibleUnits.map((unit, index) => ({
             "@type": "ListItem",
@@ -219,7 +219,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
                   </h2>
 
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {firstUnit.wordRange}
+                    {t("promptRange", { range: firstUnit.wordRange })}
                   </p>
 
                   <div className="mt-5 flex flex-wrap gap-2">

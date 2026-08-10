@@ -34,8 +34,16 @@ export default function AdminLoginPage() {
         credentials: "include",
         body: JSON.stringify({ username, password }),
       });
-      if (!res.ok) {
+      if (res.status === 401) {
         setError("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+        return;
+      }
+
+      // Anything else is the stack, not the credential. A stopped api Worker reaches the
+      // browser as a 502 from the /api forwarder — never as a thrown fetch — so folding
+      // it into `!res.ok` above reported "wrong password" for a password that was right.
+      if (!res.ok) {
+        setError("เข้าสู่ระบบไม่ได้: ติดต่อ API ไม่สำเร็จ (API ทำงานอยู่ที่ :4000 หรือไม่)");
         return;
       }
       router.push("/admin/dashboard");

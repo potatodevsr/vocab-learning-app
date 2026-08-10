@@ -35,7 +35,8 @@ test.describe("proxy: learner-protected paths", () => {
     await registerThroughUi(page);
 
     await page.goto("/en/learn?level=A1&unit=1");
-    await expect(page.getByText("A1 · Unit 1")).toBeVisible();
+    await expect(page.getByTestId("session-card")).toBeVisible();
+    await expect(page.getByTestId("session-counter")).toHaveText("1 of 8");
   });
 
   test("a tampered learner cookie is not accepted", async ({ page, context }) => {

@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Noto_Sans_Thai } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Thai, Sarabun } from "next/font/google";
 
 import "@/app/globals.css";
 import { privateMetadata } from "@/lib/seo";
@@ -14,6 +14,13 @@ const notoSansThai = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
   subsets: ["thai"],
   weight: ["400", "500", "600", "700"],
+});
+const sarabun = Sarabun({
+  variable: "--font-sarabun",
+  subsets: ["thai", "latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 export const metadata = privateMetadata("Admin");

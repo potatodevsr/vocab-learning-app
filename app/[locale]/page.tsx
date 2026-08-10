@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import {
   ArrowRight,
@@ -10,14 +11,20 @@ import {
 
 import { HeroWordIllustration } from "@/components/hero-word-illustration";
 import { WordTicker } from "@/components/word-ticker";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
 import { jsonLd, publicMetadata, SITE_URL } from "@/lib/seo";
+import { resolveLearnerMode } from "@/lib/learner-mode";
+import { TrackPageView } from "@/components/track-page-view";
+import { getTodaySummaryWithToken } from "@/lib/session-api";
+import { TodayCard } from "@/components/play/today-card";
 
 const a1WordsHref = "/english/a1";
-const learnHref = "/learn?level=A1&unit=1";
+// A visitor's first CTA must be playable with no account
+// (docs/LEARNER-LIFECYCLE.md §0, §3.1) — `/learn` is behind auth and was the highest-
+// leverage acquisition defect the funnel audit found.
+const practiceHref = "/english/a1/practice";
 
 /** Copy lives in `messages/*.json`; the tile keeps its colour and the ink that
     colour can carry — grape is dark enough to need white, the rest take ink. */
@@ -45,11 +52,29 @@ export async function generateMetadata({
   });
 }
 
-export default async function Home() {
+export default async function Home({ params }: HomeProps) {
+  const { locale } = await params;
+
+  // §8 L2 gate: "a logged-in request to `/` resolves to the lifecycle state's CTA rather
+  // than the marketing page." proxy.ts does not gate `/`, so the branch happens here.
+  const token = (await cookies()).get("user_token")?.value;
+  const summary = token ? await getTodaySummaryWithToken(token) : null;
+
+  if (summary) {
+    return (
+      <>
+        <TrackPageView family="home" locale={locale} />
+        <TodayCard summary={summary} />
+      </>
+    );
+  }
+
   const t = await getTranslations("Home");
+  const mode = resolveLearnerMode(locale);
 
   return (
     <>
+      <TrackPageView family="home" locale={locale} />
       {/* WebSite + EducationalOrganization: brand identity and sitelinks (SPEC §9.4). */}
       <script
         {...jsonLd({
@@ -102,7 +127,7 @@ export default async function Home() {
                 variant="outline"
                 className="play-key h-14 rounded-2xl border-white bg-transparent px-7 text-base font-extrabold text-white hover:bg-white/15 hover:text-white"
               >
-                <Link href={learnHref}>{t("howLearningWorks")}</Link>
+                <Link href={practiceHref} data-testid="home-practice-cta">{t("howLearningWorks")}</Link>
               </Button>
             </div>
 
@@ -129,7 +154,7 @@ export default async function Home() {
             </dl>
           </div>
 
-          <HeroWordIllustration />
+          <HeroWordIllustration mode={mode} />
         </div>
       </section>
 
@@ -237,7 +262,7 @@ export default async function Home() {
             size="lg"
             className="play-key mt-12 h-14 rounded-2xl bg-brand px-7 text-base font-extrabold text-white hover:bg-brand"
           >
-            <Link href={learnHref}>
+            <Link href={practiceHref} data-testid="home-practice-cta-bottom">
               {t("flowCta")}
               <ArrowRight className="size-5" />
             </Link>

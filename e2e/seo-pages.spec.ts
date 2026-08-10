@@ -269,9 +269,13 @@ test.describe("the sitemap only advertises pages that exist", () => {
     expect(english.length).toBeGreaterThan(5);
 
     // A status check does not need a rendered page, and there are ~45 URLs here.
-    const results = await Promise.all(
-      english.map(async (url) => ({ url, status: (await request.get(url)).status() })),
-    );
+    const results: { url: string; status: number }[] = [];
+    // The sitemap now contains hundreds of word and letter URLs. Sending all of them at
+    // once overloads the single local Worker and measures connection pressure as fake
+    // 500s. Sequential requests still verify every URL without turning the test into a DoS.
+    for (const url of english) {
+      results.push({ url, status: (await request.get(url)).status() });
+    }
 
     const broken = results.filter((result) => result.status !== 200);
 

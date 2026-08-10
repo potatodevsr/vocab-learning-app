@@ -6,6 +6,10 @@ This is the source of truth for *what we are building* and *how it is put togeth
 `AGENTS.md` (rules for anyone writing code here) points at this file. If code and this
 document disagree, one of them is a bug — say which.
 
+The end-to-end acquisition, activation, retention and course-completion journey is specified
+in [`LEARNER-LIFECYCLE.md`](LEARNER-LIFECYCLE.md). The SEO URL inventory and its content
+quality gates live in [`SEO-CONTENT.md`](SEO-CONTENT.md).
+
 ---
 
 ## 1. Goal
@@ -19,6 +23,14 @@ The product is not a dictionary and not a word list. It is a **daily habit loop*
 
 Everything in this spec exists to serve that loop. A feature that does not increase
 day-2 retention is not MVP.
+
+**[`LEARNER-LIFECYCLE.md`](LEARNER-LIFECYCLE.md) is the authority on that loop as a lived sequence** — arrival
+from search, the un-gated trial, the conversion moment, onboarding, the session beat sheet,
+the milestone ladder, and what "finished all 3,298 words" means. It amends §6 (UX
+direction) and §5.4.7 (gamification build order) with an acquisition phase that precedes
+both, and it answers open questions 4 and 7 below. Its §0 records the defect that governs
+everything else: `middleware.ts` gates `/learn` and `/quiz`, and every public CTA points at
+them, so no visitor can answer a single question without an account.
 
 **Primary user:** Thai learner, mobile, low English confidence, 5–10 min/day.
 **Secondary user:** content admin curating Thai meanings/pronunciation/examples.
@@ -334,6 +346,35 @@ Course (level: A1..B2, locale pair en→th)
 `VocabWord` stays as-is (it is well modelled) plus: `audioKeyEn`, `audioKeyExample`,
 `ipa`, `exampleEn`, `exampleTh` actually populated.
 
+**One row per headword, but not always one lesson.** `partOfSpeech` is a comma-separated
+list for 260 of the 3,295 seeded words — `across` is `"prep., adv."` — because the import
+merges the CSV's one-row-per-(word, part of speech) into one row per word. The senses do
+not merge with them: *ข้ามจากฝั่งหนึ่งไปอีกฝั่งหนึ่ง* ("she walked across the street") and
+*อยู่ฝั่งตรงข้าม* ("the shop is across the street") are two things to learn, and a single
+`exampleEn` can only carry one. `posUsages` holds the rest, as JSON:
+
+```json
+[{ "pos": "prep.", "meaningTh": "…", "exampleEn": "…", "exampleTh": "…" }]
+```
+
+One entry per part of speech, in the order `partOfSpeech` lists them. JSON rather than a
+child table because it is never queried or joined on — the admin form writes it whole and
+the word page reads it whole. Entry 0 is mirrored into `exampleEn`/`exampleTh` on save, so
+unit cards and page metadata, which know nothing about parts of speech, keep working.
+`lib/pos.ts` owns the parsing, the alignment (blocks follow their part of speech when
+`partOfSpeech` is corrected under them) and the names — `Pos.*` in `messages/*.json` for
+learners, the same strings inline for the un-localised admin screen, with
+`e2e/unit/pos.spec.ts` holding the two together.
+
+**Two pronunciation fields, pointing opposite ways.** `pronunciationTh` writes the
+*English* word in Thai script for a Thai learner (`about` → `เออะ บ๊าว ถึ`).
+`meaningThReading` / `meaningThRoman` do the reverse for someone learning Thai off the
+back of English: how `meaningTh` itself is said, in Thai (`วัฒนธรรม` → `วัด-ทะ-นะ-ทำ`)
+and in Latin script (`Wat-tha-na-tham`). They are separate columns rather than one string
+so each can be styled, searched and eventually spoken on its own. Both are admin-editable;
+the pair surfaces on the word page for `/en` only — a Thai reader already knows how
+`วัฒนธรรม` sounds.
+
 ### 5.2 Guard shapes — the security model
 
 Every generated operation gets a shape. No `enableAll`. `updateEach` stays disabled (the
@@ -420,8 +461,8 @@ Mechanics are chosen for a reason, and the reason belongs in the spec. A feature
 not serve one of these is decoration:
 
 1. **A session must be short, bounded, and finishable.** The current lesson (20 cards) plus
-   quiz (10 questions) is a 6–8 minute commitment before any reward lands. Duolingo lessons
-   are 7–10 items precisely so "I have three minutes" is enough to say yes. **Shortening
+   quiz (10 questions) is a 6–8 minute commitment before any reward lands. The target is one
+   8-item mixed session so "I have three minutes" is enough to say yes. **Shortening
    the session is worth more than any new mechanic** — it changes how often the loop can
    start at all.
 2. **Loss aversion beats reward.** Streaks work because losing 43 days hurts, not because
@@ -429,8 +470,10 @@ not serve one of these is decoration:
    thing you fear losing retains better than the streak alone.
 3. **Variable reward beats fixed reward.** Fixed XP per answer becomes wallpaper. A chest
    that *might* be big keeps attention. Use deliberately, not everywhere.
-4. **Progress must move inside a session, not only at the end.** Per-word mastery pips that
-   visibly fill mid-lesson beat a single end-of-lesson total.
+4. **Progress must move inside a session, not only at the end.** The lesson progress bar
+   moves after every card. Per-word mastery remains persisted, but unexplained dots do not
+   belong above the word; show mastery where it can be named and understood (summary,
+   collection, or word details).
 5. **Difficulty belongs in the flow channel.** The SRS data is the dial: mix due + new, and
    when session accuracy drops below ~60%, inject known words to rebuild confidence.
 6. **Collection is the most underused mechanic for a vocabulary app.** The learner is
@@ -441,8 +484,8 @@ not serve one of these is decoration:
 
 | Mechanic | Principle | Effort | Notes |
 | --- | --- | --- | --- |
-| Shorter sessions (7–10 items, learn + quiz interleaved) | 1 | S | No schema change. Highest single lever |
-| Word mastery pips (new → learning → strong → mastered) | 4, 6 | S | `UserWordProgress.mastery` already written |
+| Shorter sessions (8 items, learn + quiz interleaved) | 1 | S | Matches `SESSION_SIZE`; no schema change. Highest single lever |
+| Named word mastery (new → learning → strong → mastered) | 4, 6 | S | `UserWordProgress.mastery` already written; never render it as unexplained dots on a lesson card |
 | Oxford 3000 completion meter | 6 | S | One count query; unique to this product |
 | Mistakes bank ("practice your 12 slip-ups") | 5 | S | Every wrong `UserWordAttempt` is already stored |
 | Combo multiplier within a session | 4 | S | Makes the quiz *feel* different for ~20 lines |
@@ -554,6 +597,10 @@ API with immutable cache headers. Publishing a word without audio is blocked.
 
 ## 6. UX direction
 
+> Stage-by-stage flow, timings, copy and micro-detail live in
+> [`LEARNER-LIFECYCLE.md`](LEARNER-LIFECYCLE.md) §2–§6. This section stays the authority on the *shell and the
+> visual system*; that document is the authority on *what happens in what order*.
+
 The current UI is a well-made **marketing site** wearing a learning app's clothes:
 `min-h-screen` hero sections, `lg:grid-cols-[1.05fr_0.95fr]`, prose paragraphs about the
 product, and a floating `fixed top-4 right-4` navbar that collides with the page's own
@@ -578,7 +625,62 @@ Target:
   navbar dropdown, and every admin screen.
 - **Never a dead end:** `/progress` and `/profile` either exist or are not linked.
 
-### 6.1 Visual direction — bright, playful, and built to a craft bar
+### 6.1 Lesson comprehension and language direction
+
+The same content can support two directions, but the interface must never make the learner
+decode instructions in the language they are trying to learn.
+
+- `english` means a Thai speaker learning English and uses the Thai (`/th`) interface.
+  `thai` means an English speaker learning Thai and uses the English (`/en`) interface.
+  A state such as `/th` + “learn Thai” is invalid.
+- Learning direction is chosen at app entry/onboarding and may later live in profile settings.
+  It is never rendered on a word card, quiz question, or other session surface: course choice
+  is not a decision learners should be prompted to revisit every few minutes.
+- Every pre-session surface must advertise the same direction it launches. English UI says
+  “learn Thai through familiar Oxford 3000 English prompts”; Thai UI says “learn English
+  with Thai meanings.” CEFR labels describe the English prompt set, never Thai proficiency.
+- The studied language is always the largest text on the card. Audio or character controls
+  highlight that large hero word, never a smaller duplicate in a metadata panel.
+- In Thai-learning mode, the smaller English source word is visibly labelled as the
+  `English prompt`. Do not repeat the large Thai answer in a second “Thai meaning” panel;
+  the space below it is for new information such as its syllable reading and romanisation.
+- Character controls sit under a plain-language heading and one-sentence instruction. They
+  are learning controls, not decoration: targets are at least 48px, show a readable Thai
+  character and name, and identify the matching cluster in the hero word when pressed.
+- Example sentences show the studied-language sentence first and its translation directly
+  below. Both lines carry visible `Thai` / `English` labels; script alone is not sufficient
+  orientation for a beginner. A missing example uses the interface language.
+- One top progress bar is the session progress signal. Do not repeat progress, known/review
+  tallies, or upcoming-word previews in a desktop sidebar. Known/review totals belong on the
+  completion screen, where they answer a learner question instead of adding dashboard noise.
+- At a 1440×900 desktop viewport, the complete active card and both decision buttons fit
+  without vertical scrolling. Use two functional columns—word/reading on the left and
+  letter practice/example on the right—instead of shrinking learning text to achieve this.
+- The lesson's hard offset shadow belongs to the outer card. The inner content panel has no
+  outline or second shadow; nested outlines make the content look like an accidental card
+  inside a card.
+
+### 6.2 Thai typography is curriculum
+
+Thai learners must recognize both traditional **looped** book forms and modern **loopless**
+display/advertising forms. These are not interchangeable decoration for a beginner.
+
+- Thai teaching text defaults to the looped book face `Angsana New`. This includes the large
+  hero word, meanings, readings, examples, and individual-letter controls.
+- The global font stack uses a Thai-only Unicode-ranged local face so Thai glyphs request
+  `Angsana New` even inside mixed-language copy while Latin remains Geist. Until a licensed
+  webfont is committed, devices without Angsana New fall back to Noto Sans Thai; do not
+  claim pixel-identical typography across devices without that font asset.
+- When learning Thai, the hero word has an explicit, tappable `Book font` / `Modern font`
+  comparison. The book form is Angsana New and the intentional modern comparison uses
+  `Noto Sans Thai`. It must work on touch; hover may
+  supplement the control but may never be the only way to see the second form.
+- The text and its Unicode characters do not change when the font changes. The control is a
+  visual recognition aid, not a spelling variant, transliteration, or content field.
+- The book form is selected on every new lesson. Switching cards may preserve the learner's
+  comparison choice within that mounted session, but it does not change the global default.
+
+### 6.3 Visual direction — bright, playful, and built to a craft bar
 
 The audience skews young and studies after school or work. The current palette — near-black
 backgrounds, zinc greys, one pink accent — reads as a developer-tool landing page. **A tired
@@ -698,6 +800,12 @@ fill, keep a multi-week streak, and place in a pacer league.
 **P5 — UX rebuild.** Mobile-first shell, bottom nav, session immersion, `th` default,
 zero hardcoded strings, keyboard support.
 
+> **Sequenced by [`LEARNER-LIFECYCLE.md`](LEARNER-LIFECYCLE.md) §8.** P4's mechanics assume a learner who has
+> already signed up, and today nobody can reach a question without doing so. The journey
+> phases **L0 (measurement) → L1 (acquisition and activation) → L2
+> (daily loop)** come *before* the later P4 reward layers, and L2 subsumes P4's "short sessions"
+> item. P4 then resumes at mastery pips and the XP ledger.
+
 **P6 — Production. 🟡 partly done.** The e2e suite has landed: 309 tests over the real
 stack (Next build + Hono Worker + D1), plus an export-reachability audit
 (`pnpm test:coverage-audit`) and `docs/TEST-COVERAGE.md` mapping every handler and branch
@@ -721,16 +829,22 @@ league against labelled pacers. On Cloudflare. With no endpoint that leaks a pas
    all.
 2. Free-tier limits: is there a paid tier at all, and does it remove hearts?
 3. Do we keep `en` as a UI locale, or is the app Thai-only with English as content?
-4. Placement test at signup, or does everyone start at A1 Unit 1?
+4. ~~Placement test at signup, or does everyone start at A1 Unit 1?~~ **Answered by
+   [`LEARNER-LIFECYCLE.md`](LEARNER-LIFECYCLE.md) §3.4: neither.** Starting level is inferred from the page the
+   learner arrived on and refined by trial accuracy; the placement test becomes a *public
+   page* (`/english/test`, SEO family O) that doubles as a top-of-funnel search surface and
+   as the permanent skip-ahead mechanism. A test inside the signup flow is another wall.
 5. **Which dataset is canonical** — `oxford-3000` (the JSON seed, matches the current
    `sourceKey` scheme and the DB) or `oxford-3000-american` (the CSV, where 94% of the Thai
    work already lives)? They do not join. My read: take the CSV's content, keep the JSON's
    key scheme, and write a one-off reconciliation by `word` + `partOfSpeech`.
 6. Who proofreads Thai? De-spacing is done; character-level accuracy is not verified.
-7. **Timezone source** — ask at signup, or take the browser's
-   `Intl.DateTimeFormat().resolvedOptions().timeZone` and let the learner change it?
-   Streaks are wrong without it, and unfairly so: a mis-set timezone breaks a streak the
-   learner actually earned. **Blocks §5.4.3.**
+7. ~~**Timezone source** — ask at signup, or take the browser's value?~~ **Answered by
+   [`LEARNER-LIFECYCLE.md`](LEARNER-LIFECYCLE.md) §3.4: take `Intl.DateTimeFormat().resolvedOptions().timeZone`
+   silently at registration, never ask, always editable in profile.** Re-checked (not
+   re-written) on each session complete; a drift of more than ±3h prompts once. Signup asks
+   for email and password only — every extra field costs conversion, and this one has a
+   correct default. No longer blocks §5.4.3.
 8. **Week start — ISO Monday, or Sunday?** Common Thai usage leans Sunday. This
    permanently defines "this week", so changing it later means migrating every recorded
    week. **Blocks §5.4.3.**
@@ -786,7 +900,7 @@ declares which side of that line it is on — there is no default.
 - **`alternates.languages`** (hreflang) linking `en` ↔ `th` ↔ `x-default`. next-intl gives
   us the locale; the pairing has to be declared explicitly.
 - OpenGraph + Twitter cards. OG images are generated with `ImageResponse` (word + Thai
-  meaning on the brand gradient) — no design tool in the loop, and it reuses §6.1 tokens.
+  meaning on the brand gradient) — no design tool in the loop, and it reuses §6.3 tokens.
 - `metadataBase` set once so relative OG URLs resolve.
 
 ### 9.4 Structured data (JSON-LD)

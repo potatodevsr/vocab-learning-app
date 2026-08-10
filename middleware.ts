@@ -12,6 +12,14 @@ const intlMiddleware = createMiddleware(routing);
 const PROTECTED_USER_PATHS = ["/learn", "/quiz", "/profile"];
 
 /**
+ * The unit checkpoint is a private graded gate (`docs/LEARNER-LIFECYCLE.md` §3.8) nested
+ * under the public unit page, so a flat prefix cannot express it. Its entry point is only
+ * shown to signed-in learners, but a directly-typed URL must land on login, not on an
+ * immersive shell it will only 401 out of.
+ */
+const CHECKPOINT_PATH = /^\/(en|th)\/english\/[^/]+\/unit\/[^/]+\/checkpoint(\/|$)/;
+
+/**
  * The API signs both cookies with this one secret, so a valid signature proves only that
  * *some* token was issued — not which kind. The `role` claim is what separates them.
  * Without that check a learner could copy their `user_token` into an `admin_token` cookie
@@ -56,9 +64,11 @@ export default async function proxy(request: NextRequest) {
         return NextResponse.next();
     }
 
-    const isProtected = PROTECTED_USER_PATHS.some((path) =>
-        pathname.match(new RegExp(`^/(en|th)${path}`)),
-    );
+    const isProtected =
+        CHECKPOINT_PATH.test(pathname) ||
+        PROTECTED_USER_PATHS.some((path) =>
+            pathname.match(new RegExp(`^/(en|th)${path}`)),
+        );
 
     if (isProtected) {
         const isUser = await hasRole(

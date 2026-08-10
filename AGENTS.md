@@ -12,6 +12,10 @@ Specifically for this repo: middleware is now `proxy.ts` (Next 16 rename), `para
 Duolingo-style English vocabulary app for Thai speakers, built on the Oxford 3000.
 **Read [`docs/SPEC.md`](docs/SPEC.md) before planning any non-trivial change** — it defines
 the goal, the architecture, the current known-broken list, and the roadmap.
+For anything touching the learner's path — landing, signup, onboarding, a session, a
+milestone — also read [`docs/LEARNER-LIFECYCLE.md`](docs/LEARNER-LIFECYCLE.md), which owns
+the flow from first arrival to Oxford 3000 complete.
+For anything adding a page, read [`docs/SEO-CONTENT.md`](docs/SEO-CONTENT.md).
 
 This repo is the **web** Worker. The API lives in the `backend/` git submodule
 (`potatodevsr/vocab-backend`) and deploys as its own Worker.
@@ -46,7 +50,7 @@ in R2. Details and reasoning: `docs/SPEC.md` §2–3.
 8. **Colour comes in two tiers, and the tier decides what may be written on it.** White
    text belongs on `--brand`, `--success`, `--danger`, `--accent-grape`, `--accent-deep-sky`;
    the bright hues (`--warn`, `--accent-sun/mint/sky`) carry `--ink` text only. Chips on a
-   coloured band are solid, never `bg-white/25` — see `docs/SPEC.md` §6.1.
+   coloured band are solid, never `bg-white/25` — see `docs/SPEC.md` §6.3.
 9. **Fetch by unit, never by level.** The API caps a single read (guard `take.max`), so
    "fetch the level and slice locally" silently truncates a 900-word level to the first
    page. Use `getWordsByUnit` / `getLevelWordCount` from `lib/oxford-words.ts`.

@@ -12,7 +12,7 @@
     "start": "next start",
     "lint": "eslint",
     "extract:oxford": "tsx scripts/extract-oxford-3000.ts",
-    "gen:api-types": "openapi-typescript ${API_ORIGIN:-http://localhost:4000}/auth/openapi.json -o lib/api-types.ts",
+    "gen:api-types": "openapi-typescript ${API_ORIGIN:-http://localhost:4000}/openapi.json -o lib/api-types.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:cypress": "node cypress/scripts/run-full-stack.mjs",

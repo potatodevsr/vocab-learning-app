@@ -86,9 +86,8 @@ export function QuizSession({
       unit,
       answers: results.map((result) => ({
         wordId: result.wordId,
-        isCorrect: result.isCorrect,
+        type: result.type,
         answer: result.userAnswer,
-        correctAnswer: result.correctAnswer,
       })),
     });
   }, [isComplete, results, level, unit]);

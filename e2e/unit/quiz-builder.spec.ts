@@ -21,9 +21,13 @@ const makeWord = (index: number, overrides: Partial<OxfordWord> = {}): OxfordWor
   partOfSpeech: "noun",
   meaningTh: `ความหมาย${index}`,
   pronunciationTh: `คำอ่าน${index}`,
+  meaningThReading: `ความ-หมาย-${index}`,
+  meaningThRoman: `khwam-mai-${index}`,
   ipa: "",
   exampleEn: "",
   exampleTh: "",
+  posUsages: "[]",
+  letterBreakdown: "",
   status: "published",
   ...overrides,
 });

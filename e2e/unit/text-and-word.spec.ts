@@ -17,9 +17,13 @@ const word = (overrides: Partial<OxfordWord> = {}): OxfordWord => ({
   partOfSpeech: "verb",
   meaningTh: "วิ่ง",
   pronunciationTh: "รัน",
+  meaningThReading: "วิ่ง",
+  meaningThRoman: "wing",
   ipa: "rʌn",
   exampleEn: "I run.",
   exampleTh: "ฉันวิ่ง",
+  posUsages: "[]",
+  letterBreakdown: "",
   status: "published",
   ...overrides,
 });

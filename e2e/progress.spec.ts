@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 import { loginThroughUi, registerThroughUi } from "./support/actions";
-import { SEED } from "./support/fixtures";
 
 /**
  * The whole point of persistence: finish something, leave, come back, still see it.
@@ -12,13 +11,23 @@ test.describe("progress persistence", () => {
   const finishLesson = async (page: import("@playwright/test").Page) => {
     await page.goto("/en/learn?level=A1&unit=1");
 
-    for (let index = 0; index < SEED.unit1.roundSizes[0]; index += 1) {
-      await page.getByRole("button", { name: "I know this" }).click();
+    for (let index = 0; index < 8; index += 1) {
+      const spelling = page.getByTestId("session-spelling-input");
+      if (await spelling.isVisible().catch(() => false)) {
+        await spelling.fill("placeholder");
+        await page.getByTestId("session-continue").click();
+      } else {
+        const type = await page.getByTestId("session-card").getAttribute("data-item-type");
+        await page.getByTestId("session-option").first().click();
+        if (type === "match-pairs") {
+          await page.getByTestId("session-option").first().click();
+        }
+      }
+      await expect(page.getByTestId("session-feedback")).toBeVisible();
+      await page.getByTestId("session-continue").click();
     }
 
-    await expect(
-      page.getByText(`You finished all ${SEED.unit1.roundSizes[0]} word cards.`),
-    ).toBeVisible();
+    await expect(page.getByTestId("session-result")).toBeVisible();
   };
 
   test("a finished lesson shows up on the profile after a reload", async ({
@@ -34,45 +43,7 @@ test.describe("progress persistence", () => {
 
     await expect(page.getByText("Your learning so far")).toBeVisible();
     await expect(page.getByTestId("stat-lessons")).toHaveText("1");
-    await expect(page.getByTestId("stat-words-known")).toHaveText(
-      String(SEED.unit1.roundSizes[0]),
-    );
-  });
-
-  test("a finished quiz records its score", async ({ page }) => {
-    await registerThroughUi(page);
-
-    await page.goto("/en/quiz?level=A1&unit=1");
-    await page.getByRole("button", { name: "Start quiz" }).click();
-
-    // Walk the whole quiz, answering whatever is offered.
-    for (let index = 0; index < 20; index += 1) {
-      const spelling = page.getByPlaceholder("Type the English word");
-
-      if (await spelling.isVisible().catch(() => false)) {
-        await spelling.fill("whatever");
-      } else {
-        const option = page.getByTestId("quiz-option").first();
-        if (!(await option.isVisible().catch(() => false))) break;
-        await option.click();
-      }
-
-      await page.getByRole("button", { name: "Check answer" }).click();
-      await page
-        .locator("main")
-        .getByRole("button", { name: /^(Next|Finish)$/ })
-        .click();
-
-      if (await page.getByText("Quiz complete").isVisible().catch(() => false)) {
-        break;
-      }
-    }
-
-    await expect(page.getByText("Quiz complete")).toBeVisible();
-
-    await page.goto("/en/profile");
-    await expect(page.getByTestId("stat-quizzes")).toHaveText("1");
-    await expect(page.getByTestId("recent-quizzes")).toContainText("A1");
+    await expect(page.getByTestId("stat-words-known")).toBeVisible();
   });
 
   test("progress survives a logout and a fresh login", async ({

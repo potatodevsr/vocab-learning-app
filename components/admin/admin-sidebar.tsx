@@ -17,6 +17,7 @@ import {
   BookOpen,
   Users,
   LayoutDashboard,
+  Languages,
   LogOut,
   GraduationCap,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
     items: [
       { label: "ภาพรวม", href: "/admin/dashboard", icon: LayoutDashboard },
       { label: "คำศัพท์", href: "/admin/vocabulary", icon: BookOpen },
+      { label: "ตัวอักษรไทย", href: "/admin/letters", icon: Languages },
     ],
   },
   {

@@ -195,6 +195,19 @@ const expectValidHeroPhase = (phase: HeroPhase) => {
   );
 };
 
+const answerMixedItem = async (page: Page) => {
+  const spelling = page.getByTestId("session-spelling-input");
+  if (await spelling.isVisible().catch(() => false)) {
+    await spelling.fill("placeholder");
+    await page.getByTestId("session-continue").click();
+  } else {
+    const type = await page.getByTestId("session-card").getAttribute("data-item-type");
+    await page.getByTestId("session-option").first().click();
+    if (type === "match-pairs") await page.getByTestId("session-option").first().click();
+  }
+  await expect(page.getByTestId("session-feedback")).toBeVisible();
+};
+
 test.describe("the play palette", () => {
   test("magic-link recovery stays inside a 390px viewport", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -581,7 +594,8 @@ test.describe("motion respects the learner", () => {
     await page.goto("/en/learn?level=A1&unit=1");
 
     for (let index = 0; index < 8; index += 1) {
-      await page.getByTestId("i-know-this").click();
+      await answerMixedItem(page);
+      await page.getByTestId("session-continue").click();
     }
 
     // The element may exist, but nothing may animate or paint.
@@ -602,7 +616,8 @@ test.describe("motion respects the learner", () => {
     await page.goto("/en/learn?level=A1&unit=1");
 
     const animation = await page
-      .getByTestId("i-know-this")
+      .getByTestId("session-option")
+      .first()
       .evaluate((el) => getComputedStyle(el).transitionDuration);
 
     expect(["0s", "0s, 0s, 0s"]).toContain(animation);
@@ -645,15 +660,11 @@ test.describe("interaction states are designed", () => {
     await registerThroughUi(page);
     await page.goto("/en/learn?level=A1&unit=1");
 
-    // The pips render only once the client-side progress fetch resolves, which means the
-    // streamed tree has settled. Focusing before that is a race: the button takes focus,
-    // React swaps the subtree in, and `document.activeElement` falls back to <body> —
-    // which reads as "focus is not designed" when the real cause is timing.
-    await expect(page.getByTestId("mastery-pips")).toBeVisible();
+    await expect(page.getByTestId("session-option").first()).toBeVisible();
 
     // Focus the neighbour, then Tab: that makes the next focus keyboard-initiated,
     // which is the condition :focus-visible actually tests for.
-    await page.getByTestId("review-later").focus();
+    await page.getByTestId("session-option").first().focus();
     await page.keyboard.press("Tab");
 
     const focused = await page.evaluate(() => {
@@ -675,8 +686,10 @@ test.describe("interaction states are designed", () => {
     await registerThroughUi(page);
     await page.goto("/en/learn?level=A1&unit=1");
 
-    await expect(page.getByTestId("i-know-this").locator("svg")).toBeVisible();
-    await expect(page.getByTestId("review-later").locator("svg")).toBeVisible();
+    await page.getByTestId("session-option").first().click();
+    const feedback = page.getByTestId("session-feedback");
+    await expect(feedback).toBeVisible();
+    await expect(feedback.locator("svg")).toBeVisible();
   });
 });
 
@@ -698,7 +711,7 @@ test.describe("mobile-first", () => {
     await registerThroughUi(page);
     await page.goto("/en/learn?level=A1&unit=1");
 
-    const button = page.getByTestId("i-know-this");
+    const button = page.getByTestId("session-option").first();
 
     // Wait for the card to settle: boundingBox() is null while the route is still
     // showing its loading state, which reads as a 0px button rather than a slow one.

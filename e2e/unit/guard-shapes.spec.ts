@@ -79,6 +79,43 @@ test.describe("guard shape contents", () => {
     }
   });
 
+  test("the admin list can be ordered the way a learner meets the words", () => {
+    // level → unit → sourceOrder. Without level and unit the only available ordering is
+    // the Oxford list's global alphabetical one, which interleaves all four levels.
+    for (const key of ["level", "unit", "sourceOrder"]) {
+      expect(VOCAB_WORD_SHAPES.admin.orderBy).toHaveProperty(key);
+    }
+  });
+
+  test("public reads accept every ordering the admin client sends", () => {
+    // `lib/admin-api.ts` is one client used by both an admin and an anonymous caller, so
+    // an ordering only the admin shape allows does not degrade for the public one — it
+    // 400s and the call throws. Ordering keys must therefore be a superset here.
+    for (const key of ["level", "unit", "sourceOrder"]) {
+      expect(VOCAB_WORD_SHAPES.public.orderBy).toHaveProperty(key);
+    }
+  });
+
+  test("curator notes are admin-only and never in a public read", () => {
+    // `notes` is a scratchpad for whoever curates the Thai, not learner copy.
+    expect(VOCAB_WORD_SHAPES.public.select).not.toHaveProperty("notes");
+    expect(VOCAB_WORD_SHAPES.admin.select).toHaveProperty("notes");
+  });
+
+  test("everything an admin may write, an admin gets back", () => {
+    // The admin table swaps its row for whatever `update` returns, so a field that is
+    // writable but missing from the response blanks its own cell on save — which is
+    // exactly what `notes` used to do.
+    const writable = Object.keys(VOCAB_WORD_UPDATE_SHAPE.admin.data);
+    const returned = Object.keys(VOCAB_WORD_UPDATE_SHAPE.admin.select);
+
+    for (const field of writable) {
+      expect(returned, `${field} is writable but not returned`).toContain(
+        field,
+      );
+    }
+  });
+
   test("the update shape targets a unique id, not an operator object", () => {
     expect(VOCAB_WORD_UPDATE_SHAPE.admin.where).toEqual({ id: true });
   });
@@ -89,9 +126,13 @@ test.describe("guard shape contents", () => {
     expect(writable).toEqual([
       "meaningTh",
       "pronunciationTh",
+      "meaningThReading",
+      "meaningThRoman",
       "ipa",
       "exampleEn",
       "exampleTh",
+      "posUsages",
+      "letterBreakdown",
       "notes",
       "status",
     ]);

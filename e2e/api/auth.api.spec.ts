@@ -430,6 +430,22 @@ test.describe("GET /user/me", () => {
 
     expect(res.status()).toBe(401);
   });
+
+  test("a stale same-name localhost cookie cannot mask the fresh learner session", async () => {
+    const { ctx, user } = await asNewUser();
+    const token = await cookieValue(ctx, "user_token");
+    expect(token).toBeTruthy();
+
+    // Cookies are scoped by host rather than port. A Domain=localhost cookie from a
+    // different local app can therefore arrive beside this app's fresh host-only cookie.
+    const replay = await newApiContext();
+    const res = await replay.get(`${API}/user/me`, {
+      headers: { Cookie: `user_token=stale-other-app-token; user_token=${token}` },
+    });
+
+    expect(res.status()).toBe(200);
+    expect((await res.json()).email).toBe(user.email);
+  });
 });
 
 test.describe("POST /user/logout", () => {

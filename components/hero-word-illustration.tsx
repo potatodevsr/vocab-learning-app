@@ -2,6 +2,7 @@ import { Check, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Badge } from "@/components/ui/badge";
+import type { LearnerMode } from "@/lib/learner-mode";
 
 const cards = [
   {
@@ -9,6 +10,7 @@ const cards = [
     level: "A2",
     pronunciation: "อิม-พรูฟ",
     meaning: "พัฒนา / ทำให้ดีขึ้น",
+    thaiReading: "พัด-ทะ-นา",
     example: "She wants to improve her English every day.",
     delay: "0s",
   },
@@ -17,6 +19,7 @@ const cards = [
     level: "A1",
     pronunciation: "คัล-เชอร์",
     meaning: "วัฒนธรรม",
+    thaiReading: "วัด-ทะ-นะ-ทำ",
     example: "Food is part of Thai culture.",
     delay: "-4s",
   },
@@ -25,12 +28,13 @@ const cards = [
     level: "A2",
     pronunciation: "อะ-ชีฟ",
     meaning: "บรรลุ / ทำสำเร็จ",
+    thaiReading: "บัน-ลุ",
     example: "You can achieve your goal with practice.",
     delay: "-8s",
   },
 ];
 
-export function HeroWordIllustration() {
+export function HeroWordIllustration({ mode }: { mode: LearnerMode }) {
   const t = useTranslations("Home");
 
   return (
@@ -39,7 +43,7 @@ export function HeroWordIllustration() {
     <div
       aria-hidden
       data-testid="hero-word-illustration"
-      className="relative isolate mx-auto h-[460px] w-full max-w-[460px]"
+      className="relative isolate mx-auto h-[520px] w-full max-w-[460px]"
     >
       {/*
         A solid sun panel, not a 30% wash of it over the blue hero: the wash read as
@@ -78,23 +82,29 @@ export function HeroWordIllustration() {
             </div>
 
             <div className="mt-5">
-              <h3 className="text-4xl font-semibold tracking-tight">
-                {card.word}
-              </h3>
-
-              <p
-                className="font-thai mt-2 text-sm font-medium text-muted-foreground"
-                lang="th"
-              >
-                {card.pronunciation}
-              </p>
-
-              <p
-                className="font-thai mt-5 text-lg font-semibold leading-7"
-                lang="th"
-              >
-                {card.meaning}
-              </p>
+              {mode === "thai" ? (
+                <>
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    English prompt · {card.word}
+                  </p>
+                  <h3 className="font-thai mt-2 text-4xl font-semibold tracking-tight" lang="th">
+                    {card.meaning}
+                  </h3>
+                  <p className="font-thai mt-2 text-sm font-medium text-muted-foreground" lang="th">
+                    {card.thaiReading}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-4xl font-semibold tracking-tight">{card.word}</h3>
+                  <p className="font-thai mt-2 text-sm font-medium text-muted-foreground" lang="th">
+                    {card.pronunciation}
+                  </p>
+                  <p className="font-thai mt-5 text-lg font-semibold leading-7" lang="th">
+                    {card.meaning}
+                  </p>
+                </>
+              )}
 
               <p className="mt-4 text-sm leading-6 text-muted-foreground">
                 {card.example}

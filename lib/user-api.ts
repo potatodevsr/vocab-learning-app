@@ -37,6 +37,12 @@ export const userRegister = async (data: {
     password: string;
     firstName: string;
     lastName: string;
+    /**
+     * The browser's IANA zone, captured silently at registration
+     * (LEARNER-LIFECYCLE.md §3.4). Optional here because the API validates it and falls
+     * back to `Asia/Bangkok` when absent or invalid; never a form field.
+     */
+    timezone?: string;
 }): Promise<User> => {
     const res = await fetch(`${API_URL}/user/register`, {
         method: "POST",

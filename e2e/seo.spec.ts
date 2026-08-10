@@ -11,7 +11,7 @@ import { SEED } from "./support/fixtures";
  */
 const head = (page: import("@playwright/test").Page) => ({
   canonical: () => page.locator('link[rel="canonical"]').getAttribute("href"),
-  robots: () => page.locator('meta[name="robots"]').getAttribute("content"),
+  robots: () => page.locator('meta[name="robots"]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute("content") ?? "").join(",")),
   description: () =>
     page.locator('meta[name="description"]').getAttribute("content"),
   alternate: (lang: string) =>
@@ -174,6 +174,31 @@ test.describe("private pages are never indexable", () => {
   });
 });
 
+test.describe("practice pages (docs/LEARNER-LIFECYCLE.md §5.1)", () => {
+  test("the level practice trial is indexed with its own canonical", async ({ page }) => {
+    await page.goto("/en/english/a1/practice");
+
+    expect((await head(page).robots()) ?? "index").not.toContain("noindex");
+    expect(await head(page).canonical()).toContain("/en/english/a1/practice");
+  });
+
+  test("the unit practice trial is noindex, follow", async ({ page }) => {
+    await page.goto("/en/english/a1/unit/1/practice");
+
+    const robots = (await head(page).robots()) ?? "";
+    expect(robots).toContain("noindex");
+    expect(robots).not.toContain("nofollow");
+  });
+
+  test("the unit practice trial still declares a canonical for its own URL", async ({ page }) => {
+    // `noindex` is not `privateMetadata` — the trial is a real, reachable page with its
+    // own canonical, unlike a profile or a lesson session.
+    await page.goto("/en/english/a1/unit/1/practice");
+
+    expect(await head(page).canonical()).toContain("/en/english/a1/unit/1/practice");
+  });
+});
+
 test.describe("robots.txt", () => {
   test("allows crawling and points at the sitemap", async ({ request }) => {
     const res = await request.get("/robots.txt");
@@ -249,6 +274,17 @@ test.describe("sitemap.xml", () => {
     expect(body).toContain("/en/english/a1/unit/1");
     expect(body).toContain("/en/english/a1/unit/2");
     expect(body).not.toContain("/en/english/a1/unit/3");
+  });
+
+  test("lists the level practice trial but never the unit practice trial", async ({
+    request,
+  }) => {
+    const body = await (await request.get("/sitemap.xml")).text();
+
+    expect(body).toContain("<loc>http://localhost:3100/en/english/a1/practice</loc>");
+    // Unit-scoped practice is `noindex, follow` — reached from the unit page, not a
+    // distinct search-intent URL of its own (docs/LEARNER-LIFECYCLE.md §5.1).
+    expect(body).not.toContain("/english/a1/unit/1/practice");
   });
 
   test("lists a level hub only for levels that have published words", async ({

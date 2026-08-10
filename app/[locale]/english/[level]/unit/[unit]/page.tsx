@@ -5,7 +5,6 @@ import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   getLevelWordCount,
@@ -14,6 +13,8 @@ import {
 } from "@/lib/oxford-words";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
 import type { CefrLevel } from "@/lib/types";
+import { TrackPageView } from "@/components/track-page-view";
+import { UnitCheckpointEntry } from "@/components/practice/unit-checkpoint-entry";
 
 type UnitPageProps = {
   params: Promise<{ locale: string; level: string; unit: string }>;
@@ -91,6 +92,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
 
   return (
     <>
+      <TrackPageView family="unit" locale={locale} level={level} unit={unit} />
       {/* An ItemList of DefinedTerms: a curated vocabulary list, not an article. */}
       <script
         {...jsonLd({
@@ -149,7 +151,9 @@ export default async function UnitPage({ params }: UnitPageProps) {
             size="lg"
             className="play-key mt-8 h-14 rounded-2xl bg-accent-sun px-7 text-base font-extrabold text-ink hover:bg-accent-sun"
           >
-            <Link href={`/learn?level=${level}&unit=${unit}`}>
+            {/* Public, playable logged out (docs/LEARNER-LIFECYCLE.md §3.1) — `/learn`
+                is behind auth and is not where a first-time visitor should land. */}
+            <Link href={`/english/${level.toLowerCase()}/unit/${unit}/practice`} data-testid="unit-practice-cta">
               {t("startLesson")}
               <ArrowRight className="size-4" />
             </Link>
@@ -228,6 +232,10 @@ export default async function UnitPage({ params }: UnitPageProps) {
             <span />
           )}
         </nav>
+
+        {/* Signed-in learners get the end-of-unit checkpoint here; logged-out visitors
+            see nothing (their next action is the trial above). See UnitCheckpointEntry. */}
+        <UnitCheckpointEntry level={level} unit={unit} />
       </section>
     </main>
     </>

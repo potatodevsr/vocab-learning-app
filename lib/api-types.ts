@@ -36,6 +36,198 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/practice/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["practiceStart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/practice/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["practiceAnswer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/practice/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["practiceClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress/session/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sessionStart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress/session/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sessionAnswer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress/session/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["sessionStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress/goal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["setWeeklyGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["exportProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress/checkpoint/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["checkpointStart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress/checkpoint/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["checkpointAnswer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress/checkpoint/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["checkpointStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -65,6 +257,206 @@ export interface components {
             /** Format: email */
             email: string;
             username: string;
+        };
+        ApiMessage: {
+            message: string;
+        };
+        PracticePrompt: {
+            displayWord: string;
+            partOfSpeech: string;
+            pronunciationTh: string;
+        };
+        PracticeOption: {
+            meaningTh: string;
+            partOfSpeech: string;
+        };
+        PracticeItem: {
+            index: number;
+            prompt: components["schemas"]["PracticePrompt"];
+            options: components["schemas"]["PracticeOption"][];
+        };
+        PracticeStartResult: {
+            trialId: string;
+            itemCount: number;
+            items: components["schemas"]["PracticeItem"][];
+        };
+        PracticeAnswerResult: {
+            itemIndex: number;
+            correct: boolean;
+            correctOptionIndex: number;
+            done: boolean;
+            duplicate: boolean;
+            correctCount?: number;
+            total?: number;
+        };
+        PracticeClaimResult: {
+            /** @constant */
+            ok: true;
+            /** @description true when this trial was already claimed by an earlier, idempotent call */
+            duplicate: boolean;
+            correctCount: number;
+            total: number;
+        };
+        SessionPromptFace: {
+            displayWord?: string;
+            meaningTh?: string;
+            partOfSpeech?: string;
+            pronunciationTh?: string;
+        };
+        SessionItem: {
+            index: number;
+            /** @enum {string} */
+            type: "choose-meaning" | "choose-word" | "spelling" | "match-pairs" | "speed-round";
+            prompt: components["schemas"]["SessionPromptFace"];
+            options?: components["schemas"]["SessionPromptFace"][];
+        };
+        SessionStartResult: {
+            sessionId: string | null;
+            level: string;
+            unit: number | null;
+            /** @enum {string} */
+            mode: "normal" | "comeback" | "review";
+            itemCount: number;
+            dueCount: number;
+            items: components["schemas"]["SessionItem"][];
+        };
+        SessionAnswerResult: {
+            itemIndex: number;
+            correct: boolean;
+            done: boolean;
+            duplicate: boolean;
+            correctSpelling?: string;
+            correctCount?: number;
+            total?: number;
+        };
+        SessionStatusResult: {
+            sessionId: string;
+            level: string;
+            unit: number | null;
+            answeredCount: number;
+            total: number;
+            correctCount: number;
+            done: boolean;
+        };
+        CollectionLevel: {
+            level: string;
+            total: number;
+            strong: number;
+            mastered: number;
+        };
+        TodaySummary: {
+            dueCount: number;
+            /** @description Whole local days since the most recent completed session/quiz, or null if none ever completed */
+            absenceDays: number | null;
+            /**
+             * @description LEARNER-LIFECYCLE.md §2 state: absence-derived, overridden by completion milestones
+             * @enum {string}
+             */
+            lifecycleState: "active" | "at-risk" | "returning" | "level-complete" | "course-complete" | "maintenance";
+            /**
+             * @description The single home CTA derived from lifecycle state, open session and due reviews
+             * @enum {string}
+             */
+            recommendedAction: "start" | "resume" | "comeback" | "review" | "next-level" | "maintenance";
+            inProgressSession: {
+                id: string;
+                level: string;
+                unit: number | null;
+                createdAt: string;
+            } | null;
+            nextUnit: number | null;
+            defaultLevel: string;
+            weeklyGoal: {
+                goalDays: number | null;
+                eligibleToSetGoal: boolean;
+                activeDaysThisWeek: number;
+                weekStart: string;
+            };
+            collection: {
+                courseLevel: string;
+                levels: components["schemas"]["CollectionLevel"][];
+                totalStrong: number;
+                totalMastered: number;
+            };
+        };
+        SetGoalResult: {
+            /** @constant */
+            ok: true;
+            goalDays: number;
+        };
+        ProgressExportWord: {
+            displayWord: string;
+            level: string;
+            unit: number | null;
+            mastery: number;
+            lastSeenAt: string | null;
+            nextReviewAt: string | null;
+            correctCount: number;
+            incorrectCount: number;
+        };
+        ProgressExport: {
+            exportedAt: string;
+            learner: {
+                email: string;
+                username: string;
+                timezone: string | null;
+            };
+            summary: {
+                total: number;
+                strong: number;
+                mastered: number;
+            };
+            words: components["schemas"]["ProgressExportWord"][];
+        };
+        CheckpointNotReady: {
+            message: string;
+            recoveryCount: number;
+        };
+        CheckpointPromptFace: {
+            displayWord?: string;
+            meaningTh?: string;
+            partOfSpeech?: string;
+            pronunciationTh?: string;
+        };
+        CheckpointItem: {
+            index: number;
+            /** @enum {string} */
+            type: "choose-meaning" | "choose-word" | "spelling";
+            prompt: components["schemas"]["CheckpointPromptFace"];
+            options?: components["schemas"]["CheckpointPromptFace"][];
+        };
+        CheckpointStartResult: {
+            checkpointId: string;
+            level: string;
+            unit: number;
+            itemCount: number;
+            answeredCount: number;
+            items: components["schemas"]["CheckpointItem"][];
+        };
+        CheckpointAnswerResult: {
+            itemIndex: number;
+            correct: boolean;
+            done: boolean;
+            duplicate: boolean;
+            correctSpelling?: string;
+            correctCount?: number;
+            total?: number;
+            passed?: boolean;
+            awarded?: boolean;
+            recoveryCount?: number;
+        };
+        CheckpointStatusResult: {
+            checkpointId: string;
+            level: string;
+            unit: number;
+            answeredCount: number;
+            itemCount: number;
+            correctCount: number;
+            done: boolean;
+            passed: boolean;
+            awarded: boolean;
+            recoveryCount: number;
+            items: components["schemas"]["CheckpointItem"][];
         };
     };
     responses: never;
@@ -154,6 +546,589 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    practiceStart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    level?: "A1" | "A2" | "B1" | "B2";
+                    unit?: number;
+                    /** @enum {string} */
+                    mode?: "normal" | "comeback" | "review";
+                };
+            };
+        };
+        responses: {
+            /** @description Trial started */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeStartResult"];
+                };
+            };
+            /** @description Not enough published content for a trial */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Rate limited or a trial is already in progress */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+        };
+    };
+    practiceAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    itemIndex: number;
+                    selectedOptionIndex: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Item graded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeAnswerResult"];
+                };
+            };
+            /** @description Missing fields, out of range, or out of order */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Trial not found or expired */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Could not record answer, please retry */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+        };
+    };
+    practiceClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Trial claimed into the signed-in account (idempotent) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeClaimResult"];
+                };
+            };
+            /** @description No completed trial to claim, or an invalid/expired claim */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Trial not found, expired, or not completed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+        };
+    };
+    sessionStart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    level?: "A1" | "A2" | "B1" | "B2";
+                    unit?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Session started */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionStartResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Not enough published content for a session */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+        };
+    };
+    sessionAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sessionId: string;
+                    itemIndex: number;
+                    selectedOptionIndex?: number;
+                    spelling?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Item graded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionAnswerResult"];
+                };
+            };
+            /** @description Missing fields, out of range, or out of order */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Session not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Could not record answer, please retry */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+        };
+    };
+    sessionStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionStatusResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+        };
+    };
+    getToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today card summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodaySummary"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+        };
+    };
+    setWeeklyGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    days: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Weekly goal set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetGoalResult"];
+                };
+            };
+            /** @description days out of range */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Weekly goal not yet eligible */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+        };
+    };
+    exportProgress: {
+        parameters: {
+            query?: {
+                format?: "json" | "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's own data export (GDPR-style takeout), as JSON or CSV */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressExport"];
+                    "text/csv": string;
+                };
+            };
+            /** @description format must be json or csv */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+        };
+    };
+    checkpointStart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    level: "A1" | "A2" | "B1" | "B2";
+                    unit: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Checkpoint started or resumed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckpointStartResult"];
+                };
+            };
+            /** @description level or unit missing or out of range */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Not enough learned words in this unit for a checkpoint yet */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckpointNotReady"];
+                };
+            };
+        };
+    };
+    checkpointAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    checkpointId: string;
+                    itemIndex: number;
+                    selectedOptionIndex?: number;
+                    spelling?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Item graded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckpointAnswerResult"];
+                };
+            };
+            /** @description Missing fields, out of range, or out of order */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Checkpoint not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Could not record answer, please retry */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+        };
+    };
+    checkpointStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Checkpoint status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckpointStatusResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiMessage"];
                 };
             };
         };

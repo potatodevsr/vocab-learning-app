@@ -9,6 +9,13 @@ order we build it."
 `SPEC.md` §9 stays the authority on the *rules* (indexable vs `noindex`, canonicals,
 hreflang, structured data). This document is the authority on the *inventory*.
 
+[`LEARNER-LIFECYCLE.md`](LEARNER-LIFECYCLE.md) is the authority on what a *person* does across these pages —
+arrival, trial, signup, retention, completion. It adds families **O–S** below (detail in its
+§5.1) and it changes the priority of family **J**: the public practice page is no longer only
+a search surface, it is the product's only un-gated entry point. Read its §0 before
+planning any work here — it documents that every "learn this" CTA on every page in this
+inventory currently lands an anonymous visitor on a login form.
+
 ---
 
 ## 0. What already exists
@@ -104,7 +111,7 @@ Nothing in §4 ships before its row here is green. This is the honest version of
 | --- | --- | --- | --- |
 | D1 | **Canonical dataset chosen** (JSON vs CSV, `SPEC.md` OQ5) | backend | everything — every count moves |
 | D2 | **Thai meanings proofread** (character-level, not just de-spaced) | admin queue | every family; nothing indexes before this |
-| D3 | **Per-sense meanings** — `about (adv.)` ≠ `about (prep.)` | schema + content | word pages stop being near-duplicates; A, M |
+| D3 | **Per-sense meanings** — `about (adv.)` ≠ `about (prep.)` | ~~schema~~ done (`posUsages`, `SPEC.md` §5.1) + content | word pages stop being near-duplicates; A, M |
 | D4 | `exampleEn` + `exampleTh` populated | `generateExampleEn.ts` + review | word/unit substance floor |
 | D5 | `ipa` populated | content pipeline | word pages, pronunciation guides |
 | D6 | **`posPrimary` + `posAll` normalised columns** (12 canonical values, 13 garbage rows repaired) | schema + migration | F |
@@ -168,8 +175,20 @@ as two URLs but one page of work.
 | L | Trust / static | `/about`, `/how-it-works`, `/privacy`, `/terms`, `/contact` | 10 | **new** | — |
 | M | Thai-direction pages | `/thai/[thai-slug]` | ~4,000 | **decision required** | D2 D3 |
 | N | HTML sitemap | `/sitemap` | 2 | **new** | — |
+| O | Placement test | `/english/test`, `/english/test/[level]` | 10 | **new** ([lifecycle §5.1](LEARNER-LIFECYCLE.md)) | D2 |
+| P | Exam vocabulary hubs | `/english/exams`, `/english/exams/[exam]` | 18 | **new** ([lifecycle §5.1](LEARNER-LIFECYCLE.md)) | editorial + D2 |
+| Q | School grade hubs | `/english/grades`, `/english/grades/[grade]` | 26 | **new** ([lifecycle §5.1](LEARNER-LIFECYCLE.md)) | editorial + D2 |
+| R | Word of the day | `/english/word-of-the-day` | 2 | **new**, retention-first ([lifecycle §5.1](LEARNER-LIFECYCLE.md)) | D2 D4 |
+| S | Share cards | `/share/[token]` | 0 indexed | **not an SEO family** — growth surface, `noindex` ([lifecycle §5.1](LEARNER-LIFECYCLE.md)) | — |
 
-**Indexable total without M: ≈ 6,876 URLs. With M: ≈ 10,900.** Both are comfortably under
+Families O–S are specified in [`LEARNER-LIFECYCLE.md`](LEARNER-LIFECYCLE.md) §5.1 rather than repeated here:
+each one is a funnel stage first and a search surface second, so its rationale only makes
+sense next to the journey it serves. Every one of them was tested against §2 of this
+document before being admitted, and the rules in §2, §5, §6, §7 and §8 apply to them
+unchanged. Note that **S is never in a sitemap** — it is a per-person share surface with OG
+tags, not a public page.
+
+**Indexable total without M: ≈ 6,932 URLs. With M: ≈ 10,956.** Both are comfortably under
 the 50,000-URL-per-sitemap limit, but §6 shards anyway — one dynamic sitemap that has to
 page through every published word is a slow request that crawlers time out on.
 
@@ -524,7 +543,7 @@ split by level:
 | --- | --- |
 | `0` | static: `/`, `/english`, `/faq`, `/about`, `/how-it-works`, `/sitemap`, legal |
 | `1` | level hubs + unit pages |
-| `2` | letters + POS + topics + lists |
+| `2` | letters + POS + topics + lists + test (O) + exams (P) + grades (Q) + word of the day (R) |
 | `3` | guides + compare |
 | `4`–`7` | word pages, one shard per CEFR level |
 
@@ -614,6 +633,13 @@ expected return for a Thai audience.
 
 **S5 — Practice (J) and compare (K).** Public quizzes at level scope; the first 40 curated
 confusable pairs.
+
+> **Sequenced by [`LEARNER-LIFECYCLE.md`](LEARNER-LIFECYCLE.md) §8.** Family J is not an S5 concern — it is the
+> product's only un-gated entry point, so it moves to **L1, ahead of everything in this
+> list including S1**. Every phase here delivers crawlers to pages whose only forward action
+> is a login form until J ships. The answer-leakage spike (§11/7) becomes blocking rather
+> than exploratory. Families O–S follow only after the journey work they serve and their
+> respective data/editorial gates are satisfied.
 
 **S6 — Decide on M** using the D3 evidence described in §4/M.
 

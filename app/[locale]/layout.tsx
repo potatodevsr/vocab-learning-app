@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Sans_Thai } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Thai, Sarabun } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
@@ -23,6 +23,14 @@ const notoSansThai = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
   subsets: ["thai"],
   weight: ["400", "500", "600", "700"],
+});
+
+const sarabun = Sarabun({
+  variable: "--font-sarabun",
+  subsets: ["thai", "latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -59,7 +67,7 @@ export default async function LocaleLayout({
     // which silently dropped the whole app to Times.
     <html
       lang={locale}
-      className={`${geistSans.variable} ${geistMono.variable} ${notoSansThai.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansThai.variable} ${sarabun.variable}`}
     >
       <body className="antialiased">
         <NextIntlClientProvider>

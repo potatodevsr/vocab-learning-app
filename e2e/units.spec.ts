@@ -18,13 +18,15 @@ test.describe("unit scoping", () => {
     page,
   }) => {
     await page.goto("/en/learn?level=A1&unit=1");
-    await expect(page.getByText("Card 1 of 8")).toBeVisible();
+    await expect(page.getByTestId("session-counter")).toHaveText("1 of 8");
     await expect(
       page.getByRole("heading", { name: "word1", level: 2 }),
     ).toBeVisible();
 
+    await page.context().clearCookies();
+    await registerThroughUi(page);
     await page.goto("/en/learn?level=A1&unit=2");
-    await expect(page.getByText("Card 1 of 8")).toBeVisible();
+    await expect(page.getByTestId("session-counter")).toHaveText("1 of 8");
     await expect(
       page.getByRole("heading", { name: "word21", level: 2 }),
     ).toBeVisible();
@@ -36,15 +38,15 @@ test.describe("unit scoping", () => {
     // 40 published words = 2 units; unit 99 must not render an empty lesson.
     await page.goto("/en/learn?level=A1&unit=99");
 
-    await expect(page.getByText("Card 1 of 8")).toBeVisible();
-    await expect(page.getByText(`A1 · Unit ${SEED.unit2.number}`)).toBeVisible();
+    await expect(page.getByTestId("session-counter")).toHaveText("1 of 8");
+    await expect(page.getByTestId("session-prompt")).toHaveText("word21");
   });
 
   test("draft-only units are not reachable", async ({ page }) => {
     // Orders 41-45 are drafts, so a third unit does not exist even though the rows do.
     await page.goto("/en/learn?level=A1&unit=3");
 
-    await expect(page.getByText(`A1 · Unit ${SEED.unit2.number}`)).toBeVisible();
+    await expect(page.getByTestId("session-prompt")).toHaveText("word21");
     await expect(page.getByText(SEED.draftWord, { exact: true })).toHaveCount(0);
   });
 });

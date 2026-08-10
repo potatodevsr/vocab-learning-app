@@ -21,10 +21,21 @@ export type OxfordWord = {
     sense: string | null;
     partOfSpeech: string;
     meaningTh: string;
+    /** The English word spelled out in Thai script, for a Thai learner. */
     pronunciationTh: string;
+    /** How `meaningTh` is itself read — the other direction, for a learner of Thai. */
+    meaningThReading: string;
+    meaningThRoman: string;
     ipa: string;
     exampleEn: string;
     exampleTh: string;
+    /**
+     * JSON `PosUsage[]` — one meaning and example pair per part of speech, for the words
+     * that have more than one. Read it through `alignPosUsages` in `lib/pos.ts`.
+     */
+    posUsages: string;
+    /** JSON override for the letter breakdown; empty means derive it. See `lib/thai-letters.ts`. */
+    letterBreakdown: string;
     status: WordStatus;
     /** ISO timestamp; drives <lastmod> in the sitemap. */
     updatedAt?: string;
