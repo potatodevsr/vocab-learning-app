@@ -16,10 +16,18 @@ const head = (page: import("@playwright/test").Page) => ({
     page.locator('meta[name="description"]').getAttribute("content"),
   alternate: (lang: string) =>
     page.locator(`link[rel="alternate"][hreflang="${lang}"]`).getAttribute("href"),
+  /**
+   * Flattens `@graph`.
+   *
+   * Related nodes are published as one block with an `@graph` array — the organisation,
+   * the site and the word list reference each other by `@id`, and splitting them across
+   * separate scripts would break those references. Callers still want to ask "is there a
+   * node of type X", so the wrapper is unwrapped here rather than in every test.
+   */
   jsonLd: async () =>
-    (await page.locator('script[type="application/ld+json"]').allTextContents()).map(
-      (raw) => JSON.parse(raw),
-    ),
+    (await page.locator('script[type="application/ld+json"]').allTextContents())
+      .map((raw) => JSON.parse(raw))
+      .flatMap((node) => (Array.isArray(node["@graph"]) ? node["@graph"] : [node])),
 });
 
 test.describe("public pages are indexable", () => {
@@ -92,14 +100,16 @@ test.describe("structured data", () => {
     await page.goto(`/en/english/words/${SEED.unit1.firstWord}`);
 
     const blocks = await head(page).jsonLd();
-    const set = blocks.find((b) => b["@type"] === "DefinedTermSet");
+    const term = blocks.find((b) => b["@type"] === "DefinedTerm");
 
-    expect(set).toBeTruthy();
-    expect(set.hasDefinedTerm[0]).toMatchObject({
+    expect(term).toBeTruthy();
+    expect(term).toMatchObject({
       "@type": "DefinedTerm",
       name: SEED.unit1.firstWord,
       description: SEED.unit1.firstMeaning,
     });
+    // Membership is a reference to the anchored set, not a repeated bare string.
+    expect(term.inDefinedTermSet["@id"]).toContain("#oxford-3000");
   });
 
   test("the A1 hub emits an ItemList", async ({ page }) => {
@@ -109,7 +119,13 @@ test.describe("structured data", () => {
     const list = blocks.find((b) => b["@type"] === "ItemList");
 
     expect(list).toBeTruthy();
-    expect(list.numberOfItems).toBe(SEED.publishedWordCount);
+    // It enumerates units, so it must count units. It used to report the level's word
+    // count (758) beside 8 listed items.
+    expect(list.numberOfItems).toBe(list.itemListElement.length);
+    // And every entry must point somewhere; they used to carry names only.
+    for (const item of list.itemListElement) {
+      expect(item.item, "a ListItem with no URL points nowhere").toBeTruthy();
+    }
   });
 
   test("the landing page identifies the organisation", async ({ page }) => {

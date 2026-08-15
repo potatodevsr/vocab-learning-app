@@ -70,9 +70,11 @@ test.describe("public content", () => {
     await expect(
       page.getByRole("heading", { name: SEED.unit1.firstWord, level: 1 }),
     ).toBeVisible();
-    // The JSON-LD block also contains this string, so scope to what is rendered.
+    // Scoped to `main` because the JSON-LD block carries this string too, and
+    // `exact` because the page now links its unit-mates: a loose match on
+    // "ความหมาย1" also catches ความหมาย10 through ความหมาย13 in that list.
     await expect(
-      page.locator("main").getByText(SEED.unit1.firstMeaning),
+      page.locator("main").getByText(SEED.unit1.firstMeaning, { exact: true }).first(),
     ).toBeVisible();
   });
 

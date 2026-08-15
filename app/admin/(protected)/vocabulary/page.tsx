@@ -368,6 +368,33 @@ export default function AdminVocabularyPage() {
       const updated = await updateWord(selected.id, changed);
       setWords((prev) => prev.map((w) => (w.id === updated.id ? updated : w)));
       setDraft(draftOf(updated));
+
+      /**
+       * Drop the cached renders this edit invalidates, and wait for it.
+       *
+       * The learner-facing pages are incrementally regenerated on an hourly window, so
+       * without this an editor fixes a meaning and then watches the old one sit there —
+       * which reads as "the save silently failed" and is how someone ends up saving
+       * twice. Awaited rather than fired and forgotten so that "saved" means the reader
+       * would see it; otherwise navigating away immediately can cancel the request and
+       * leave the stale copy in place.
+       *
+       * Its own try/catch: the write already succeeded, and a cache purge that fails is
+       * not a save that failed. Worst case the page is stale until `revalidate` expires.
+       */
+      try {
+        await fetch("/admin/revalidate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: updated.slug,
+            level: updated.level,
+            unit: updated.unit,
+          }),
+        });
+      } catch {
+        // Stale-until-expiry is an acceptable degradation; a false error is not.
+      }
     } catch {
       setSaveError("บันทึกไม่สำเร็จ");
     } finally {

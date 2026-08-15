@@ -1,7 +1,7 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
@@ -11,14 +11,12 @@ import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
 import { TrackPageView } from "@/components/track-page-view";
 
 /**
- * Public content: cacheable, re-rendered hourly.
+ * Deliberately *not* statically rendered, unlike its sibling content routes.
  *
- * Every page on the site was `ƒ` (server-rendered on demand) and therefore shipped
- * `Cache-Control: private, no-cache, no-store` — at ~6,000 URLs, a Worker invocation and
- * a D1 read for every crawler hit and every visitor. Nothing here varies by visitor, so
- * nothing here needs to.
+ * This page paginates with `?page=`, and reading `searchParams` is a dynamic API — it
+ * cannot coexist with `setRequestLocale`/`generateStaticParams`. Trying anyway made every
+ * letter page throw a Server Components render error and return 500.
  */
-export const revalidate = 3600;
 
 
 /**
@@ -103,19 +101,6 @@ const pathFor = (letter: string, page: number) =>
     ? `english/words/letter/${letter}?page=${page}`
     : `english/words/letter/${letter}`;
 
-/**
- * Empty on purpose.
- *
- * Declaring `generateStaticParams` is what opts a dynamic segment into incremental static
- * regeneration; returning nothing from it means no page is built up front. There are
- * thousands of these URLs and almost all of them are never requested, so building them at
- * deploy time would cost minutes to produce pages nobody reads. Each one is rendered on
- * first request and then cached for `revalidate`.
- */
-export function generateStaticParams() {
-  return [];
-}
-
 export async function generateMetadata({
   params,
   searchParams,
@@ -156,9 +141,6 @@ export default async function WordsLetterPage({
   searchParams,
 }: LocalePageProps) {
   const { locale, letter } = await params;
-
-  // Keeps the route statically renderable — see app/[locale]/about/page.tsx.
-  setRequestLocale(locale);
   if (!/^[a-z]$/.test(letter)) notFound();
 
   const words = await wordsForLetter(letter);

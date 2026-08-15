@@ -62,7 +62,12 @@ test.describe("typography", () => {
   test("Thai word content uses the Thai face", async ({ page }) => {
     await page.goto(`/en/english/words/${SEED.unit1.firstWord}`);
 
-    const meaning = page.locator("main").getByText(SEED.unit1.firstMeaning);
+    // `exact` + `first`: the related-words list repeats sibling meanings, and
+    // "ความหมาย1" is a prefix of ความหมาย10-13.
+    const meaning = page
+      .locator("main")
+      .getByText(SEED.unit1.firstMeaning, { exact: true })
+      .first();
     await expect(meaning).toBeVisible();
 
     const font = await meaning.evaluate((el) => getComputedStyle(el).fontFamily);

@@ -52,7 +52,10 @@ test.describe("alternatesFor", () => {
   test("x-default resolves to the default locale", () => {
     const languages = alternatesFor("th")?.languages as Record<string, string>;
 
-    expect(languages["x-default"]).toBe(absoluteUrl("/en"));
+    // Thai, not English. `x-default` is where an unlabelled visitor lands, and the Thai
+    // course is the primary product (AGENTS.md rule 3) — pointing it at `/en` sent that
+    // traffic to the smaller of the two courses. Tracks `routing.defaultLocale`.
+    expect(languages["x-default"]).toBe(absoluteUrl("/th"));
   });
 
   test("every alternate is absolute — relative hreflang is ignored by crawlers", () => {

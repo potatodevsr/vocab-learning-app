@@ -116,11 +116,17 @@ test.describe("unit pages", () => {
   test("the unit page emits an ItemList of DefinedTerms", async ({ page }) => {
     await page.goto("/en/english/a1/unit/1");
 
+    // `@graph`: the unit page publishes its BreadcrumbList and its ItemList as one
+    // block, so related nodes can reference each other by `@id`.
     const blocks = (
       await page.locator('script[type="application/ld+json"]').allTextContents()
-    ).map((raw) => JSON.parse(raw));
+    )
+      .map((raw) => JSON.parse(raw))
+      .flatMap((node) => (Array.isArray(node["@graph"]) ? node["@graph"] : [node]));
 
     const list = blocks.find((b) => b["@type"] === "ItemList");
+    // The breadcrumb this page type was missing entirely.
+    expect(blocks.some((b) => b["@type"] === "BreadcrumbList")).toBe(true);
 
     expect(list.numberOfItems).toBe(20);
     expect(list.itemListElement[0].item).toMatchObject({

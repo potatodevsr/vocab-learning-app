@@ -7,6 +7,14 @@ export type VocabWord = {
     level: string;
     word: string;
     displayWord: string;
+    /**
+     * The URL segment of the learner-facing page for this row, and the unit it belongs
+     * to. Both come back on every read and were simply missing from this type — which is
+     * the drift AGENTS.md rule 2 warns about, and the reason the admin screen could not
+     * name the pages its own edits invalidate. `unit` is nullable in the schema.
+     */
+    slug: string;
+    unit: number | null;
     partOfSpeech: string;
     meaningTh: string;
     pronunciationTh: string;
