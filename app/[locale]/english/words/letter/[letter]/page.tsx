@@ -1,7 +1,7 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
@@ -9,6 +9,17 @@ import { getAllPublishedWords } from "@/lib/oxford-words";
 import type { OxfordWord } from "@/lib/types";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
 import { TrackPageView } from "@/components/track-page-view";
+
+/**
+ * Public content: cacheable, re-rendered hourly.
+ *
+ * Every page on the site was `ƒ` (server-rendered on demand) and therefore shipped
+ * `Cache-Control: private, no-cache, no-store` — at ~6,000 URLs, a Worker invocation and
+ * a D1 read for every crawler hit and every visitor. Nothing here varies by visitor, so
+ * nothing here needs to.
+ */
+export const revalidate = 3600;
+
 
 /**
  * A single A–Z letter page (SEO-CONTENT §E, the letter-detail half of family E). It serves
@@ -26,7 +37,7 @@ import { TrackPageView } from "@/components/track-page-view";
  * letter with no matching published word calls `notFound()`.
  */
 
-type PageProps = {
+type LocalePageProps = {
   params: Promise<{ locale: string; letter: string }>;
   searchParams: Promise<{ page?: string }>;
 };
@@ -92,10 +103,23 @@ const pathFor = (letter: string, page: number) =>
     ? `english/words/letter/${letter}?page=${page}`
     : `english/words/letter/${letter}`;
 
+/**
+ * Empty on purpose.
+ *
+ * Declaring `generateStaticParams` is what opts a dynamic segment into incremental static
+ * regeneration; returning nothing from it means no page is built up front. There are
+ * thousands of these URLs and almost all of them are never requested, so building them at
+ * deploy time would cost minutes to produce pages nobody reads. Each one is rendered on
+ * first request and then cached for `revalidate`.
+ */
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({
   params,
   searchParams,
-}: PageProps): Promise<Metadata> {
+}: LocalePageProps): Promise<Metadata> {
   const { locale, letter } = await params;
   if (!/^[a-z]$/.test(letter)) notFound();
 
@@ -130,8 +154,11 @@ export async function generateMetadata({
 export default async function WordsLetterPage({
   params,
   searchParams,
-}: PageProps) {
+}: LocalePageProps) {
   const { locale, letter } = await params;
+
+  // Keeps the route statically renderable — see app/[locale]/about/page.tsx.
+  setRequestLocale(locale);
   if (!/^[a-z]$/.test(letter)) notFound();
 
   const words = await wordsForLetter(letter);

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut, User as UserIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { getMe, userLogout, type User } from "@/lib/user-api";
+import { userLogout, type User } from "@/lib/user-api";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,22 +27,27 @@ import { LoadingOverlay } from "@/components/loading-overlay";
  * 1.41:1 against the light canvas and collided with each page's own header. It now sits
  * inside the bar, on the surface, in the app's language.
  */
-export function UserNavbar({ locale }: { locale: string }) {
+/**
+ * `user` is resolved once by the app bar (`lib/use-session.ts`) and passed down, rather
+ * than fetched here. Fetching in this component meant a `GET /api/user/me` on every page
+ * load for every visitor — including the logged-out majority, for whom it was a
+ * guaranteed 401.
+ */
+export function UserNavbar({
+  locale,
+  user,
+}: {
+  locale: string;
+  user: User | null | undefined;
+}) {
   const router = useRouter();
-  const pathname = usePathname();
   const t = useTranslations("Nav");
-  const [user, setUser] = useState<User | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
-
-  useEffect(() => {
-    getMe().then(setUser);
-  }, [pathname]);
 
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
       await userLogout();
-      setUser(null);
       router.push(`/${locale}`);
       router.refresh();
     } finally {
@@ -56,14 +61,14 @@ export function UserNavbar({ locale }: { locale: string }) {
         <Button
           asChild
           variant="ghost"
-          className="play-underline play-focus h-10 rounded-full px-2 text-sm font-semibold text-ink hover:bg-brand-soft sm:px-3"
+          className="play-underline play-focus h-11 rounded-full px-2 text-sm font-semibold text-ink hover:bg-brand-soft sm:px-3"
         >
           <Link href={`/${locale}/auth/login`}>{t("signIn")}</Link>
         </Button>
 
         <Button
           asChild
-          className="play-press h-10 rounded-full bg-brand px-3 text-sm font-bold text-white hover:bg-brand sm:px-4"
+          className="play-press h-11 rounded-full bg-brand px-3 text-sm font-bold text-white hover:bg-brand sm:px-4"
         >
           <Link href={`/${locale}/auth/register`}>{t("signUp")}</Link>
         </Button>

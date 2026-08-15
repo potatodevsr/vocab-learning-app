@@ -16,7 +16,8 @@ import { defineConfig, devices } from "@playwright/test";
 const API_PORT = 4100;
 const WEB_PORT = 3100;
 
-// Must match backend/wrangler.jsonc — middleware verifies user tokens the API signed.
+// Must match backend/.dev.vars — middleware verifies user tokens the API signed. Both are
+// dev-only throwaways; production signs with a secret set via `wrangler secret put`.
 const JWT_SECRET =
   "49022f773409abad1e30a7057912cbe866a42791804a6dd2b0f763055da2b106";
 

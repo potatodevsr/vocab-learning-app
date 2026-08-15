@@ -180,11 +180,21 @@
     "loadingRegister": "Creating your account...",
     "loadingRegisterSuccess": "Account created — logging you in...",
     "backHome": "Back to home",
-    "passwordRuleLength": "8-15 characters",
+    "passwordRuleLength": "8-64 characters",
     "passwordRuleDigit": "At least one number",
     "passwordRuleUpper": "At least one uppercase letter",
     "passwordRuleLower": "At least one lowercase letter",
-    "passwordRuleSpecial": "At least one special character, e.g. ! @ # $ * &"
+    "passwordRuleSpecial": "At least one symbol",
+    "optionalLabel": "optional",
+    "orDivider": "or",
+    "googleSignIn": "Continue with Google",
+    "googleError": "Google sign-in did not complete. Try again, or use your email.",
+    "registerSubmit": "Create account",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "passwordRulesTitle": "Your password needs:",
+    "legalNotice": "By creating an account you agree to our <terms>Terms of Use</terms> and <privacy>Privacy Policy</privacy>.",
+    "googleUnavailable": "Google sign-in isn’t set up on this site yet. Use your email address below instead."
   },
   "Profile": {
     "badge": "Your account",
@@ -235,7 +245,10 @@
     "account": "Account menu",
     "language": "Language",
     "home": "Home",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "homeLabel": "Vocab Learning — home",
+    "sections": "Sections",
+    "tryFree": "Try free"
   },
   "Level": {
     "metaTitle": "Learn Thai with {count} familiar Oxford 3000 {level} English prompts",
@@ -349,7 +362,9 @@
     "subtitle": "Learn {count} Thai words through familiar English prompts, with pronunciation, spelling and examples — unit {unit} of {total}.",
     "startLesson": "Start this unit",
     "unitLink": "Unit {unit}",
-    "listenable": "Has an example sentence"
+    "listenable": "Has an example sentence",
+    "breadcrumbUnit": "Unit {unit}",
+    "meaningPending": "Being reviewed"
   },
   "Word": {
     "breadcrumbLevel": "{level} words",
@@ -366,7 +381,16 @@
     "usageBody": "This word does more than one job, and each one is used differently.",
     "practiseTitle": "Practise this word in its unit",
     "practiseBody": "Words stick when you meet them again. Take unit {unit} and see it in a short lesson.",
-    "practiseCta": "Start unit {unit}"
+    "practiseCta": "Start unit {unit}",
+    "breadcrumbHome": "Home",
+    "h1Meaning": "means {meaning}",
+    "meaningPending": "The Thai meaning of this word is being reviewed.",
+    "pronunciationPending": "The Thai pronunciation of this word is being reviewed.",
+    "nearbyLabel": "Nearby words",
+    "previousWord": "Previous word",
+    "nextWord": "Next word",
+    "relatedTitle": "Other words in unit {unit}",
+    "relatedBody": "These are learned in the same unit, so they come up together in practice."
   },
   "Pos": {
     "noun": "Noun",
@@ -404,7 +428,8 @@
     "nextFaq": "Common questions",
     "errorTitle": "The alphabet could not be loaded",
     "errorBody": "Something went wrong fetching the letters. Trying again usually fixes it.",
-    "errorRetry": "Try again"
+    "errorRetry": "Try again",
+    "tableScrollHint": "Scrollable table — drag sideways to see every column"
   },
   "Faq": {
     "title": "Frequently asked questions",
@@ -449,6 +474,18 @@
     "levelLink": "{level} vocabulary",
     "appHeading": "The app",
     "faq": "Questions",
+    "exploreHeading": "Explore",
+    "englishHub": "English vocabulary",
+    "allWords": "All words A–Z",
+    "thaiAlphabet": "Thai alphabet",
+    "aboutHeading": "About",
+    "about": "About us",
+    "howItWorks": "How it works",
+    "contact": "Contact",
+    "legalHeading": "Legal and site information",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "sitemap": "Sitemap",
     "credit": "Built on the Oxford 3000 word list. Vocabulary data is used for study purposes."
   },
   "Practice": {
@@ -507,11 +544,80 @@
     "continueWithoutAccount": "Continue without an account"
   },
   "Trust": {
-    "about": {"metaTitle":"About this vocabulary course","metaDescription":"How this English vocabulary course is built for Thai learners.","h1":"A practical vocabulary course","intro":"We help Thai speakers build durable English vocabulary through short, focused practice.","s1Heading":"What we teach","s1Body":"The course is based on the Oxford 3000 and organised by CEFR level. Thai meanings and pronunciation support make each word approachable.","s2Heading":"How learning works","s2Body":"Recognition, spelling and recall are mixed into short sessions. The server grades answers and spaced review brings words back when they are due.","s3Heading":"What progress means","s3Body":"Seen, strong and mastered are different states. We show them honestly; opening a word does not mean it has been learned.","cta":"Explore English vocabulary"},
-    "howItWorks": {"metaTitle":"How vocabulary practice works","metaDescription":"Learn how sessions, review and progress work in the vocabulary app.","h1":"How it works","intro":"A clear path from a first five-word trial to daily recall and long-term review.","s1Heading":"Start with useful words","s1Body":"Choose a CEFR level or try a public practice session. You can see value before creating an account.","s2Heading":"Practise in short sessions","s2Body":"Each normal session has eight item slots and mixes meaning, word choice and spelling with lightweight warm-ups.","s3Heading":"Review at the right time","s3Body":"Correct and incorrect attempts update a spaced-review schedule. Due words come before new material.","s4Heading":"Finish a level honestly","s4Body":"A level is collected when its required words are strong. Mastery remains a longer-term stretch goal.","cta":"Choose a level"},
-    "privacy": {"metaTitle":"Privacy","metaDescription":"What learner data the vocabulary app stores and why.","h1":"Privacy","intro":"We collect the minimum information needed to run accounts, save learning progress and understand the acquisition funnel.","s1Heading":"Account and learning data","s1Body":"Account email, username and authentication data are stored with progress rows in Cloudflare D1. Audio assets may be served from Cloudflare R2.","s2Heading":"Cookies","s2Body":"First-party, secure cookies keep you signed in and preserve an anonymous practice claim. They are not answer keys and are not placed in URLs.","s3Heading":"Analytics","s3Body":"Product analytics uses a separate pseudonymous identifier. We do not send the application user ID, email, typed answers, tokens or Thai meaning text to analytics.","s4Heading":"Your data","s4Body":"Signed-in learners can export their own portable progress. For correction or deletion requests, use the contact pathway available in the app; identity must be verified before account data is changed."},
-    "terms": {"metaTitle":"Terms of use","metaDescription":"Plain-language terms for using the vocabulary learning app.","h1":"Terms of use","intro":"Use the service for personal learning and treat its content and other users responsibly.","s1Heading":"Educational purpose","s1Body":"This is an independent learning tool, not an accredited school, examination provider or guarantee of a CEFR result.","s2Heading":"Your account","s2Body":"Keep access credentials private and provide accurate account information. Do not attempt to access another learner's progress or administrative tools.","s3Heading":"Service availability","s3Body":"We work to keep the service reliable, but do not promise uninterrupted availability. Features and content may change as quality improves.","s4Heading":"Content use","s4Body":"You may use the app for personal study. Automated extraction, abuse of practice endpoints and attempts to bypass access controls are not permitted."},
-    "contact": {"metaTitle":"Contact and support","metaDescription":"How to get help with the vocabulary learning app.","h1":"Contact and support","intro":"Start with the help available inside the app so your request reaches the right context without publishing personal information.","s1Heading":"Learning or account help","s1Body":"Use the in-app support pathway while signed in and describe the page and action that failed. Never include your password or a magic-link token.","s2Heading":"Privacy requests","s2Body":"Ask through the same verified account pathway for an export, correction or deletion. We may need to confirm account ownership before acting.","s3Heading":"Content corrections","s3Body":"Report the English word, CEFR level and the Thai text that needs review. Corrections enter the content review queue rather than changing published learning data immediately.","cta":"Read common questions"}
+    "about": {
+      "metaTitle": "About this vocabulary course",
+      "metaDescription": "How this English vocabulary course is built for Thai learners.",
+      "h1": "A practical vocabulary course",
+      "intro": "We help Thai speakers build durable English vocabulary through short, focused practice.",
+      "s1Heading": "What we teach",
+      "s1Body": "The course is based on the Oxford 3000 and organised by CEFR level. Thai meanings and pronunciation support make each word approachable.",
+      "s2Heading": "How learning works",
+      "s2Body": "Recognition, spelling and recall are mixed into short sessions. The server grades answers and spaced review brings words back when they are due.",
+      "s3Heading": "What progress means",
+      "s3Body": "Seen, strong and mastered are different states. We show them honestly; opening a word does not mean it has been learned.",
+      "cta": "Explore English vocabulary",
+      "eyebrow": "The Oxford 3000"
+    },
+    "howItWorks": {
+      "metaTitle": "How vocabulary practice works",
+      "metaDescription": "Learn how sessions, review and progress work in the vocabulary app.",
+      "h1": "How it works",
+      "intro": "A clear path from a first five-word trial to daily recall and long-term review.",
+      "s1Heading": "Start with useful words",
+      "s1Body": "Choose a CEFR level or try a public practice session. You can see value before creating an account.",
+      "s2Heading": "Practise in short sessions",
+      "s2Body": "Each normal session has eight item slots and mixes meaning, word choice and spelling with lightweight warm-ups.",
+      "s3Heading": "Review at the right time",
+      "s3Body": "Correct and incorrect attempts update a spaced-review schedule. Due words come before new material.",
+      "s4Heading": "Finish a level honestly",
+      "s4Body": "A level is collected when its required words are strong. Mastery remains a longer-term stretch goal.",
+      "cta": "Choose a level",
+      "ladderHeading": "When words come back",
+      "ladderCaption": "Each correct recall moves a word one rung up this schedule. The gaps widen because recall you have to work for is the recall that lasts.",
+      "dayCount": "{days, plural, one {# day} other {# days}}"
+    },
+    "privacy": {
+      "metaTitle": "Privacy",
+      "metaDescription": "What learner data the vocabulary app stores and why.",
+      "h1": "Privacy",
+      "intro": "We collect the minimum information needed to run accounts, save learning progress and understand the acquisition funnel.",
+      "s1Heading": "Account and learning data",
+      "s1Body": "Account email, username and authentication data are stored with progress rows in Cloudflare D1. Audio assets may be served from Cloudflare R2.",
+      "s2Heading": "Cookies",
+      "s2Body": "First-party, secure cookies keep you signed in and preserve an anonymous practice claim. They are not answer keys and are not placed in URLs.",
+      "s3Heading": "Analytics",
+      "s3Body": "Product analytics uses a separate pseudonymous identifier. We do not send the application user ID, email, typed answers, tokens or Thai meaning text to analytics.",
+      "s4Heading": "Your data",
+      "s4Body": "Signed-in learners can export their own portable progress. For correction or deletion requests, use the contact pathway available in the app; identity must be verified before account data is changed.",
+      "contentsHeading": "Contents"
+    },
+    "terms": {
+      "metaTitle": "Terms of use",
+      "metaDescription": "Plain-language terms for using the vocabulary learning app.",
+      "h1": "Terms of use",
+      "intro": "Use the service for personal learning and treat its content and other users responsibly.",
+      "s1Heading": "Educational purpose",
+      "s1Body": "This is an independent learning tool, not an accredited school, examination provider or guarantee of a CEFR result.",
+      "s2Heading": "Your account",
+      "s2Body": "Keep access credentials private and provide accurate account information. Do not attempt to access another learner's progress or administrative tools.",
+      "s3Heading": "Service availability",
+      "s3Body": "We work to keep the service reliable, but do not promise uninterrupted availability. Features and content may change as quality improves.",
+      "s4Heading": "Content use",
+      "s4Body": "You may use the app for personal study. Automated extraction, abuse of practice endpoints and attempts to bypass access controls are not permitted."
+    },
+    "contact": {
+      "metaTitle": "Contact and support",
+      "metaDescription": "How to get help with the vocabulary learning app.",
+      "h1": "Contact and support",
+      "intro": "Start with the help available inside the app so your request reaches the right context without publishing personal information.",
+      "s1Heading": "Learning or account help",
+      "s1Body": "Use the in-app support pathway while signed in and describe the page and action that failed. Never include your password or a magic-link token.",
+      "s2Heading": "Privacy requests",
+      "s2Body": "Ask through the same verified account pathway for an export, correction or deletion. We may need to confirm account ownership before acting.",
+      "s3Heading": "Content corrections",
+      "s3Body": "Report the English word, CEFR level and the Thai text that needs review. Corrections enter the content review queue rather than changing published learning data immediately.",
+      "cta": "Read common questions"
+    }
   },
   "HtmlSitemap": {
     "metaTitle": "Sitemap | English vocabulary for Thai learners",

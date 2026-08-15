@@ -531,7 +531,15 @@ export function PracticeSession({
                           : "bg-white text-ink hover:bg-brand-soft",
                   ].join(" ")}
                 >
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-current text-xs font-bold">
+                  {/*
+                    The number is a visual affordance for "press 2", not part of the
+                    answer. Left readable it made the accessible name of the option
+                    `"2 in"` — an index glued to a Thai gloss.
+                  */}
+                  <span
+                    aria-hidden
+                    className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-current text-xs font-bold"
+                  >
                     {index + 1}
                   </span>
                   <span lang="th">{option.meaningTh}</span>

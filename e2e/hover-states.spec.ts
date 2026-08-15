@@ -99,6 +99,8 @@ test.describe("hover states — public pages", () => {
     { name: "privacy", path: "/en/privacy" },
     { name: "terms", path: "/en/terms" },
     { name: "contact", path: "/en/contact" },
+    { name: "thai-alphabet", path: "/en/thai-alphabet" },
+    { name: "thai-alphabet-th", path: "/th/thai-alphabet" },
     { name: "html-sitemap", path: "/en/sitemap" },
     { name: "html-sitemap-th", path: "/th/sitemap" },
     { name: "word", path: `/en/english/words/${SEED.unit1.firstWord}` },

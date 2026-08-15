@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { PracticeSession } from "@/components/practice/practice-session";
@@ -8,6 +8,18 @@ import { getWordsByUnit } from "@/lib/oxford-words";
 import { alternatesFor, localePath, absoluteUrl } from "@/lib/seo";
 import { TrackPageView } from "@/components/track-page-view";
 import type { CefrLevel } from "@/lib/types";
+
+/**
+ * Public content: cacheable, re-rendered hourly. `noindex, follow` is about what belongs
+ * in a search index, not about who may read it — this page is the same for everyone.
+ */
+export const revalidate = 3600;
+
+/** Empty on purpose — see the word page. Opts the segment into on-demand ISR. */
+export function generateStaticParams() {
+  return [];
+}
+
 
 type UnitPracticePageProps = {
   params: Promise<{ locale: string; level: string; unit: string }>;
@@ -64,6 +76,9 @@ export async function generateMetadata({
 
 export default async function UnitPracticePage({ params }: UnitPracticePageProps) {
   const { locale, level: rawLevel, unit: rawUnit } = await params;
+
+  // Keeps the route statically renderable — see app/[locale]/about/page.tsx.
+  setRequestLocale(locale);
   const level = parseLevel(rawLevel);
   const unit = parseUnit(rawUnit);
 

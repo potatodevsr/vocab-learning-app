@@ -310,3 +310,107 @@ test.describe("sitemap.xml", () => {
     expect(body).toContain('hreflang="th"');
   });
 });
+
+/**
+ * Delivery, not markup.
+ *
+ * These are the failures a tag-checking audit scores 100 on. Every one of them was live:
+ * no social image anywhere, ~400 KB of preloaded fonts for CSS nothing used, and a
+ * `Cache-Control: no-store` on all ~6,000 URLs that made the edge cache useless.
+ */
+test.describe("delivery", () => {
+  test("public content is edge-cacheable", async ({ request }) => {
+    for (const path of ["/th/faq", "/th/english/a1", "/th/english/words/ability"]) {
+      const cacheControl =
+        (await request.get(path)).headers()["cache-control"] ?? "";
+
+      expect(cacheControl, `${path} is not cacheable`).toContain("s-maxage");
+      expect(cacheControl, `${path} forbids caching`).not.toContain("no-store");
+    }
+  });
+
+  test("the home page stays per-visitor", async ({ request }) => {
+    // It branches on the session server-side to show the lifecycle CTA
+    // (docs/LEARNER-LIFECYCLE.md §8 L2), so it is the one public page that cannot be
+    // shared between visitors. Asserted so nobody "fixes" it into a cache.
+    const cacheControl = (await request.get("/th")).headers()["cache-control"] ?? "";
+
+    expect(cacheControl).toContain("no-store");
+  });
+
+  test("security headers are set", async ({ request }) => {
+    const headers = (await request.get("/th")).headers();
+
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+    expect(headers["x-frame-options"]).toBe("DENY");
+    expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+    // Advertising the stack buys nothing.
+    expect(headers["x-powered-by"]).toBeUndefined();
+  });
+
+  test("every public page carries a social preview image", async ({ page }) => {
+    for (const path of ["/th", "/th/english/a1", "/th/english/words/ability"]) {
+      await page.goto(path);
+
+      const image = await page
+        .locator('meta[property="og:image"]')
+        .first()
+        .getAttribute("content");
+
+      // `summary_large_image` without an image renders a blank card — on LINE above all,
+      // which is where this audience shares links.
+      expect(image, `${path} has no og:image`).toContain("/og.png");
+    }
+
+    expect((await page.request.get("/og.png")).status()).toBe(200);
+  });
+
+  test("no font is preloaded that nothing renders", async ({ page }) => {
+    await page.goto("/th");
+
+    const preloaded = await page.locator('link[rel="preload"][as="font"]').count();
+
+    // Sarabun was 8 weights x 2 styles x 2 subsets = 32 files, ~400 KB, preloaded at
+    // highest priority on every page, for 16 `.sarabun-*` classes no component used.
+    expect(preloaded, "unused fonts are being preloaded again").toBeLessThanOrEqual(4);
+  });
+
+  test("hreflang is declared once, in the head", async ({ request }) => {
+    const response = await request.get("/th/english/words/ability");
+    const link = response.headers()["link"] ?? "";
+
+    // next-intl's automatic header built `x-default` by stripping the locale segment,
+    // producing unprefixed URLs that 307 — an hreflang target that redirects is not a
+    // target, and it disagreed with the head on every URL.
+    expect(link).not.toContain("hreflang");
+  });
+
+  test("x-default points at Thai, the primary audience", async ({ page }) => {
+    await page.goto("/th/english/a1");
+
+    expect(await head(page).alternate("x-default")).toContain("/th/english/a1");
+  });
+
+  test("llms.txt describes the site and names its limits", async ({ request }) => {
+    const response = await request.get("/llms.txt");
+    const body = await response.text();
+
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toContain("text/plain");
+    expect(body).toContain("Oxford 3000");
+    // The corpus is still being proof-read; an assistant quoting us should be told.
+    expect(body).toMatch(/review|proof/i);
+  });
+
+  test("the app is installable", async ({ request }) => {
+    const response = await request.get("/manifest.webmanifest");
+    const manifest = await response.json();
+
+    expect(response.status()).toBe(200);
+    expect(manifest.display).toBe("standalone");
+    // Thai is the primary audience, so the installed shortcut opens the Thai course.
+    expect(manifest.start_url).toBe("/th");
+    expect(manifest.icons.length).toBeGreaterThan(0);
+  });
+});

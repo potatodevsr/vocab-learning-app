@@ -8,6 +8,8 @@ import { routing } from "./i18n/routing";
 // 1.20 cannot bundle Node.js Proxy yet, so the documented `middleware.ts` compatibility
 // path keeps this request boundary on its default Edge runtime until adapter support lands.
 
+// Hreflang behaviour lives in `i18n/routing.ts` (`alternateLinks: false`) — it is a
+// routing option in next-intl 4, not a middleware argument.
 const intlMiddleware = createMiddleware(routing);
 const PROTECTED_USER_PATHS = ["/learn", "/quiz", "/profile"];
 

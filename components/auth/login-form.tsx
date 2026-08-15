@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requestMagicLink } from "@/lib/user-api";
+import { GoogleButton, AuthDivider } from "@/components/auth/google-button";
 
 const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
@@ -20,9 +21,17 @@ type LoginFormProps = {
    * value. `null` when there is none.
    */
   from: string | null;
+  /** True when the Google callback bounced back here after failing. */
+  googleFailed?: boolean;
+  /** No OAuth credentials configured — the button cannot work, so it is not shown. */
+  googleUnavailable?: boolean;
 };
 
-export function LoginForm({ from }: LoginFormProps) {
+export function LoginForm({
+  from,
+  googleFailed = false,
+  googleUnavailable = false,
+}: LoginFormProps) {
   const locale = useLocale();
   const t = useTranslations("Auth");
   const [email, setEmail] = useState("");
@@ -73,7 +82,41 @@ export function LoginForm({ from }: LoginFormProps) {
             <Button variant="ghost" className="w-full" onClick={() => setSent(false)}>{t("magicTryAnother")}</Button>
           </div>
         ) : (
-          <form onSubmit={submit} className="space-y-4" noValidate>
+          <div className="space-y-4">
+            {/* Google first: it is one tap, and the email route below asks the learner to
+                leave the app and come back from their inbox. */}
+            {googleFailed && (
+              <p
+                role="alert"
+                data-testid="google-error"
+                className="rounded-2xl border-3 border-ink bg-warn px-4 py-3 text-sm font-semibold text-ink"
+              >
+                {t("googleError")}
+              </p>
+            )}
+
+            {googleUnavailable ? (
+              /*
+                A sign-in button that can only fail is worse than no sign-in button. When
+                Google is not configured the email route below is the whole offer, so the
+                divider goes too rather than heading an empty alternative.
+              */
+              <p
+                role="status"
+                data-testid="google-unavailable"
+                className="rounded-2xl border-3 border-ink bg-brand-soft px-4 py-3 text-sm font-semibold text-ink"
+              >
+                {t("googleUnavailable")}
+              </p>
+            ) : (
+              <>
+                <GoogleButton from={from ?? undefined} />
+
+                <AuthDivider />
+              </>
+            )}
+
+            <form onSubmit={submit} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="email">{t("email")}</Label>
               <div className="relative">
@@ -88,7 +131,8 @@ export function LoginForm({ from }: LoginFormProps) {
             <p className="text-center text-sm text-muted-foreground">
               {t("noAccount")} <Link href={from ? `/${locale}/auth/register?from=${encodeURIComponent(from)}` : `/${locale}/auth/register`} className="play-focus font-semibold text-brand underline-offset-4 hover:underline">{t("register")}</Link>
             </p>
-          </form>
+            </form>
+          </div>
         )}
       </CardContent>
     </Card>

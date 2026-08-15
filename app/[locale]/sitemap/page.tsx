@@ -1,11 +1,22 @@
 import { cache } from "react";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { TrackPageView } from "@/components/track-page-view";
 import { getAllPublishedWords, UNIT_SIZE } from "@/lib/oxford-words";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
+
+/**
+ * Public content: cacheable, re-rendered hourly.
+ *
+ * Every page on the site was `ƒ` (server-rendered on demand) and therefore shipped
+ * `Cache-Control: private, no-cache, no-store` — at ~6,000 URLs, a Worker invocation and
+ * a D1 read for every crawler hit and every visitor. Nothing here varies by visitor, so
+ * nothing here needs to.
+ */
+export const revalidate = 3600;
+
 
 type Props = { params: Promise<{ locale: string }> };
 const loadWords = cache(() => getAllPublishedWords());
@@ -19,6 +30,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function HtmlSitemapPage({ params }: Props) {
   const { locale } = await params;
+
+  // Keeps the route statically renderable — see app/[locale]/about/page.tsx.
+  setRequestLocale(locale);
   const t = await getTranslations("HtmlSitemap");
   const words = await loadWords();
   const uniqueWords = [...new Map(words.map((word) => [word.slug, word])).values()];

@@ -18,6 +18,34 @@ const HIDDEN_ON = [/^\/learn/, /^\/quiz/, /^\/auth\//];
 
 const LEVELS = ["a1", "a2", "b1", "b2"] as const;
 
+/**
+ * Content and trust surfaces reachable from every page.
+ *
+ * These pages all existed and all shipped in the sitemap, but nothing in the UI linked
+ * them: a crawl from the homepage reached 229 URLs and none of these were among them.
+ * `/english` and `/english/words` are the content root and the A–Z index — the two hubs
+ * SEO-CONTENT.md §5 leans on to distribute signal into the word long tail — so leaving
+ * them orphaned wasted the pages that link *out* of them, not just the pages themselves.
+ */
+const EXPLORE = [
+  { href: "/english", key: "englishHub" },
+  { href: "/english/words", key: "allWords" },
+  { href: "/thai-alphabet", key: "thaiAlphabet" },
+] as const;
+
+const ABOUT = [
+  { href: "/about", key: "about" },
+  { href: "/how-it-works", key: "howItWorks" },
+  { href: "/contact", key: "contact" },
+] as const;
+
+/** Legal + the HTML sitemap, which is itself the hub for everything above. */
+const LEGAL = [
+  { href: "/privacy", key: "privacy" },
+  { href: "/terms", key: "terms" },
+  { href: "/sitemap", key: "sitemap" },
+] as const;
+
 export function SiteFooter() {
   const pathname = usePathname();
   const t = useTranslations("Nav");
@@ -27,7 +55,7 @@ export function SiteFooter() {
 
   return (
     <footer className="border-t-3 border-ink bg-ink text-white">
-      <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-14 lg:grid-cols-[1.2fr_1fr_1fr] lg:px-8">
+      <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] lg:px-8">
         <div>
           <Link
             href="/"
@@ -52,16 +80,16 @@ export function SiteFooter() {
         </div>
 
         <nav aria-label={tFooter("levelsHeading")}>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-accent-sun">
+          <p className="text-sm font-bold uppercase tracking-widest text-accent-sun">
             {tFooter("levelsHeading")}
-          </h2>
+          </p>
 
           <ul className="mt-4 grid gap-2 text-sm">
             {LEVELS.map((level) => (
               <li key={level}>
                 <Link
                   href={`/english/${level}`}
-                  className="play-underline play-focus font-semibold"
+                  className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
                 >
                   {tFooter("levelLink", { level: level.toUpperCase() })}
                 </Link>
@@ -71,15 +99,15 @@ export function SiteFooter() {
         </nav>
 
         <nav aria-label={tFooter("appHeading")}>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-accent-sun">
+          <p className="text-sm font-bold uppercase tracking-widest text-accent-sun">
             {tFooter("appHeading")}
-          </h2>
+          </p>
 
           <ul className="mt-4 grid gap-2 text-sm">
             <li>
               <Link
                 href="/learn?level=A1&unit=1"
-                className="play-underline play-focus font-semibold"
+                className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
               >
                 {t("learn")}
               </Link>
@@ -87,7 +115,7 @@ export function SiteFooter() {
             <li>
               <Link
                 href="/quiz?level=A1&unit=1"
-                className="play-underline play-focus font-semibold"
+                className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
               >
                 {t("quiz")}
               </Link>
@@ -95,7 +123,7 @@ export function SiteFooter() {
             <li>
               <Link
                 href="/review"
-                className="play-underline play-focus font-semibold"
+                className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
               >
                 {t("review")}
               </Link>
@@ -103,18 +131,71 @@ export function SiteFooter() {
             <li>
               <Link
                 href="/faq"
-                className="play-underline play-focus font-semibold"
+                className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
               >
                 {tFooter("faq")}
               </Link>
             </li>
           </ul>
         </nav>
+
+        <nav aria-label={tFooter("exploreHeading")}>
+          <p className="text-sm font-bold uppercase tracking-widest text-accent-sun">
+            {tFooter("exploreHeading")}
+          </p>
+
+          <ul className="mt-4 grid gap-2 text-sm">
+            {EXPLORE.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
+                >
+                  {tFooter(item.key)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <nav aria-label={tFooter("aboutHeading")}>
+          <p className="text-sm font-bold uppercase tracking-widest text-accent-sun">
+            {tFooter("aboutHeading")}
+          </p>
+
+          <ul className="mt-4 grid gap-2 text-sm">
+            {ABOUT.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
+                >
+                  {tFooter(item.key)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
 
       <div className="border-t border-white/15">
-        <div className="mx-auto w-full max-w-6xl px-6 py-6 text-xs text-white/80 lg:px-8">
-          {tFooter("credit")}
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-6 text-xs text-white/80 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <p>{tFooter("credit")}</p>
+
+          <nav aria-label={tFooter("legalHeading")}>
+            <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              {LEGAL.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="play-underline play-focus inline-flex min-h-11 items-center font-semibold text-white"
+                  >
+                    {tFooter(item.key)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
       </div>
     </footer>

@@ -36,6 +36,8 @@ const cards = [
 
 export function HeroWordIllustration({ mode }: { mode: LearnerMode }) {
   const t = useTranslations("Home");
+  // The card depicts the lesson UI, so it borrows that screen's own labels.
+  const tLesson = useTranslations("Lesson");
 
   return (
     // Decorative: the cards below are a picture of the product, and a screen reader
@@ -117,14 +119,23 @@ export function HeroWordIllustration({ mode }: { mode: LearnerMode }) {
               control that lies about being one. They are now inert shapes, hidden from
               assistive tech along with the rest of the picture.
             */}
+            {/*
+              Translated, like the app it depicts.
+
+              These two labels were hardcoded English on a page selling a Thai-language
+              product — a screenshot of the app showing an interface the app does not
+              have. The keys already existed in `messages/`; only this component was not
+              reading them.
+            */}
             <div className="mt-7 grid grid-cols-2 gap-3">
               <span className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-success text-sm font-medium text-white">
-                <Check className="size-4" />I know this
+                <Check className="size-4" />
+                {tLesson("iKnowThis")}
               </span>
 
               <span className="flex h-9 items-center justify-center gap-1.5 rounded-full border border-border bg-white text-sm font-medium">
                 <RotateCcw className="size-4" />
-                Review
+                {tLesson("reviewLater")}
               </span>
             </div>
           </article>

@@ -109,9 +109,9 @@ test.describe("POST /auth/logout", () => {
 });
 
 test.describe("POST /user/register", () => {
-  const fields = ["email", "username", "password", "firstName", "lastName"] as const;
+  const required = ["email", "username", "password"] as const;
 
-  for (const field of fields) {
+  for (const field of required) {
     test(`rejects a body missing ${field}`, async () => {
       const ctx = await asAnonymous();
       const body: Record<string, string> = { ...uniqueUser() };
@@ -120,6 +120,21 @@ test.describe("POST /user/register", () => {
       const res = await ctx.post(`${API}/user/register`, { data: body });
 
       expect(res.status()).toBe(400);
+    });
+  }
+
+  // Name is not required to learn vocabulary. It was two fields of friction in front of
+  // the product, and the column defaults to "" rather than rejecting the insert.
+  for (const field of ["firstName", "lastName"] as const) {
+    test(`accepts a body missing ${field}`, async () => {
+      const ctx = await asAnonymous();
+      const body: Record<string, string> = { ...uniqueUser() };
+      delete body[field];
+
+      const res = await ctx.post(`${API}/user/register`, { data: body });
+
+      expect(res.status()).toBe(200);
+      expect((await res.json())[field]).toBe("");
     });
   }
 
@@ -260,14 +275,32 @@ test.describe("magic-link login", () => {
     });
   });
 
+  /**
+   * The property is that the two cases are indistinguishable, not that an unknown address
+   * produces nothing. Since a magic link can now create an account, an unknown address
+   * does get a link — a sign-up link — so asserting its absence would be asserting the
+   * very asymmetry an enumeration probe looks for.
+   */
   test("does not reveal whether an email is registered", async () => {
     const ctx = await asAnonymous();
-    const res = await ctx.post(`${API}/user/magic-link/request`, {
-      data: { email: "missing@example.com", locale: "en" },
+    const known = uniqueUser();
+    await ctx.post(`${API}/user/register`, { data: known });
+
+    const forKnown = await ctx.post(`${API}/user/magic-link/request`, {
+      data: { email: known.email, locale: "en" },
+    });
+    const forUnknown = await ctx.post(`${API}/user/magic-link/request`, {
+      data: { email: `missing-${Date.now()}@example.com`, locale: "en" },
     });
 
-    expect(res.status()).toBe(202);
-    expect(await res.json()).toEqual({ ok: true });
+    expect(forKnown.status()).toBe(202);
+    expect(forUnknown.status()).toBe(forKnown.status());
+
+    // Same shape either way. (The dev-only link body is present in both under
+    // MAGIC_LINK_DEV_MODE; production returns a bare `{ ok: true }` for both.)
+    expect(Object.keys(await forUnknown.json()).sort()).toEqual(
+      Object.keys(await forKnown.json()).sort(),
+    );
   });
 
   test("issues a single-use link that creates a learner session", async () => {

@@ -1,10 +1,21 @@
 import type { Metadata } from "next";
 import { ArrowRight } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { jsonLd, publicMetadata } from "@/lib/seo";
+
+/**
+ * Public content: cacheable, re-rendered hourly.
+ *
+ * Every page on the site was `ƒ` (server-rendered on demand) and therefore shipped
+ * `Cache-Control: private, no-cache, no-store` — at ~6,000 URLs, a Worker invocation and
+ * a D1 read for every crawler hit and every visitor. Nothing here varies by visitor, so
+ * nothing here needs to.
+ */
+export const revalidate = 3600;
+
 
 type FaqPageProps = { params: Promise<{ locale: string }> };
 
@@ -35,7 +46,16 @@ export async function generateMetadata({
   });
 }
 
-export default async function FaqPage() {
+export default async function FaqPage({ params }: FaqPageProps) {
+  const { locale } = await params;
+  /**
+   * Required per page, not just in the layout: without it every unqualified
+   * `getTranslations(...)` below reads the request headers to discover its locale, which
+   * makes the route dynamic and re-imposes `Cache-Control: no-store` on content that
+   * never varies by visitor.
+   */
+  setRequestLocale(locale);
+
   const t = await getTranslations("Faq");
 
   return (

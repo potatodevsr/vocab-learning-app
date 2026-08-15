@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react";
 
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,28 @@ import {
   getWordsByUnit,
   UNIT_SIZE,
 } from "@/lib/oxford-words";
-import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
+import {
+  absoluteUrl,
+  jsonLd,
+  localePath,
+  publicMetadata,
+  OXFORD_3000_TERMSET_ID,
+} from "@/lib/seo";
+import { trustedThai } from "@/lib/thai-text";
 import type { CefrLevel } from "@/lib/types";
 import { TrackPageView } from "@/components/track-page-view";
 import { UnitCheckpointEntry } from "@/components/practice/unit-checkpoint-entry";
+
+/**
+ * Public content: cacheable, re-rendered hourly.
+ *
+ * Every page on the site was `ƒ` (server-rendered on demand) and therefore shipped
+ * `Cache-Control: private, no-cache, no-store` — at ~6,000 URLs, a Worker invocation and
+ * a D1 read for every crawler hit and every visitor. Nothing here varies by visitor, so
+ * nothing here needs to.
+ */
+export const revalidate = 3600;
+
 
 type UnitPageProps = {
   params: Promise<{ locale: string; level: string; unit: string }>;
@@ -36,6 +54,19 @@ const parseUnit = (value: string) => {
  * A unit page is the main long-tail SEO surface (docs/SPEC.md §9.2): twenty real words
  * with their Thai meanings on one crawlable page, each linking to its own word page.
  */
+/**
+ * Empty on purpose.
+ *
+ * Declaring `generateStaticParams` is what opts a dynamic segment into incremental static
+ * regeneration; returning nothing from it means no page is built up front. There are
+ * thousands of these URLs and almost all of them are never requested, so building them at
+ * deploy time would cost minutes to produce pages nobody reads. Each one is rendered on
+ * first request and then cached for `revalidate`.
+ */
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({
   params,
 }: UnitPageProps): Promise<Metadata> {
@@ -74,6 +105,9 @@ export async function generateMetadata({
 
 export default async function UnitPage({ params }: UnitPageProps) {
   const { locale, level: rawLevel, unit: rawUnit } = await params;
+
+  // Keeps the route statically renderable — see app/[locale]/about/page.tsx.
+  setRequestLocale(locale);
   const level = parseLevel(rawLevel);
   const unit = parseUnit(rawUnit);
 
@@ -87,32 +121,76 @@ export default async function UnitPage({ params }: UnitPageProps) {
   if (words.length === 0) notFound();
 
   const t = await getTranslations("Unit");
+  const tNav = await getTranslations("Nav");
   const unitCount = Math.max(Math.ceil(levelTotal / UNIT_SIZE), 1);
   const levelHref = `/english/${level.toLowerCase()}`;
 
   return (
     <>
       <TrackPageView family="unit" locale={locale} level={level} unit={unit} />
-      {/* An ItemList of DefinedTerms: a curated vocabulary list, not an article. */}
+      {/*
+        An ItemList of DefinedTerms — a curated vocabulary list, not an article — plus the
+        BreadcrumbList this page type was missing.
+
+        `inDefinedTermSet` now references the anchored `@id` the homepage publishes rather
+        than repeating the bare string "Oxford 3000", and terms whose Thai gloss did not
+        survive extraction are described without one instead of with debris.
+      */}
       <script
         {...jsonLd({
           "@context": "https://schema.org",
-          "@type": "ItemList",
-          name: `Oxford 3000 ${level} — unit ${unit}`,
-          numberOfItems: words.length,
-          itemListElement: words.map((word, index) => ({
-            "@type": "ListItem",
-            position: index + 1,
-            item: {
-              "@type": "DefinedTerm",
-              name: word.displayWord,
-              description: word.meaningTh,
-              inDefinedTermSet: "Oxford 3000",
-              url: absoluteUrl(
-                localePath(locale, `english/words/${word.slug}`),
-              ),
+          "@graph": [
+            {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: tNav("home"),
+                  item: absoluteUrl(localePath(locale)),
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: tNav("words"),
+                  item: absoluteUrl(localePath(locale, "english")),
+                },
+                {
+                  "@type": "ListItem",
+                  position: 3,
+                  name: level,
+                  item: absoluteUrl(
+                    localePath(locale, `english/${level.toLowerCase()}`),
+                  ),
+                },
+                {
+                  "@type": "ListItem",
+                  position: 4,
+                  name: t("breadcrumbUnit", { unit }),
+                },
+              ],
             },
-          })),
+            {
+              "@type": "ItemList",
+              name: `Oxford 3000 ${level} — unit ${unit}`,
+              numberOfItems: words.length,
+              itemListElement: words.map((word, index) => ({
+                "@type": "ListItem",
+                position: index + 1,
+                item: {
+                  "@type": "DefinedTerm",
+                  name: word.displayWord,
+                  ...(trustedThai(word.meaningTh)
+                    ? { description: trustedThai(word.meaningTh) }
+                    : {}),
+                  inDefinedTermSet: { "@id": OXFORD_3000_TERMSET_ID },
+                  url: absoluteUrl(
+                    localePath(locale, `english/words/${word.slug}`),
+                  ),
+                },
+              })),
+            },
+          ],
         })}
       />
     <main className="min-h-screen bg-background text-foreground">
@@ -175,13 +253,15 @@ export default async function UnitPage({ params }: UnitPageProps) {
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {word.partOfSpeech}
-                    {word.pronunciationTh ? ` · ${word.pronunciationTh}` : ""}
+                    {trustedThai(word.pronunciationTh)
+                      ? ` · ${trustedThai(word.pronunciationTh)}`
+                      : ""}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <p className="font-thai text-lg font-semibold" lang="th">
-                    {word.meaningTh}
+                    {trustedThai(word.meaningTh) ?? t("meaningPending")}
                   </p>
                   {word.exampleEn ? (
                     <Volume2

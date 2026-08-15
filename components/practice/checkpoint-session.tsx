@@ -582,7 +582,11 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
                         isSelected ? "bg-accent-sun text-ink" : "bg-white text-ink hover:bg-brand-soft",
                       ].join(" ")}
                     >
-                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-current text-xs font-bold">
+                      {/* Decorative index — see practice-session.tsx. */}
+                      <span
+                        aria-hidden
+                        className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-current text-xs font-bold"
+                      >
                         {index + 1}
                       </span>
                       <span lang="th">{label}</span>

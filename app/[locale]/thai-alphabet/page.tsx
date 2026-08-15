@@ -1,11 +1,22 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { getConsonants, getVowelSounds, type ThaiLetter } from "@/lib/thai-letters";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
 import { TrackPageView } from "@/components/track-page-view";
+
+/**
+ * Public content: cacheable, re-rendered hourly.
+ *
+ * Every page on the site was `ƒ` (server-rendered on demand) and therefore shipped
+ * `Cache-Control: private, no-cache, no-store` — at ~6,000 URLs, a Worker invocation and
+ * a D1 read for every crawler hit and every visitor. Nothing here varies by visitor, so
+ * nothing here needs to.
+ */
+export const revalidate = 3600;
+
 
 /**
  * The Thai writing system as a reference table: 44 consonants and the traditional 32 vowels,
@@ -24,11 +35,11 @@ import { TrackPageView } from "@/components/track-page-view";
  * column is curated at `/admin/letters` rather than generated, which is §2.3.
  */
 
-type PageProps = { params: Promise<{ locale: string }> };
+type LocalePageProps = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({
   params,
-}: PageProps): Promise<Metadata> {
+}: LocalePageProps): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "Alphabet" });
 
@@ -43,13 +54,24 @@ export async function generateMetadata({
 const LetterTable = ({
   letters,
   columns,
+  scrollHint,
 }: {
   letters: ThaiLetter[];
   columns: { char: string; name: string; roman: string; sound: string };
+  scrollHint: string;
 }) => (
   // Wide content scrolls inside its own container so the page body never scrolls sideways
-  // at 390px, which is the width this is designed at.
-  <div className="mt-4 overflow-x-auto rounded-2xl border-2 border-ink bg-white">
+  // at 390px, which is the width this is designed at. The table is 612px inside a 345px
+  // container there, so 43% of every row starts off-screen — silently, because a
+  // touch device draws no scrollbar until you already know to drag. The hint says so,
+  // and `tabIndex` makes the region reachable by keyboard, which an `overflow` container
+  // holding focusable-free content otherwise is not.
+  <div
+    role="region"
+    aria-label={scrollHint}
+    tabIndex={0}
+    className="play-focus mt-4 overflow-x-auto rounded-2xl border-2 border-ink bg-white"
+  >
     <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
       <thead>
         <tr className="border-b-2 border-ink bg-accent-mint/30">
@@ -102,8 +124,11 @@ const LetterTable = ({
   </div>
 );
 
-export default async function ThaiAlphabetPage({ params }: PageProps) {
+export default async function ThaiAlphabetPage({ params }: LocalePageProps) {
   const { locale } = await params;
+
+  // Keeps the route statically renderable — see app/[locale]/about/page.tsx.
+  setRequestLocale(locale);
   const t = await getTranslations("Alphabet");
 
   // Two reads rather than one filtered locally: each is a single request well under the
@@ -153,7 +178,11 @@ export default async function ThaiAlphabetPage({ params }: PageProps) {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             {t("consonantsBody")}
           </p>
-          <LetterTable letters={consonants} columns={columns} />
+          <LetterTable
+            letters={consonants}
+            columns={columns}
+            scrollHint={t("tableScrollHint")}
+          />
         </section>
 
         <section className="mt-12" data-testid="alphabet-vowels">
@@ -163,7 +192,11 @@ export default async function ThaiAlphabetPage({ params }: PageProps) {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             {t("vowelsBody")}
           </p>
-          <LetterTable letters={vowels} columns={columns} />
+          <LetterTable
+            letters={vowels}
+            columns={columns}
+            scrollHint={t("tableScrollHint")}
+          />
         </section>
 
         {/*

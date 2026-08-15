@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { routing } from "@/i18n/routing";
 import { absoluteUrl, localePath } from "@/lib/seo";
 import { getAllPublishedWords, UNIT_SIZE } from "@/lib/oxford-words";
+import { isTrustworthyThai } from "@/lib/thai-text";
 import type { CefrLevel } from "@/lib/types";
 
 /**
@@ -20,7 +21,20 @@ const STATIC_PATHS = [
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const words = await getAllPublishedWords();
+  /**
+   * The substance floor, applied here and in the word page's own `generateMetadata`, from
+   * one predicate so the two can never disagree.
+   *
+   * A published row is not automatically a page worth submitting. The PDF extraction left
+   * entries whose Thai meaning is Latin debris — `age` meant `"ang"`, `aunt` meant
+   * `"in"` — and listing thousands of those is how a long tail becomes a liability.
+   * `backend/scripts/repair-thai-text.mjs` withdraws the worst of them at the database
+   * level; this is the second line, for anything that gets published later without
+   * clearing review.
+   */
+  const words = (await getAllPublishedWords()).filter((word) =>
+    isTrustworthyThai(word.meaningTh),
+  );
 
   const entries: MetadataRoute.Sitemap = [];
 
@@ -31,14 +45,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified,
         priority,
         // Both locales are the same page in different languages — say so, rather than
-        // letting them compete for the same query.
+        // letting them compete for the same query. `x-default` is listed alongside them
+        // so the sitemap says exactly what the `<head>` says; it was previously absent
+        // from all ~6,000 entries while every page declared one.
         alternates: {
-          languages: Object.fromEntries(
-            routing.locales.map((other) => [
-              other,
-              absoluteUrl(localePath(other, path)),
-            ]),
-          ),
+          languages: {
+            ...Object.fromEntries(
+              routing.locales.map((other) => [
+                other,
+                absoluteUrl(localePath(other, path)),
+              ]),
+            ),
+            "x-default": absoluteUrl(localePath(routing.defaultLocale, path)),
+          },
         },
       });
     }

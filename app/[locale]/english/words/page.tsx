@@ -1,12 +1,23 @@
 import { cache } from "react";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { getAllPublishedWords } from "@/lib/oxford-words";
 import type { OxfordWord } from "@/lib/types";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
 import { TrackPageView } from "@/components/track-page-view";
+
+/**
+ * Public content: cacheable, re-rendered hourly.
+ *
+ * Every page on the site was `ƒ` (server-rendered on demand) and therefore shipped
+ * `Cache-Control: private, no-cache, no-store` — at ~6,000 URLs, a Worker invocation and
+ * a D1 read for every crawler hit and every visitor. Nothing here varies by visitor, so
+ * nothing here needs to.
+ */
+export const revalidate = 3600;
+
 
 /**
  * The A–Z word index (SEO-CONTENT §E, the index half — letter detail routes at
@@ -23,7 +34,7 @@ import { TrackPageView } from "@/components/track-page-view";
  * since no letter page will cover them.
  */
 
-type PageProps = { params: Promise<{ locale: string }> };
+type LocalePageProps = { params: Promise<{ locale: string }> };
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -93,7 +104,7 @@ const groupByLetter = (words: OxfordWord[]) => {
 
 export async function generateMetadata({
   params,
-}: PageProps): Promise<Metadata> {
+}: LocalePageProps): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "WordsIndex" });
   const count = uniqueBySlug(await loadWords()).length;
@@ -109,8 +120,11 @@ export async function generateMetadata({
   });
 }
 
-export default async function WordsIndexPage({ params }: PageProps) {
+export default async function WordsIndexPage({ params }: LocalePageProps) {
   const { locale } = await params;
+
+  // Keeps the route statically renderable — see app/[locale]/about/page.tsx.
+  setRequestLocale(locale);
   const t = await getTranslations("WordsIndex");
 
   const unique = uniqueBySlug(await loadWords());

@@ -12,6 +12,14 @@ const locales = [
 ];
 
 /**
+ * Announcing a locale link in the language it leads to, not the one the page is in — so
+ * "TH" is not read out with English phonology to a Thai speaker, and vice versa. `lang`
+ * does the announcing; `hrefLang` states the relationship. Both chips get both: only the
+ * English one carried `hrefLang` before, and neither carried `lang`.
+ */
+const LANG_TAG: Record<string, string> = { en: "en", th: "th" };
+
+/**
  * A segmented control, in two tones.
  *
  * `onColor` is for the ink-tier hero bands (brand, grape, deep-sky); `onSurface` is for
@@ -56,9 +64,11 @@ export function LanguageSwitcher({
             key={item.value}
             href={pathname}
             locale={item.value}
+            lang={LANG_TAG[item.value]}
+            hrefLang={LANG_TAG[item.value]}
             aria-current={isActive ? "true" : undefined}
             className={cn(
-              "play-lift play-focus rounded-full px-2.5 py-1 text-sm font-bold transition-colors sm:px-3",
+              "play-lift play-focus flex min-h-11 items-center rounded-full px-2.5 text-sm font-bold transition-colors sm:px-3",
               isActive && onColor && "bg-white text-brand",
               isActive && !onColor && "bg-brand text-white",
               // The inactive chip stays readable in its own right — it is a link, not a

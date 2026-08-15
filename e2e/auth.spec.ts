@@ -20,14 +20,42 @@ test.describe("authentication", () => {
     await expect(page.getByText(user.username)).toBeVisible();
   });
 
+  /**
+   * An unknown address now receives a sign-up link rather than nothing, so the screen it
+   * lands on must be the one a registered address sees — that sameness is the point. It is
+   * no longer meaningful to assert the dev link is absent: its absence *was* the tell.
+   */
   test("an unknown email gets the same inbox confirmation", async ({ page }) => {
     await page.goto("/en/auth/login");
-    await page.fill("#email", "no-account@example.com");
+    await page.fill("#email", `no-account-${Date.now()}@example.com`);
     await page.click('button[type="submit"]');
 
     await expect(page.getByTestId("magic-link-sent")).toBeVisible();
-    await expect(page.getByTestId("dev-magic-link")).toHaveCount(0);
     await expect(page).toHaveURL(/\/auth\/login/);
+  });
+
+  test("a link sent to a brand-new address creates the account and signs in", async ({
+    page,
+  }) => {
+    const email = `signup-${Date.now()}@example.com`;
+
+    await page.goto("/en/auth/login");
+    await page.fill("#email", email);
+    await page.click('button[type="submit"]');
+
+    await page.getByTestId("dev-magic-link").click();
+
+    // The link carries no `from`, so verification lands back on the locale root. Wait for
+    // that before asserting — the account menu only mounts once the session cookie is set.
+    await expect(page).toHaveURL(/\/en$/, { timeout: 20_000 });
+
+    // Landing signed in is the whole point: before this, the only way to create an
+    // account was the five-field password form. The username was derived from the
+    // address, since nothing asked for one.
+    await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(page.getByText(email.split("@")[0].replace(/-/g, ""))).toBeVisible();
   });
 
   test("a magic link signs in once and preserves the requested destination", async ({

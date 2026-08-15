@@ -4,7 +4,10 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-Specifically for this repo: middleware is now `proxy.ts` (Next 16 rename), `params` and
+Specifically for this repo: Next 16 renames middleware to `proxy.ts`, but this repo still
+uses **`middleware.ts`** — OpenNext Cloudflare 1.20 cannot bundle the Node.js Proxy
+runtime, so the documented compatibility path keeps that boundary on Edge until adapter
+support lands (see the note at the top of `middleware.ts`). `params` and
 `searchParams` are Promises, and builds run on Turbopack.
 
 # Vocab Learning App — web
@@ -122,7 +125,7 @@ components/ui/      shadcn primitives — generated, don't hand-edit
 components/         feature components
 lib/                api clients, quiz/SRS logic, pure helpers
 i18n/, messages/    next-intl routing + strings
-proxy.ts            route protection (Next 16 middleware)
+middleware.ts       route protection (not `proxy.ts` — see above)
 backend/            → git submodule: the api Worker
 docs/SPEC.md        goal, architecture, audit, roadmap
 ```

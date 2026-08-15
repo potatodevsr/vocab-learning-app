@@ -1,5 +1,5 @@
 import { ArrowRight, BookOpen, Play, Repeat2, Sparkles } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import type { CefrLevel, OxfordWord } from "@/lib/types";
@@ -14,8 +14,25 @@ import {
   getPreviewWords,
   UNIT_SIZE,
 } from "@/lib/oxford-words";
-import { jsonLd, publicMetadata } from "@/lib/seo";
+import {
+  absoluteUrl,
+  jsonLd,
+  localePath,
+  publicMetadata,
+  ORGANISATION_ID,
+} from "@/lib/seo";
 import { TrackPageView } from "@/components/track-page-view";
+
+/**
+ * Public content: cacheable, re-rendered hourly.
+ *
+ * Every page on the site was `ƒ` (server-rendered on demand) and therefore shipped
+ * `Cache-Control: private, no-cache, no-store` — at ~6,000 URLs, a Worker invocation and
+ * a D1 read for every crawler hit and every visitor. Nothing here varies by visitor, so
+ * nothing here needs to.
+ */
+export const revalidate = 3600;
+
 
 type LessonUnit = {
   id: string;
@@ -113,11 +130,15 @@ export async function generateMetadata({
 
 export default async function LevelPage({ params }: LevelPageProps) {
   const { locale, level: raw } = await params;
+
+  // Keeps the route statically renderable — see app/[locale]/about/page.tsx.
+  setRequestLocale(locale);
   const level = parseLevel(raw);
 
   if (!level) notFound();
 
   const t = await getTranslations("Level");
+  const tNav = await getTranslations("Nav");
 
   const [totalWords, previewWords] = await Promise.all([
     getLevelWordCount(level),
@@ -131,18 +152,76 @@ export default async function LevelPage({ params }: LevelPageProps) {
   return (
     <>
       <TrackPageView family="level" locale={locale} level={level} />
-      {/* ItemList: tells Google this page is a curated list, not a landing page. */}
+      {/*
+        Course, BreadcrumbList and ItemList together.
+
+        `Course` is the strongest structural fit the site has and was missing entirely —
+        four CEFR levels, self-paced, free, split into units. `BreadcrumbList` was present
+        on word and letter pages but absent from exactly the three page types that sit
+        mid-hierarchy, so a crawler reaching a level page had nothing telling it what this
+        page hangs off.
+
+        The `ItemList` had two faults: `numberOfItems` reported the level's *word* count
+        (758) for a list enumerating its *units* (8), which is the kind of mismatch the
+        Rich Results Test flags; and no `ListItem` carried an `item`, so the list pointed
+        nowhere at all.
+      */}
       <script
         {...jsonLd({
           "@context": "https://schema.org",
-          "@type": "ItemList",
-          name: `Oxford 3000 ${level} Thai learning path`,
-          numberOfItems: totalWords,
-          itemListElement: visibleUnits.map((unit, index) => ({
-            "@type": "ListItem",
-            position: index + 1,
-            name: `Unit ${unit.number}`,
-          })),
+          "@graph": [
+            {
+              "@type": "Course",
+              name: t("title", { level }),
+              description: t(`blurb${level}`),
+              url: absoluteUrl(localePath(locale, `english/${level.toLowerCase()}`)),
+              educationalLevel: level,
+              inLanguage: locale,
+              isAccessibleForFree: true,
+              provider: { "@id": ORGANISATION_ID },
+              teaches: `Oxford 3000 vocabulary, CEFR ${level}`,
+              hasCourseInstance: {
+                "@type": "CourseInstance",
+                courseMode: "online",
+                // One short round, which is the unit of study the app actually offers.
+                courseWorkload: "PT3M",
+              },
+            },
+            {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: tNav("home"),
+                  item: absoluteUrl(localePath(locale)),
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: tNav("words"),
+                  item: absoluteUrl(localePath(locale, "english")),
+                },
+                { "@type": "ListItem", position: 3, name: level },
+              ],
+            },
+            {
+              "@type": "ItemList",
+              name: `Oxford 3000 ${level} Thai learning path`,
+              numberOfItems: visibleUnits.length,
+              itemListElement: visibleUnits.map((unit, index) => ({
+                "@type": "ListItem",
+                position: index + 1,
+                name: t("unitTitle", { unit: unit.number }),
+                item: absoluteUrl(
+                  localePath(
+                    locale,
+                    `english/${level.toLowerCase()}/unit/${unit.number}`,
+                  ),
+                ),
+              })),
+            },
+          ],
         })}
       />
     <main className="min-h-screen bg-background text-foreground">

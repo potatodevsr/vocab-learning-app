@@ -11,7 +11,12 @@ export default async function LocaleNotFound() {
     <main className="flex min-h-screen items-center justify-center bg-accent-deep-sky px-6 text-white">
       <div className="w-full max-w-md text-center" data-testid="not-found">
         {/* The code, set as an outline, is the whole illustration — no payload. */}
-        <p aria-hidden className="play-outline-word play-display text-white">
+        {/* Deep-sky backdrop, so the stroke is white — see `--outline-color` in globals.css. */}
+        <p
+          aria-hidden
+          className="play-outline-word play-display"
+          style={{ ["--outline-color" as string]: "#fff" }}
+        >
           {t("code")}
         </p>
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ArrowRight, BookOpen, LibraryBig, Play, Type } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
@@ -9,6 +9,17 @@ import type { CefrLevel } from "@/lib/types";
 import { getLevelWordCount, UNIT_SIZE } from "@/lib/oxford-words";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
 import { TrackPageView } from "@/components/track-page-view";
+
+/**
+ * Public content: cacheable, re-rendered hourly.
+ *
+ * Every page on the site was `ƒ` (server-rendered on demand) and therefore shipped
+ * `Cache-Control: private, no-cache, no-store` — at ~6,000 URLs, a Worker invocation and
+ * a D1 read for every crawler hit and every visitor. Nothing here varies by visitor, so
+ * nothing here needs to.
+ */
+export const revalidate = 3600;
+
 
 /**
  * The `/english` content root (SEO-CONTENT §D). Every other English family — level hubs,
@@ -21,7 +32,7 @@ import { TrackPageView } from "@/components/track-page-view";
  * single read, AGENTS.md rule 9), so the four cards report the real published size.
  */
 
-type PageProps = { params: Promise<{ locale: string }> };
+type LocalePageProps = { params: Promise<{ locale: string }> };
 
 const LEVELS: CefrLevel[] = ["A1", "A2", "B1", "B2"];
 
@@ -39,7 +50,7 @@ const LEVEL_TILE: Record<CefrLevel, string> = {
 
 export async function generateMetadata({
   params,
-}: PageProps): Promise<Metadata> {
+}: LocalePageProps): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "EnglishHub" });
 
@@ -51,8 +62,11 @@ export async function generateMetadata({
   });
 }
 
-export default async function EnglishHubPage({ params }: PageProps) {
+export default async function EnglishHubPage({ params }: LocalePageProps) {
   const { locale } = await params;
+
+  // Keeps the route statically renderable — see app/[locale]/about/page.tsx.
+  setRequestLocale(locale);
 
   const t = await getTranslations("EnglishHub");
   const tLevel = await getTranslations("Level");

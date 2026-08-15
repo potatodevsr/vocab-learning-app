@@ -300,9 +300,14 @@
 
 /* An outlined word, for the one accent in a headline. Flat by definition — it
    is a stroke, not a fill, so it adds emphasis without adding a colour. */
+/* The stroke colour must be stated, never inherited. `currentColor` cannot work here:
+   this rule sets `color: transparent` on the same element, so `currentColor` resolves to
+   that transparent value and the word paints nothing at all. Callers set
+   `--outline-color` to whatever the backdrop needs; the default is ink, for the light
+   canvas the app uses almost everywhere. */
 .play-outline-word {
   color: transparent;
-  -webkit-text-stroke: 3px currentColor;
+  -webkit-text-stroke: 3px var(--outline-color, var(--ink));
   paint-order: stroke fill;
 }
 
@@ -352,102 +357,6 @@
 .font-thai-modern {
   font-family: var(--font-noto-sans-thai), var(--font-geist-sans), system-ui,
     sans-serif;
-}
-
-.sarabun-thin {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 100;
-  font-style: normal;
-}
-
-.sarabun-extralight {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 200;
-  font-style: normal;
-}
-
-.sarabun-light {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 300;
-  font-style: normal;
-}
-
-.sarabun-regular {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 400;
-  font-style: normal;
-}
-
-.sarabun-medium {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 500;
-  font-style: normal;
-}
-
-.sarabun-semibold {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 600;
-  font-style: normal;
-}
-
-.sarabun-bold {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 700;
-  font-style: normal;
-}
-
-.sarabun-extrabold {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 800;
-  font-style: normal;
-}
-
-.sarabun-thin-italic {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 100;
-  font-style: italic;
-}
-
-.sarabun-extralight-italic {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 200;
-  font-style: italic;
-}
-
-.sarabun-light-italic {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 300;
-  font-style: italic;
-}
-
-.sarabun-regular-italic {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 400;
-  font-style: italic;
-}
-
-.sarabun-medium-italic {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 500;
-  font-style: italic;
-}
-
-.sarabun-semibold-italic {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 600;
-  font-style: italic;
-}
-
-.sarabun-bold-italic {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 700;
-  font-style: italic;
-}
-
-.sarabun-extrabold-italic {
-  font-family: var(--font-sarabun), sans-serif;
-  font-weight: 800;
-  font-style: italic;
 }
 
 /* The card stack: one opaque card is being read while two compact, solid cards create

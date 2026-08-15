@@ -14,11 +14,30 @@ import { WordTicker } from "@/components/word-ticker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
-import { jsonLd, publicMetadata, SITE_URL } from "@/lib/seo";
+import {
+  absoluteUrl,
+  jsonLd,
+  localePath,
+  publicMetadata,
+  ORGANISATION_ID,
+  OXFORD_3000_TERMSET_ID,
+  SITE_URL,
+  WEBSITE_ID,
+} from "@/lib/seo";
 import { resolveLearnerMode } from "@/lib/learner-mode";
 import { TrackPageView } from "@/components/track-page-view";
 import { getTodaySummaryWithToken } from "@/lib/session-api";
 import { TodayCard } from "@/components/play/today-card";
+
+/**
+ * The one public page that genuinely cannot be cached.
+ *
+ * `/` branches on the session server-side — a signed-in learner gets their lifecycle CTA
+ * instead of the marketing page (docs/LEARNER-LIFECYCLE.md §8 L2) — so it reads `cookies()`
+ * and is per-visitor by construction. Every other public route now carries `revalidate`
+ * and is edge-cacheable; this one pays for a real feature.
+ */
+
 
 const a1WordsHref = "/english/a1";
 // A visitor's first CTA must be playable with no account
@@ -75,14 +94,54 @@ export default async function Home({ params }: HomeProps) {
   return (
     <>
       <TrackPageView family="home" locale={locale} />
-      {/* WebSite + EducationalOrganization: brand identity and sitelinks (SPEC §9.4). */}
+      {/*
+        The entity graph: publisher, site, and the word list itself, each with a stable
+        `@id` that the rest of the site references rather than restates.
+
+        The comment above this block used to promise "WebSite + EducationalOrganization"
+        and only the organisation was ever emitted — with no `logo` and no `sameAs`, so
+        there was nothing to tie the brand to anything outside this domain, and no node
+        for the ~5,600 word pages to point at when they claimed membership of the Oxford
+        3000. `potentialAction`/`SearchAction` is deliberately absent: there is no site
+        search to point it at, and declaring one that does not exist is worse than none.
+      */}
       <script
         {...jsonLd({
           "@context": "https://schema.org",
-          "@type": "EducationalOrganization",
-          name: "Vocab Learning",
-          url: SITE_URL,
-          description: t("heroDescription"),
+          "@graph": [
+            {
+              "@type": "EducationalOrganization",
+              "@id": ORGANISATION_ID,
+              name: "Vocab Learning",
+              url: SITE_URL,
+              description: t("heroDescription"),
+              logo: {
+                "@type": "ImageObject",
+                url: absoluteUrl("/icon-512.png"),
+                width: 512,
+                height: 512,
+              },
+              image: absoluteUrl("/og.png"),
+            },
+            {
+              "@type": "WebSite",
+              "@id": WEBSITE_ID,
+              url: SITE_URL,
+              name: "Vocab Learning",
+              description: t("heroDescription"),
+              inLanguage: ["th", "en"],
+              publisher: { "@id": ORGANISATION_ID },
+            },
+            {
+              "@type": "DefinedTermSet",
+              "@id": OXFORD_3000_TERMSET_ID,
+              name: "Oxford 3000",
+              description: t("heroDescription"),
+              url: absoluteUrl(localePath(locale, "english/words")),
+              inLanguage: "en",
+              publisher: { "@id": ORGANISATION_ID },
+            },
+          ],
         })}
       />
     <main className="min-h-screen bg-background text-foreground">
