@@ -207,3 +207,54 @@ test.describe("Google links to an existing account", () => {
     ).toBe(original.id);
   });
 });
+
+/**
+ * What `start` is allowed to hand a browser.
+ *
+ * `GOOGLE_AUTH_DEV_MODE` lets this suite exercise the callback without reaching Google,
+ * and it also made `start` fall back to a placeholder `client_id=test-client-id`. The
+ * suite never followed that redirect so nothing caught it — but a human clicking the
+ * button did, straight into Google's own "Error 401: invalid_client" page, which reads as
+ * a broken app rather than an unconfigured one. `pnpm dev` no longer sets the flag.
+ *
+ * Written to hold whether or not credentials happen to exist, because they are read from
+ * `backend/.dev.vars`, which the developer's own Google setup also writes to: asserting
+ * one branch would make the suite pass or fail on a file that is not in the repository.
+ */
+test.describe("Google sign-in redirect target", () => {
+  test("either goes to Google with a usable redirect_uri, or back to the login form", async ({
+    request,
+  }) => {
+    const start = await request.get(`${API}/user/google/start?locale=th`, {
+      maxRedirects: 0,
+    });
+
+    expect(start.status()).toBe(302);
+    const location = start.headers()["location"] ?? "";
+
+    if (!location.includes("accounts.google.com")) {
+      // Unconfigured: back to the sign-in page, which explains itself and offers the
+      // email route instead of showing a button that cannot work.
+      expect(location).toContain("/auth/login");
+      expect(location).toContain("error=google_unavailable");
+      return;
+    }
+
+    const url = new URL(location);
+
+    /**
+     * The callback address, which is the part that is easy to get wrong: it is the *web*
+     * origin plus the `/api/*` forwarder, not the API's own port. Registering anything
+     * else in Google Cloud Console produces `redirect_uri_mismatch`, so this is the value
+     * a human has to copy exactly.
+     */
+    expect(url.searchParams.get("redirect_uri")).toMatch(
+      /^https?:\/\/[^/]+\/api\/user\/google\/callback$/,
+    );
+
+    // A placeholder id is only ever acceptable because this suite does not follow the
+    // redirect. If it reaches a real browser it is a dead end.
+    const clientId = url.searchParams.get("client_id") ?? "";
+    expect(clientId.length, "client_id must not be empty").toBeGreaterThan(0);
+  });
+});

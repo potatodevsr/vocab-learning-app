@@ -123,4 +123,36 @@ test.describe("public content", () => {
     await page.goto(`/th/english/words/${SEED.unit1.firstWord}`);
     await expect(page.getByTestId("thai-reading")).toHaveCount(0);
   });
+
+  test("the letter breakdown decodes the Thai meaning and lights the tapped letter on /en", async ({
+    page,
+  }) => {
+    // The breakdown is the read-the-script aid for a Thai learner: it appears on /en (mode
+    // "thai") and is derived one character at a time from the meaning, so ความหมาย1 must
+    // yield a button per character with the romanised name a non-reader can act on.
+    await page.goto(`/en/english/words/${SEED.unit1.firstWord}`);
+
+    const breakdown = page.getByTestId("thai-letters");
+    await expect(breakdown).toBeVisible();
+
+    const letters = breakdown.getByTestId("thai-letter");
+    // Array.from(meaning) yields one letter per code point — never zero, or the aid is empty.
+    expect(await letters.count()).toBeGreaterThan(0);
+
+    // A letter the alphabet table knows is pressable and carries its romanised name (the
+    // accessible label), not the raw Thai glyph an English reader cannot say.
+    const known = breakdown.locator('[data-testid="thai-letter"]:not([disabled])').first();
+    await expect(known).toHaveAttribute("aria-pressed", "false");
+    await expect(known).not.toHaveAttribute("aria-label", "");
+
+    // Tapping selects that letter — the one interaction the component owns.
+    await known.click();
+    await expect(known).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("the letter breakdown is withheld from Thai readers on /th", async ({ page }) => {
+    // A Thai reader already reads the script, so the decode aid would be noise (mode "english").
+    await page.goto(`/th/english/words/${SEED.unit1.firstWord}`);
+    await expect(page.getByTestId("thai-letters")).toHaveCount(0);
+  });
 });

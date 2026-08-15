@@ -18,18 +18,33 @@ export const dynamic = "force-dynamic";
 const LEVELS: CefrLevel[] = ["A1", "A2", "B1", "B2"];
 
 export async function GET() {
+    /**
+     * The word counts are a nicety; the file is not.
+     *
+     * Every count is a live read, so without this a single API blip turned an orientation
+     * file into a 500 — which is a worse answer than the same file with the numbers left
+     * off. Each level degrades on its own rather than taking the others down with it.
+     */
     const counts = await Promise.all(
-        LEVELS.map(async (level) => [level, await getLevelWordCount(level)] as const),
+        LEVELS.map(async (level) => {
+            try {
+                return [level, await getLevelWordCount(level)] as const;
+            } catch {
+                return [level, 0] as const;
+            }
+        }),
     );
 
-    const levelLines = counts
-        .filter(([, count]) => count > 0)
-        .map(
-            ([level, count]) =>
-                `- [คำศัพท์ระดับ ${level}](${absoluteUrl(
-                    localePath("th", `english/${level.toLowerCase()}`),
-                )}): ${count} words at CEFR ${level}, grouped into units of 20.`,
-        )
+    const known = counts.filter(([, count]) => count > 0);
+
+    // If every read failed, still name the levels — a reader needs the URLs more than the
+    // sizes, and an empty section would imply the course has no content.
+    const levelLines = (known.length > 0 ? known : LEVELS.map((l) => [l, 0] as const))
+        .map(([level, count]) => {
+            const url = absoluteUrl(localePath("th", `english/${level.toLowerCase()}`));
+            const size = count > 0 ? `${count} words at CEFR ${level}` : `CEFR ${level}`;
+            return `- [คำศัพท์ระดับ ${level}](${url}): ${size}, grouped into units of 20.`;
+        })
         .join("\n");
 
     const body = `# Vocab Learning

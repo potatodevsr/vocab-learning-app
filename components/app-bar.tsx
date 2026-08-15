@@ -29,7 +29,7 @@ const HIDDEN_ON = [/^\/learn/, /^\/quiz/, /^\/auth\//];
 export function AppBar({ locale }: { locale: string }) {
   const pathname = usePathname();
   const t = useTranslations("Nav");
-  const { user, signedIn } = useSession();
+  const { user, signedIn, clear } = useSession();
 
   if (HIDDEN_ON.some((pattern) => pattern.test(pathname))) return null;
 
@@ -116,7 +116,7 @@ export function AppBar({ locale }: { locale: string }) {
 
         <div className="ml-auto flex min-w-0 items-center gap-2 md:ml-0">
           <LanguageSwitcher />
-          <UserNavbar locale={locale} user={user} />
+          <UserNavbar locale={locale} user={user} onSignedOut={clear} />
         </div>
       </div>
 

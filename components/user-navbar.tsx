@@ -36,9 +36,12 @@ import { LoadingOverlay } from "@/components/loading-overlay";
 export function UserNavbar({
   locale,
   user,
+  onSignedOut,
 }: {
   locale: string;
   user: User | null | undefined;
+  /** Clears the lifted session state — see `lib/use-session.ts`. */
+  onSignedOut: () => void;
 }) {
   const router = useRouter();
   const t = useTranslations("Nav");
@@ -48,6 +51,9 @@ export function UserNavbar({
     setLoggingOut(true);
     try {
       await userLogout();
+      // Before the router call: pushing to a route we may already be on does not re-run
+      // the session effect, and the bar would keep offering the account menu.
+      onSignedOut();
       router.push(`/${locale}`);
       router.refresh();
     } finally {

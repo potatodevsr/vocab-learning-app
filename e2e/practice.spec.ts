@@ -95,3 +95,54 @@ test.describe("public practice journey", () => {
     await expect(page.getByTestId("practice-option").first()).toBeVisible();
   });
 });
+
+/**
+ * The `PracticeSession` render branches the happy-path journey above never dwells on: the
+ * loading spinner, the 429 "already in progress elsewhere" block, and the full result
+ * summary (insight line, per-item pips, and the next-unit preview).
+ */
+test.describe("public practice UI branches", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("the loading spinner shows while the trial is being prepared", async ({ page }) => {
+    // Hold the start response open long enough to observe the loading branch, then let it
+    // through so the real trial renders — no mocked payload.
+    await page.route("**/api/practice/start", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await route.continue();
+    });
+
+    await page.goto("/en/english/a1/practice");
+    await expect(page.getByTestId("practice-loading")).toBeVisible();
+    await expect(page.getByTestId("practice-card")).toBeVisible();
+  });
+
+  test("a 429 start shows the already-in-progress block, not an error", async ({ page }) => {
+    await page.route("**/api/practice/start", (route) =>
+      route.fulfill({ status: 429, contentType: "application/json", body: '{"message":"rate limited"}' }),
+    );
+
+    await page.goto("/en/english/a1/practice");
+    await expect(page.getByTestId("practice-blocked")).toBeVisible();
+    await expect(page.getByTestId("practice-error")).toHaveCount(0);
+  });
+
+  test("the trial renders its card and prompt and the full result summary", async ({ page }) => {
+    await page.goto("/en/english/a1/practice");
+    await expect(page.getByTestId("practice-card")).toBeVisible();
+    await expect(page.getByTestId("practice-prompt")).toBeVisible();
+
+    for (let index = 0; index < 5; index += 1) {
+      await page.getByTestId("practice-option").first().click();
+      await expect(page.getByTestId("practice-feedback")).toBeVisible();
+      await page.getByTestId("practice-continue").click();
+    }
+
+    await expect(page.getByTestId("practice-result")).toBeVisible();
+    await expect(page.getByTestId("result-insight")).toBeVisible();
+    await expect(page.getByTestId("result-next-preview")).toBeVisible();
+    await expect(
+      page.getByTestId("result-pips").getByTestId("result-pip"),
+    ).toHaveCount(5);
+  });
+});

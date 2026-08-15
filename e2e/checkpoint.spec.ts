@@ -67,6 +67,7 @@ test.describe("unit checkpoint", () => {
     // 422 from the server becomes a "practise a little more" screen with a route onward —
     // a lock is never a dead end (§3.8).
     await expect(page.getByTestId("checkpoint-not-ready")).toBeVisible();
+    await expect(page.getByTestId("checkpoint-not-ready-body")).toBeVisible();
     await expect(page.getByTestId("checkpoint-error")).toHaveCount(0);
 
     const practise = page.getByTestId("checkpoint-practice-cta");
@@ -117,6 +118,11 @@ test.describe("unit checkpoint", () => {
     await expect(result).toBeVisible();
     await expect(result).toHaveAttribute("data-passed", "false");
 
+    await expect(page.getByTestId("checkpoint-result-heading")).toBeVisible();
+    await expect(
+      page.getByTestId("checkpoint-result-pips").getByTestId("checkpoint-result-pip"),
+    ).toHaveCount(5);
+
     const recovery = page.getByTestId("checkpoint-recovery-cta");
     await expect(recovery).toBeVisible();
     await expect(recovery).toHaveAttribute("href", "/en/english/a1/unit/1/practice");
@@ -130,6 +136,98 @@ test.describe("unit checkpoint", () => {
   test("the checkpoint route is behind auth", async ({ page }) => {
     await page.goto(CHECKPOINT_URL);
     await expect(page).toHaveURL(/\/en\/auth\/login/);
+  });
+
+  const START = "**/api/progress/checkpoint/start";
+
+  test("the loading spinner shows while the checkpoint is prepared", async ({ page }) => {
+    await registerThroughUi(page);
+    await page.route(START, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await route.continue();
+    });
+
+    await page.goto(CHECKPOINT_URL);
+    await expect(page.getByTestId("checkpoint-loading")).toBeVisible();
+    // A fresh learner hasn't met enough words, so the settled state is the not-ready gate.
+    await expect(page.getByTestId("checkpoint-not-ready")).toBeVisible();
+  });
+
+  test("a 401 from the server shows the sign-in screen, not a crash", async ({ page }) => {
+    await registerThroughUi(page);
+    await page.route(START, (route) =>
+      route.fulfill({ status: 401, contentType: "application/json", body: '{"message":"unauth"}' }),
+    );
+
+    await page.goto(CHECKPOINT_URL);
+    await expect(page.getByTestId("checkpoint-unauth")).toBeVisible();
+    const signin = page.getByTestId("checkpoint-signin");
+    await expect(signin).toBeVisible();
+    await expect(signin).toHaveAttribute("href", /\/auth\/login\?from=/);
+  });
+
+  test("a failed checkpoint start shows a retry that recovers", async ({ page }) => {
+    await registerThroughUi(page);
+    await page.route(START, (route) =>
+      route.fulfill({ status: 500, contentType: "application/json", body: '{"message":"down"}' }),
+    );
+
+    await page.goto(CHECKPOINT_URL);
+    await expect(page.getByTestId("checkpoint-error")).toBeVisible();
+
+    await page.unroute(START);
+    await page.getByTestId("checkpoint-retry").click();
+    await expect(page.getByTestId("checkpoint-not-ready")).toBeVisible();
+  });
+
+  test("an in-progress checkpoint closes through its confirmation dialog", async ({ page }) => {
+    await registerThroughUi(page);
+    await completeOneSession(page);
+
+    await page.goto(CHECKPOINT_URL);
+    await expect(page.getByTestId("checkpoint-card")).toBeVisible();
+    await expect(page.getByTestId("checkpoint-prompt")).toBeVisible();
+
+    await page.getByTestId("checkpoint-close").click();
+    await expect(page.getByTestId("checkpoint-close-confirm")).toBeVisible();
+    await page.getByTestId("checkpoint-close-confirm-cancel").click();
+    await expect(page.getByTestId("checkpoint-close-confirm")).toHaveCount(0);
+
+    await page.getByTestId("checkpoint-close").click();
+    await expect(page.getByTestId("checkpoint-close-confirm-save")).toHaveAttribute(
+      "href",
+      "/en/english/a1/unit/1",
+    );
+  });
+
+  test("a passing checkpoint celebrates and routes back to the unit", async ({ page }) => {
+    await registerThroughUi(page);
+    await completeOneSession(page);
+
+    // A genuine pass needs every published unit word at mastery >= 3, which one session
+    // cannot reach (see the note at the bottom of this file). Flip only the gate outcome on
+    // the settling answer — every per-item verdict is still the real server's — so the
+    // celebratory result branch and its "back to unit" continue can be exercised.
+    await page.route("**/api/progress/checkpoint/answer", async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      await route.fulfill({ response, json: body.done ? { ...body, passed: true } : body });
+    });
+
+    await page.goto(CHECKPOINT_URL);
+    await expect(page.getByTestId("checkpoint-card")).toBeVisible();
+    for (let index = 0; index < 5; index += 1) {
+      await answerCheckpointItem(page);
+    }
+
+    const result = page.getByTestId("checkpoint-result");
+    await expect(result).toBeVisible();
+    await expect(result).toHaveAttribute("data-passed", "true");
+    await expect(page.getByTestId("checkpoint-result-heading")).toBeVisible();
+    await expect(page.getByTestId("checkpoint-result-continue")).toHaveAttribute(
+      "href",
+      "/en/english/a1/unit/1",
+    );
   });
 });
 

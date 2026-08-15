@@ -103,6 +103,12 @@ const stampInteractive = async (
       if (rect.width < 6 || rect.height < 6) return;
       if (style.visibility === "hidden" || style.opacity === "0") return;
 
+      // A scrollable region is in the tab order because WCAG 2.1 requires content that
+      // scrolls to be reachable by keyboard, not because it is a control. It has no hover
+      // state and no pointer cursor, and demanding one would mean styling a wrapper as if
+      // it were a button. The Thai alphabet tables are 612px wide inside 345px.
+      if (el.getAttribute("role") === "region") return;
+
       el.setAttribute("data-hover-idx", String(index));
 
       out.push({

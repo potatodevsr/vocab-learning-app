@@ -556,7 +556,15 @@
       "s3Heading": "What progress means",
       "s3Body": "Seen, strong and mastered are different states. We show them honestly; opening a word does not mean it has been learned.",
       "cta": "Explore English vocabulary",
-      "eyebrow": "The Oxford 3000"
+      "eyebrow": "The Oxford 3000",
+      "sourcingHeading": "Where the words and meanings come from",
+      "sourcingBody": "The word list is the Oxford 3000, a published list of the English words that matter most to a learner, grouped here by CEFR level. The list tells us which words to teach; it does not come with Thai. Every Thai meaning and every Thai pronunciation on this site is written by us, which is also why we are the ones accountable for them.",
+      "reviewHeading": "How Thai meanings are checked",
+      "reviewBody": "A meaning is drafted, then read again character by character before it is published — Thai written with the wrong vowel or a missing tone mark looks almost right and teaches the wrong word. Entries that have not cleared that reading are held back from search results and from our sitemap rather than published as filler. If a word page tells you its meaning is still being reviewed, that is literal: we would rather show you nothing than show you a guess.",
+      "limitsHeading": "What this course does not have yet",
+      "limitsBody": "There are no example sentences and no IPA transcriptions yet, and no recorded audio. We would rather say so here than imply otherwise on the pages themselves. Pronunciation is currently written in Thai script, which is what a Thai reader can actually act on without learning a second notation first.",
+      "contactHeading": "Telling us we got one wrong",
+      "contactBody": "If a meaning or a pronunciation is wrong, tell us and we will fix the entry. A dictionary that cannot be corrected is just a confident one."
     },
     "howItWorks": {
       "metaTitle": "How vocabulary practice works",

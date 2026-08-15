@@ -63,10 +63,42 @@ export default async function AboutPage({ params }: LocalePageProps) {
 
   const t = await getTranslations("Trust.about");
 
+  /**
+   * The last four sections are the accountability half of this page, and they were the
+   * gap that mattered most: nothing on the site said where the Thai came from, who wrote
+   * it, how it is checked, or what the course does not have. A site publishing thousands
+   * of dictionary claims with no named source and no editorial policy is asking to be
+   * read as a scrape — and for a reader deciding whether to trust a translation they
+   * cannot yet verify themselves, that question is the whole decision.
+   *
+   * `limits` is deliberately included. Saying "no example sentences yet" here is what
+   * makes the rest of the page credible, and it stops the pages themselves from having
+   * to imply otherwise.
+   */
   const sections = [
     { heading: t("s1Heading"), body: t("s1Body"), block: "var(--accent-sun)" },
     { heading: t("s2Heading"), body: t("s2Body"), block: "var(--accent-mint)" },
     { heading: t("s3Heading"), body: t("s3Body"), block: "var(--accent-sky)" },
+    {
+      heading: t("sourcingHeading"),
+      body: t("sourcingBody"),
+      block: "var(--accent-grape)",
+    },
+    {
+      heading: t("reviewHeading"),
+      body: t("reviewBody"),
+      block: "var(--accent-sun)",
+    },
+    {
+      heading: t("limitsHeading"),
+      body: t("limitsBody"),
+      block: "var(--accent-mint)",
+    },
+    {
+      heading: t("contactHeading"),
+      body: t("contactBody"),
+      block: "var(--accent-sky)",
+    },
   ];
 
   return (

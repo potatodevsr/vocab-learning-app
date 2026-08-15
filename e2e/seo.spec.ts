@@ -141,11 +141,23 @@ test.describe("structured data", () => {
     for (const path of ["/en", "/en/english/a1", `/en/english/words/${SEED.unit1.firstWord}`]) {
       await page.goto(path);
 
-      const blocks = await head(page).jsonLd();
-      expect(blocks.length, `${path} has no structured data`).toBeGreaterThan(0);
+      // Raw scripts, not the flattened view: `@context` is declared once per block and
+      // the nodes inside an `@graph` inherit it, so flattening would look like a page
+      // full of context-less nodes.
+      const raw = await page
+        .locator('script[type="application/ld+json"]')
+        .allTextContents();
 
-      for (const block of blocks) {
+      expect(raw.length, `${path} has no structured data`).toBeGreaterThan(0);
+
+      for (const text of raw) {
+        const block = JSON.parse(text);
         expect(block["@context"]).toBe("https://schema.org");
+
+        // And every node inside a graph still declares its own type.
+        for (const node of block["@graph"] ?? [block]) {
+          expect(node["@type"], `${path} has a node with no @type`).toBeTruthy();
+        }
       }
     }
   });
@@ -366,7 +378,11 @@ test.describe("delivery", () => {
   });
 
   test("every public page carries a social preview image", async ({ page }) => {
-    for (const path of ["/th", "/th/english/a1", "/th/english/words/ability"]) {
+    for (const path of [
+      "/th",
+      "/th/english/a1",
+      `/th/english/words/${SEED.unit1.firstWord}`,
+    ]) {
       await page.goto(path);
 
       const image = await page

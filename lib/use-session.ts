@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { getMe, type User } from "@/lib/user-api";
@@ -48,5 +48,15 @@ export function useSession() {
         };
     }, [pathname]);
 
-    return { user, signedIn: user != null, resolved: user !== undefined };
+    /**
+     * Drop the session locally, without waiting for a re-read.
+     *
+     * The effect above is keyed on `pathname`, so signing out while already on the page
+     * you are redirected to does not re-run it — the bar kept showing the account menu
+     * until something else navigated. The old component-local state cleared itself on
+     * logout; lifting it here has to keep that.
+     */
+    const clear = useCallback(() => setUser(null), []);
+
+    return { user, signedIn: user != null, resolved: user !== undefined, clear };
 }

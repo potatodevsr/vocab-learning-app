@@ -168,6 +168,127 @@ test.describe("quiz page branches", () => {
   });
 });
 
+test.describe("mixed session branches", () => {
+  test.beforeEach(async ({ page }) => {
+    await registerThroughUi(page);
+  });
+
+  const LEARN_URL = "/en/learn?level=A1&unit=1";
+  const START = "**/api/progress/session/start";
+
+  /** Steps through all eight items of a fresh unit-1 session, answering whatever variant
+   *  the server hands over (recognition tap, match-pairs two-tap, or typed spelling). */
+  const finishSession = async (page: import("@playwright/test").Page) => {
+    await expect(page.getByTestId("session-card")).toBeVisible();
+    for (let index = 0; index < 8; index += 1) {
+      const itemType = await page.getByTestId("session-card").getAttribute("data-item-type");
+      const spelling = page.getByTestId("session-spelling-input");
+      if (await spelling.isVisible().catch(() => false)) {
+        await spelling.fill("placeholder");
+        await page.getByTestId("session-continue").click();
+      } else {
+        await page.getByTestId("session-option").first().click();
+        if (itemType === "match-pairs") {
+          await page.getByTestId("session-option").first().click();
+        }
+      }
+      await expect(page.getByTestId("session-feedback")).toBeVisible();
+      await page.getByTestId("session-continue").click();
+    }
+  };
+
+  test("the loading spinner shows while the session is prepared", async ({ page }) => {
+    await page.route(START, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await route.continue();
+    });
+
+    await page.goto(LEARN_URL);
+    await expect(page.getByTestId("session-loading")).toBeVisible();
+    await expect(page.getByTestId("session-card")).toBeVisible();
+  });
+
+  test("a failed session start shows a retry that recovers", async ({ page }) => {
+    await page.route(START, (route) =>
+      route.fulfill({ status: 503, contentType: "application/json", body: '{"message":"down"}' }),
+    );
+
+    await page.goto(LEARN_URL);
+    await expect(page.getByTestId("session-error")).toBeVisible();
+    // The server never returned a verdict, so nothing may be shown as graded.
+    await expect(page.getByTestId("session-feedback")).toHaveCount(0);
+
+    await page.unroute(START);
+    await page.getByTestId("session-retry").click();
+    await expect(page.getByTestId("session-card")).toBeVisible();
+  });
+
+  test("a 422 session start shows the not-enough screen without a retry", async ({ page }) => {
+    await page.route(START, (route) =>
+      route.fulfill({ status: 422, contentType: "application/json", body: '{"message":"not enough"}' }),
+    );
+
+    await page.goto(LEARN_URL);
+    await expect(page.getByTestId("session-error")).toBeVisible();
+    await expect(page.getByTestId("session-retry")).toHaveCount(0);
+  });
+
+  test("a due-review count surfaces the due note on the first item", async ({ page }) => {
+    // Patch only the display-only `dueCount` on the real start response; the session id and
+    // items stay the server's, so grading still works — this exercises the note's branch
+    // without a due-SRS fixture the committed seed does not provide.
+    await page.route(START, async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      await route.fulfill({ response, json: { ...body, dueCount: 3 } });
+    });
+
+    await page.goto(LEARN_URL);
+    await expect(page.getByTestId("session-card")).toBeVisible();
+    await expect(page.getByTestId("session-due-note")).toBeVisible();
+  });
+
+  test("the speed-round item shows its countdown timer", async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto(LEARN_URL);
+    await expect(page.getByTestId("session-card")).toBeVisible();
+
+    for (let index = 0; index < 8; index += 1) {
+      const itemType = await page.getByTestId("session-card").getAttribute("data-item-type");
+      if (itemType === "speed-round") {
+        await expect(page.getByTestId("session-speed-timer")).toBeVisible();
+        return;
+      }
+      const spelling = page.getByTestId("session-spelling-input");
+      if (await spelling.isVisible().catch(() => false)) {
+        await spelling.fill("placeholder");
+        await page.getByTestId("session-continue").click();
+      } else {
+        await page.getByTestId("session-option").first().click();
+        if (itemType === "match-pairs") {
+          await page.getByTestId("session-option").first().click();
+        }
+      }
+      await expect(page.getByTestId("session-feedback")).toBeVisible();
+      await page.getByTestId("session-continue").click();
+    }
+
+    throw new Error("no speed-round item appeared in the session");
+  });
+
+  test("a completed session shows the result heading and one pip per item", async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto(LEARN_URL);
+    await finishSession(page);
+
+    await expect(page.getByTestId("session-result")).toBeVisible();
+    await expect(page.getByTestId("session-result-heading")).toBeVisible();
+    await expect(
+      page.getByTestId("session-result-pips").getByTestId("session-result-pip"),
+    ).toHaveCount(8);
+  });
+});
+
 test.describe("word detail branches", () => {
   test("an unknown slug is a 404 with the designed not-found page", async ({
     page,

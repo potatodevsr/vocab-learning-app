@@ -287,7 +287,15 @@ test.describe("crawlability", () => {
 
     expect(crumbs).toBeTruthy();
     expect(crumbs.itemListElement.at(-1).name).toBe(SEED.unit1.firstWord);
-    expect(crumbs.itemListElement[0].item).toContain("/english/a1");
+    // The trail starts at the site root. It used to open at the level hub, which told a
+    // crawler this page hangs off nothing, and disagreed with the visible breadcrumb.
+    expect(crumbs.itemListElement[0].item).toMatch(/\/(en|th)$/);
+    expect(
+      crumbs.itemListElement.some((c: { item?: string }) =>
+        c.item?.includes("/english/a1"),
+      ),
+      "the level hub is still a step in the trail",
+    ).toBe(true);
   });
 });
 
