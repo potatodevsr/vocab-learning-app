@@ -20,6 +20,7 @@
   <img alt="React" src="https://img.shields.io/badge/React-19-087ea4?style=flat-square&logo=react" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white" />
   <img alt="Cloudflare Workers" src="https://img.shields.io/badge/Cloudflare-Workers-f38020?style=flat-square&logo=cloudflare&logoColor=white" />
+  <a href="https://github.com/potatodevsr/vocab-learning-app/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/potatodevsr/vocab-learning-app/ci.yml?branch=main&style=flat-square&label=CI" /></a>
 </p>
 
 ## Why Vocab Learning?
@@ -41,6 +42,16 @@ Choose a level  →  Learn the cards  →  Take a short quiz  →  Review weak w
 ```
 
 The learning loop is intentionally small: a lesson takes only a few minutes, progress is saved to the learner’s account, and missed words return for another attempt.
+
+## See it in action
+
+<p align="center">
+  <img src="docs/assets/screenshots/homepage.jpg" alt="Vocab Learning homepage showing the bilingual word-card experience" width="100%" />
+</p>
+
+| Learning path | Vocabulary lesson |
+| --- | --- |
+| <img src="docs/assets/screenshots/learning-path.jpg" alt="Three-step learning path: learn, practice, and review" /> | <img src="docs/assets/screenshots/lesson.jpg" alt="Oxford 3000 vocabulary lesson with English prompts and Thai meanings" /> |
 
 ## Built with
 
@@ -121,7 +132,7 @@ For deeper implementation details, start with [the product specification](docs/S
 
 ## Contributing
 
-Thoughtful issues and pull requests are welcome. Before opening a PR:
+Thoughtful issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
 
 1. Keep changes focused and consistent with the existing product language.
 2. Run `pnpm lint` and `pnpm exec tsc --noEmit`.
@@ -129,6 +140,8 @@ Thoughtful issues and pull requests are welcome. Before opening a PR:
 4. Run the relevant end-to-end suite for the flow you touched.
 
 If you are proposing a larger change, open an issue first so the direction can be discussed before implementation.
+
+Please report security concerns through the process in [SECURITY.md](SECURITY.md), not through a public issue.
 
 ## Deployment
 
