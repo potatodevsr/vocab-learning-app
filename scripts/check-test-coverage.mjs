@@ -26,6 +26,10 @@ const EXEMPT = new Map([
     ["backend/src/progress.ts:progress", "mounted router; every route is tested individually"],
     ["lib/utils.ts:cn", "shadcn class merge helper, exercised by every rendered component"],
     [
+        "lib/use-session.ts:useSession",
+        "React/Next hook exercised through the real app bar in auth, Google-auth and navigation e2e flows; no component-test runtime",
+    ],
+    [
         "backend/src/helpers/instances.ts:prisma",
         "legacy Node-side client for the pre-D1 content scripts in backend/scripts; not part of the Worker",
     ],
@@ -34,6 +38,24 @@ const EXEMPT = new Map([
         "backend/src/progress.ts:MASTERY_MASTERED",
         "asserted behaviourally in e2e/api/gamification.api.spec.ts; importing it into the web tsconfig would pull the backend's generated tree into typechecking",
     ],
+    [
+        "backend/src/practice.ts:TRIAL_CLAIM_COOKIE",
+        "asserted through httpOnly cookie issuance and invalid/valid/replayed claims in e2e/api/practice.api.spec.ts; importing the route pulls generated backend code into web tsc",
+    ],
+    [
+        "backend/src/practice.ts:verifyTrialClaim",
+        "asserted through forged, valid and replayed claim-cookie requests in e2e/api/practice.api.spec.ts; importing the route pulls generated backend code into web tsc",
+    ],
+    ...[
+        "redirectUriFor",
+        "startGoogleAuth",
+        "clearOAuthCookies",
+        "returnPathFrom",
+        "exchangeGoogleCode",
+    ].map((name) => [
+        `backend/src/google-auth.ts:${name}`,
+        "exercised through real start/callback/cookie/linking flows in e2e/google-auth.spec.ts; importing the route pulls generated backend code into web tsc",
+    ]),
 ]);
 
 const walk = (dir) => {

@@ -1,6 +1,30 @@
 import { expect, test } from "@playwright/test";
 
-import { fetchWordsPage, updateWord } from "../../lib/admin-api";
+import {
+  createLetter,
+  deleteLetter,
+  fetchLetters,
+  fetchWordsPage,
+  updateLetter,
+  updateWord,
+} from "../../lib/admin-api";
+import {
+  CheckpointApiError,
+  answerCheckpoint,
+  getCheckpointStatus,
+} from "../../lib/checkpoint-api";
+import {
+  answerPractice,
+  claimPractice,
+  startPractice,
+} from "../../lib/practice-api";
+import {
+  SessionApiError,
+  answerSessionItem,
+  getTodaySummaryWithToken,
+  setWeeklyGoal,
+  startSession,
+} from "../../lib/session-api";
 import {
   getMistakesWithToken,
   getProgressSummaryWithToken,
@@ -171,6 +195,78 @@ test.describe("admin-api", () => {
     await expect(
       updateWord("e2e-a1-0001", { meaningTh: "nope" }),
     ).rejects.toThrow(/Failed to update word/);
+  });
+
+  test("letter reads are public but writes require an admin", async () => {
+    const letters = await fetchLetters();
+    expect(letters.length).toBeGreaterThan(0);
+
+    const draft = {
+      kind: "tone" as const,
+      ordinal: 999,
+      char: "x",
+      name: "unauthorised",
+      roman: "x",
+      sound: "",
+      soundFinal: "",
+      vowelLength: "",
+      clip: "",
+    };
+    await expect(createLetter(draft)).rejects.toThrow(/Failed to create letter/);
+    await expect(updateLetter("missing", { roman: "x" })).rejects.toThrow(
+      /Failed to update letter/,
+    );
+    await expect(deleteLetter("missing")).rejects.toThrow(/Failed to delete letter/);
+  });
+});
+
+test.describe("gameplay client wrappers", () => {
+  test("practice wrappers send the expected lower-case POST requests", async () => {
+    const original = globalThis.fetch;
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = (async (url, init) => {
+      calls.push({ url: String(url), init });
+      return Response.json({ items: [], ok: true });
+    }) as typeof fetch;
+
+    try {
+      await startPractice({ level: "A1" });
+      await answerPractice({ itemIndex: 0, selectedOptionIndex: 0 });
+      await claimPractice();
+    } finally {
+      globalThis.fetch = original;
+    }
+
+    expect(calls.map((call) => new URL(call.url).pathname)).toEqual([
+      "/practice/start",
+      "/practice/answer",
+      "/practice/claim",
+    ]);
+    expect(calls.every((call) => call.init?.method === "POST")).toBe(true);
+    expect(calls.every((call) => call.init?.credentials === "include")).toBe(true);
+  });
+
+  test("checkpoint answer and status reject an unauthenticated caller", async () => {
+    await expect(
+      answerCheckpoint({ checkpointId: "missing", itemIndex: 0, selectedOptionIndex: 0 }),
+    ).rejects.toBeInstanceOf(CheckpointApiError);
+    await expect(getCheckpointStatus("missing/id")).rejects.toBeInstanceOf(
+      CheckpointApiError,
+    );
+  });
+
+  test("session mutations reject unauthenticated callers", async () => {
+    await expect(startSession({ level: "A1", unit: 1 })).rejects.toBeInstanceOf(
+      SessionApiError,
+    );
+    await expect(
+      answerSessionItem({ sessionId: "missing", itemIndex: 0, selectedOptionIndex: 0 }),
+    ).rejects.toBeInstanceOf(SessionApiError);
+    await expect(setWeeklyGoal(5)).rejects.toBeInstanceOf(SessionApiError);
+  });
+
+  test("today summary returns null for a garbage token", async () => {
+    await expect(getTodaySummaryWithToken("not-a-jwt")).resolves.toBeNull();
   });
 });
 

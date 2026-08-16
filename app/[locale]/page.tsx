@@ -152,23 +152,28 @@ export default async function Home({ params }: HomeProps) {
         phone, beside it on a desk — the same content, re-ordered, not a second layout.
       */}
       <section className="border-b-3 border-ink bg-brand text-white">
-        <div className="mx-auto grid w-full max-w-6xl gap-12 px-6 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:py-24">
+        {/*
+          Vertical rhythm is halved below `sm`. The desktop hero can afford 80px of
+          padding above the kicker and a 48px grid gap; a 390×844 phone cannot — that
+          alone was 128px of the space the primary CTA needed to clear the fold.
+        */}
+        <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-10 sm:gap-12 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:py-24">
           <div>
             <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
               {t("heroKicker")}
             </span>
 
-            <h1 className="play-display mt-6">
+            <h1 className="play-display mt-4 sm:mt-6">
               {t("heroLead")}{" "}
               <span className="play-highlight">{t("heroHighlight")}</span>{" "}
               {t("heroTrail")}
             </h1>
 
-            <p className="mt-6 max-w-xl text-lg leading-8 text-white">
+            <p className="mt-4 max-w-xl text-base leading-7 text-white sm:mt-6 sm:text-lg sm:leading-8">
               {t("heroDescription")}
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
               <Button
                 asChild
                 size="lg"
@@ -191,7 +196,7 @@ export default async function Home({ params }: HomeProps) {
             </div>
 
             {/* Three claims, each one checkable on the site itself. */}
-            <dl className="mt-10 grid max-w-xl grid-cols-3 gap-3">
+            <dl className="mt-8 grid max-w-xl grid-cols-3 gap-3 sm:mt-10">
               {[
                 { value: t("proofWords"), label: t("proofWordsLabel"), tilt: "-1.5deg" },
                 { value: t("proofMinutes"), label: t("proofMinutesLabel"), tilt: "1deg" },
@@ -222,7 +227,7 @@ export default async function Home({ params }: HomeProps) {
       {/* Features: four stickers, each with its own colour, each tilted a hair
           differently so the row reads as objects placed by hand. */}
       <section className="bg-background">
-        <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-20 lg:px-8">
+        <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-12 sm:gap-10 sm:py-20 lg:px-8">
           <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
             <div>
               <span className="play-stamp bg-accent-mint px-4 py-1.5 text-sm font-extrabold text-ink">
@@ -282,7 +287,7 @@ export default async function Home({ params }: HomeProps) {
       {/* The loop, drawn as the path it is: four numbered nodes on one ink rule.
           This is the product's core metaphor, so it is a picture, not a list. */}
       <section className="border-y-3 border-ink bg-accent-mint">
-        <div className="mx-auto w-full max-w-6xl px-6 py-20 lg:px-8">
+        <div className="mx-auto w-full max-w-6xl px-6 py-12 sm:py-20 lg:px-8">
           <div className="max-w-2xl">
             <span className="play-stamp bg-white px-4 py-1.5 text-sm font-extrabold text-ink">
               {t("pathBadge")}
@@ -295,7 +300,7 @@ export default async function Home({ params }: HomeProps) {
             <p className="mt-4 text-base leading-7 text-ink/80">{t("pathBody")}</p>
           </div>
 
-          <ol className="relative mt-12 grid gap-6 md:grid-cols-4">
+          <ol className="relative mt-8 grid gap-6 sm:mt-12 md:grid-cols-4">
             {/* The rule the nodes sit on. Decorative: the ordered list carries the
                 sequence for anyone not looking at it. */}
             <div

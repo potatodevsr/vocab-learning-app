@@ -5,9 +5,12 @@ import {
   alternatesFor,
   jsonLd,
   localePath,
+  ORGANISATION_ID,
+  OXFORD_3000_TERMSET_ID,
   privateMetadata,
   publicMetadata,
   SITE_URL,
+  WEBSITE_ID,
 } from "../../lib/seo";
 
 test.describe("URL helpers", () => {
@@ -103,6 +106,61 @@ test.describe("privateMetadata", () => {
 
   test("declares no canonical — a private page has no public address", () => {
     expect(meta.alternates).toBeUndefined();
+  });
+});
+
+test.describe("entity-graph @ids", () => {
+  // These three `@id` values are the anchors ~5,600 word pages point at (docs/SPEC.md §9).
+  // They must be absolute, origin-stable, and never collide — a drifted fragment silently
+  // detaches every reference from the node it was meant to name.
+  const IDS = {
+    OXFORD_3000_TERMSET_ID,
+    ORGANISATION_ID,
+    WEBSITE_ID,
+  };
+
+  test("each @id is the exact expected absolute value", () => {
+    expect(OXFORD_3000_TERMSET_ID).toBe(absoluteUrl("/#oxford-3000"));
+    expect(ORGANISATION_ID).toBe(absoluteUrl("/#organisation"));
+    expect(WEBSITE_ID).toBe(absoluteUrl("/#website"));
+  });
+
+  test("every @id is an absolute URL rooted at the site origin", () => {
+    for (const id of Object.values(IDS)) {
+      expect(id.startsWith("http")).toBe(true);
+      expect(id.startsWith(`${SITE_URL}/#`)).toBe(true);
+    }
+  });
+
+  test("@ids are pairwise unique", () => {
+    const values = Object.values(IDS);
+    expect(new Set(values).size).toBe(values.length);
+  });
+
+  test("each @id carries a distinct, non-empty fragment on the origin", () => {
+    const fragments = Object.values(IDS).map((id) => {
+      const [origin, fragment] = id.split("#");
+      expect(origin).toBe(`${SITE_URL}/`);
+      expect(fragment.length).toBeGreaterThan(0);
+      return fragment;
+    });
+    expect(new Set(fragments).size).toBe(fragments.length);
+  });
+
+  test("@ids are locale-free — one entity across en and th", () => {
+    for (const id of Object.values(IDS)) {
+      expect(id).not.toContain("/en/");
+      expect(id).not.toContain("/th/");
+    }
+  });
+
+  test("an @id survives round-tripping through the jsonLd payload", () => {
+    const props = jsonLd({
+      "@id": OXFORD_3000_TERMSET_ID,
+      "@type": "DefinedTermSet",
+    });
+    const parsed = JSON.parse(props.dangerouslySetInnerHTML.__html);
+    expect(parsed["@id"]).toBe(OXFORD_3000_TERMSET_ID);
   });
 });
 

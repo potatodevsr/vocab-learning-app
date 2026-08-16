@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import {
+  THAI_LETTER_CREATE_SHAPE,
+  THAI_LETTER_DELETE_SHAPE,
+  THAI_LETTER_SHAPES,
+  THAI_LETTER_UPDATE_SHAPE,
   USER_SHAPES,
   VOCAB_WORD_SHAPES,
   VOCAB_WORD_UPDATE_SHAPE,
@@ -140,5 +144,26 @@ test.describe("guard shape contents", () => {
     for (const immutable of ["id", "word", "level", "unit", "sourceKey"]) {
       expect(writable).not.toContain(immutable);
     }
+  });
+
+  test("Thai-letter reads expose curated fields and cap the complete inventory", () => {
+    for (const variant of Object.values(THAI_LETTER_SHAPES)) {
+      expect(variant.take.max).toBe(120);
+      for (const field of ["id", "kind", "ordinal", "char", "name", "roman"]) {
+        expect(variant.select).toHaveProperty(field);
+      }
+    }
+  });
+
+  test("Thai-letter mutations are admin-only and target unique ids", () => {
+    expect(THAI_LETTER_CREATE_SHAPE).not.toHaveProperty("public");
+    expect(THAI_LETTER_UPDATE_SHAPE).not.toHaveProperty("public");
+    expect(THAI_LETTER_DELETE_SHAPE).not.toHaveProperty("public");
+    expect(THAI_LETTER_UPDATE_SHAPE.admin.where).toEqual({ id: true });
+    expect(THAI_LETTER_DELETE_SHAPE.admin.where).toEqual({ id: true });
+
+    const writable = Object.keys(THAI_LETTER_CREATE_SHAPE.admin.data);
+    expect(writable).not.toContain("id");
+    expect(writable).toEqual(Object.keys(THAI_LETTER_UPDATE_SHAPE.admin.data));
   });
 });

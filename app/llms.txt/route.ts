@@ -87,6 +87,7 @@ ${levelLines}
 ## Contact
 
 - [ติดต่อเรา / Contact](${absoluteUrl(localePath("th", "contact"))})
+- Corrections to a Thai meaning or reading: chadapohn.srkn@gmail.com
 `;
 
     return new Response(body, {

@@ -2,6 +2,16 @@ import { expect, test } from "@playwright/test";
 
 import { SEED } from "./support/fixtures";
 
+async function expectStreamedNotFound(page: import("@playwright/test").Page) {
+  await expect(
+    page.getByRole("heading", { name: "We couldn't find that page" }),
+  ).toBeVisible();
+  await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute(
+    "content",
+    /noindex/,
+  );
+}
+
 /**
  * The pages that exist to be *found* (docs/SPEC.md §9.2). Each targets a different search
  * shape: a level hub ("คำศัพท์ภาษาอังกฤษ A1"), a unit page (long-tail lists), a word page
@@ -24,9 +34,8 @@ test.describe("level hubs", () => {
   });
 
   test("an unknown level is a 404, not an empty page", async ({ page }) => {
-    const response = await page.goto("/en/english/c3");
-
-    expect(response?.status()).toBe(404);
+    await page.goto("/en/english/c3");
+    await expectStreamedNotFound(page);
   });
 
   test("each level declares its own canonical", async ({ page }) => {
@@ -90,15 +99,13 @@ test.describe("unit pages", () => {
   });
 
   test("a unit beyond the published content is a 404", async ({ page }) => {
-    const response = await page.goto("/en/english/a1/unit/99");
-
-    expect(response?.status()).toBe(404);
+    await page.goto("/en/english/a1/unit/99");
+    await expectStreamedNotFound(page);
   });
 
   test("a non-numeric unit is a 404", async ({ page }) => {
-    const response = await page.goto("/en/english/a1/unit/abc");
-
-    expect(response?.status()).toBe(404);
+    await page.goto("/en/english/a1/unit/abc");
+    await expectStreamedNotFound(page);
   });
 
   test("the unit page carries its own metadata and canonical", async ({ page }) => {
@@ -322,6 +329,50 @@ test.describe("locale differentiation", () => {
 
     expect(english).not.toBe(thai);
   });
+});
+
+/**
+ * A site that publishes thousands of dictionary claims has to say how a reader reports a
+ * wrong one, and how long it keeps their account. Both pages existed and said neither:
+ * the contact page routed everything through "the support pathway available in the app",
+ * a channel that was never built, and the privacy policy listed what it collects without
+ * ever saying when it stops holding it.
+ */
+test.describe("accountability pages name a real channel", () => {
+  for (const locale of ["th", "en"] as const) {
+    test(`the ${locale} contact page publishes a reachable address`, async ({
+      page,
+    }) => {
+      await page.goto(`/${locale}/contact`);
+
+      const mailto = page.locator('a[href^="mailto:"]');
+
+      await expect(mailto).toHaveCount(1);
+      await expect(mailto).toBeVisible();
+
+      // The visible text is the address itself, not "email us" — a reader who cannot use
+      // a `mailto:` handler still has something to copy.
+      await expect(mailto).toContainText("@");
+
+      const href = await mailto.getAttribute("href");
+      expect(href?.slice("mailto:".length)).toBe(
+        await mailto.innerText().then((text) => text.trim()),
+      );
+    });
+
+    test(`the ${locale} privacy policy states a retention period`, async ({
+      page,
+    }) => {
+      await page.goto(`/${locale}/privacy`);
+
+      const retention = page.locator("#retention");
+
+      await expect(retention).toBeVisible();
+      // The number is the point of the section; a heading with no period in the body
+      // would pass a mere "section exists" check.
+      await expect(retention).toContainText("12");
+    });
+  }
 });
 
 test.describe("the sitemap only advertises pages that exist", () => {

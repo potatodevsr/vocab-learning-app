@@ -596,8 +596,10 @@
       "s3Heading": "Analytics",
       "s3Body": "Product analytics uses a separate pseudonymous identifier. We do not send the application user ID, email, typed answers, tokens or Thai meaning text to analytics.",
       "s4Heading": "Your data",
-      "s4Body": "Signed-in learners can export their own portable progress. For correction or deletion requests, use the contact pathway available in the app; identity must be verified before account data is changed.",
-      "contentsHeading": "Contents"
+      "s4Body": "Signed-in learners can export their own portable progress. For a correction or a deletion, write to chadapohn.srkn@gmail.com from the address the account uses; ownership is verified before any account data is changed.",
+      "contentsHeading": "Contents",
+      "s5Heading": "How long we keep it",
+      "s5Body": "Learning progress stays for as long as the account does. An account with no sign-in for 12 months is treated as inactive and is deleted together with its progress rows. Deleting an account yourself removes it straight away rather than waiting out that window."
     },
     "terms": {
       "metaTitle": "Terms of use",
@@ -617,14 +619,16 @@
       "metaTitle": "Contact and support",
       "metaDescription": "How to get help with the vocabulary learning app.",
       "h1": "Contact and support",
-      "intro": "Start with the help available inside the app so your request reaches the right context without publishing personal information.",
+      "intro": "One address handles everything below. What changes is what you should put in the message, so that the reply is useful the first time.",
       "s1Heading": "Learning or account help",
-      "s1Body": "Use the in-app support pathway while signed in and describe the page and action that failed. Never include your password or a magic-link token.",
+      "s1Body": "Say which page you were on, what you tapped, and what happened instead. Mention whether you were signed in. Never send your password or a magic-link token — neither is ever needed to work out what went wrong.",
       "s2Heading": "Privacy requests",
-      "s2Body": "Ask through the same verified account pathway for an export, correction or deletion. We may need to confirm account ownership before acting.",
+      "s2Body": "Write from the address the account uses to ask for an export, a correction or a deletion. Ownership is confirmed before anything changes, so a request sent from a different address gets a question back rather than data.",
       "s3Heading": "Content corrections",
       "s3Body": "Report the English word, CEFR level and the Thai text that needs review. Corrections enter the content review queue rather than changing published learning data immediately.",
-      "cta": "Read common questions"
+      "cta": "Read common questions",
+      "emailHeading": "Write to us",
+      "emailBody": "One address, read by the person who maintains the site. This is a small project rather than a support desk, so a reply can take a few days. Never include your password or a sign-in link in the message."
     }
   },
   "HtmlSitemap": {

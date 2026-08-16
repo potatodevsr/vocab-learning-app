@@ -59,9 +59,14 @@ test.describe("public content", () => {
     await page.goto("/en/english/a1");
     await expect(page.getByText(SEED.draftWord, { exact: true })).toHaveCount(0);
 
-    // Directly requesting a draft word's page 404s rather than rendering it.
-    const response = await page.goto(`/en/english/words/${SEED.draftWord}`);
-    expect(response?.status()).toBe(404);
+    // Directly requesting a draft word renders the localized not-found experience rather
+    // than its content. Next can commit a streamed response before `notFound()` resolves,
+    // so the visible contract is more reliable here than the document status.
+    await page.goto(`/en/english/words/${SEED.draftWord}`);
+    await expect(
+      page.getByRole("heading", { name: "We couldn't find that page" }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: SEED.draftWord })).toHaveCount(0);
   });
 
   test("word detail page shows the seeded entry", async ({ page }) => {
@@ -154,5 +159,107 @@ test.describe("public content", () => {
     // A Thai reader already reads the script, so the decode aid would be noise (mode "english").
     await page.goto(`/th/english/words/${SEED.unit1.firstWord}`);
     await expect(page.getByTestId("thai-letters")).toHaveCount(0);
+  });
+
+  test("the unit page offers a public practice CTA that stays out of the auth wall", async ({
+    page,
+  }) => {
+    await page.goto(`/en/english/a1/unit/${SEED.unit1.number}`);
+
+    const cta = page.getByTestId("unit-practice-cta");
+    await expect(cta).toBeVisible();
+    // Public and playable logged out: it goes to /practice, never behind the /learn auth wall.
+    await expect(cta).toHaveAttribute(
+      "href",
+      new RegExp(`/english/a1/unit/${SEED.unit1.number}/practice$`),
+    );
+
+    await cta.click();
+    await expect(page).toHaveURL(
+      new RegExp(`/en/english/a1/unit/${SEED.unit1.number}/practice$`),
+    );
+  });
+
+  test("a published word with no pronunciation admits it rather than faking one", async ({
+    page,
+  }) => {
+    // Orders 24-40 are published but carry no Thai meaning or reading (see
+    // backend/scripts/generate-e2e-seed.mjs: hasMeaning is order<=20 || 21-23). word24 is
+    // one such page, so the pronunciation card must show the pending copy, not a glyph.
+    await page.goto("/en/english/words/word24");
+
+    await expect(page.getByTestId("pronunciation-pending")).toBeVisible();
+  });
+
+  test("the landing page ends on a practice CTA a logged-out visitor can act on", async ({
+    page,
+  }) => {
+    await page.goto("/en");
+
+    const cta = page.getByTestId("home-practice-cta-bottom");
+    await expect(cta).toBeVisible();
+    await expect(cta).toHaveAttribute("href", /\/practice/);
+  });
+
+  test("the Thai alphabet page partitions the writing system into consonants and vowels", async ({
+    page,
+  }) => {
+    // Thai is the primary audience, so assert against /th. The letter rows ship in the
+    // ThaiLetter migration (backend/data/thai-letters.mjs), so dev, e2e and production
+    // start from identical data — the counts and romanisations below are that source,
+    // not the fixture seed, which carries no letters.
+    await page.goto("/th/thai-alphabet");
+
+    const consonants = page.getByTestId("alphabet-consonants");
+    const vowels = page.getByTestId("alphabet-vowels");
+    await expect(consonants).toBeVisible();
+    await expect(vowels).toBeVisible();
+
+    // The two sections are the filter: each holds exactly its own kind and nothing else.
+    // 44 consonants and the traditional 32 vowel sounds — a wrong count means a kind
+    // leaked across the boundary (the guard `where:{kind}` read in lib/thai-letters.ts),
+    // or a level-style read truncated one section to a single page.
+    const consonantRows = consonants.getByTestId("alphabet-row");
+    const vowelRows = vowels.getByTestId("alphabet-row");
+    await expect(consonantRows).toHaveCount(44);
+    await expect(vowelRows).toHaveCount(32);
+
+    // Every row carries exactly one romanisation cell, so the roman column is populated
+    // for each letter rather than only rendered where data happened to exist.
+    await expect(consonants.getByTestId("alphabet-roman")).toHaveCount(44);
+    await expect(vowels.getByTestId("alphabet-roman")).toHaveCount(32);
+
+    // Rendered row content, in taught order: the first consonant is ก / "ko kai", the
+    // first vowel is อะ / "sara a". This proves the ordinal sort and that the Thai glyph
+    // and its RTGS name land in the right columns, not merely that a row is visible.
+    const firstConsonant = consonantRows.first();
+    await expect(firstConsonant).toContainText("ก");
+    await expect(firstConsonant.getByTestId("alphabet-roman")).toHaveText("ko kai");
+
+    const firstVowel = vowelRows.first();
+    await expect(firstVowel).toContainText("อะ");
+    await expect(firstVowel.getByTestId("alphabet-roman")).toHaveText("sara a");
+
+    // The consonant section must not romanise a vowel, and vice versa — the sharpest proof
+    // that the kind filter actually partitions rather than dumping every letter twice.
+    await expect(consonants.getByTestId("alphabet-roman").filter({ hasText: "sara a" })).toHaveCount(0);
+    await expect(vowels.getByTestId("alphabet-roman").filter({ hasText: "ko kai" })).toHaveCount(0);
+
+    // vowelLength is data only the 32 vowel sounds carry, rendered as a short/long badge.
+    // On /th every other string is Thai, so these English badge labels can only come from
+    // the vowel rows — present in the vowels section, absent from the consonants section.
+    await expect(vowels.getByText("short").first()).toBeVisible();
+    await expect(vowels.getByText("long").first()).toBeVisible();
+    await expect(consonants.getByText("short")).toHaveCount(0);
+    await expect(consonants.getByText("long")).toHaveCount(0);
+
+    // The content is locale-independent curated data: switching to /en keeps the same
+    // inventory and the same romanisations, only the surrounding copy changes.
+    await page.goto("/en/thai-alphabet");
+    await expect(page.getByTestId("alphabet-consonants").getByTestId("alphabet-row")).toHaveCount(44);
+    await expect(page.getByTestId("alphabet-vowels").getByTestId("alphabet-row")).toHaveCount(32);
+    await expect(
+      page.getByTestId("alphabet-consonants").getByTestId("alphabet-row").first().getByTestId("alphabet-roman"),
+    ).toHaveText("ko kai");
   });
 });

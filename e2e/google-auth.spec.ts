@@ -1,4 +1,4 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect, type APIRequestContext, type Page } from "@playwright/test";
 
 /**
  * Google sign-in and magic-link sign-up, against the real Worker and a real database.
@@ -179,6 +179,91 @@ test.describe("magic link can create an account", () => {
       });
       expect(attempt.status(), `password ${JSON.stringify(password)} must be refused`).not.toBe(200);
     }
+  });
+});
+
+/**
+ * What the learner actually *sees* when the Google callback bounces them back to the login
+ * form. The tests above prove the callback emits the right `error=` code; these prove the
+ * form turns each code into the correct recovery or unavailable presentation — and, in the
+ * `google_unavailable` case, that it withdraws the button that could only ever fail rather
+ * than leaving a dead control on the page.
+ *
+ * The two codes are the documented query contract of `app/[locale]/auth/login/page.tsx`
+ * (`error=google` → `googleFailed`, `error=google_unavailable` → `googleUnavailable`), so
+ * driving them through the URL exercises exactly the branch a real callback lands on,
+ * without depending on whether OAuth credentials happen to be configured in `.dev.vars`.
+ */
+const googleSignInLink = (page: Page) =>
+  page.locator('a[href*="/api/user/google/start"]');
+
+test.describe("Google sign-in recovery presentation", () => {
+  test("error=google shows a recoverable alert and keeps both sign-in routes", async ({
+    page,
+  }) => {
+    await page.goto("/en/auth/login?error=google");
+
+    const alert = page.getByTestId("google-error");
+    await expect(alert).toBeVisible();
+    // A recoverable failure: announced assertively, and it must name the way out.
+    await expect(alert).toHaveAttribute("role", "alert");
+    await expect(alert).toContainText("Google sign-in did not complete.");
+
+    // "Try again" is only honest if the button the learner would try again with is here.
+    await expect(googleSignInLink(page)).toBeVisible();
+    await expect(page.getByLabel("Email")).toBeVisible();
+
+    // The page rendered its form, not an error boundary.
+    await expect(page.getByTestId("google-unavailable")).toHaveCount(0);
+  });
+
+  test("error=google_unavailable explains itself and withdraws the button", async ({
+    page,
+  }) => {
+    await page.goto("/en/auth/login?error=google_unavailable");
+
+    const status = page.getByTestId("google-unavailable");
+    await expect(status).toBeVisible();
+    // Not a failure the visitor can retry, so it is a status, not an alert.
+    await expect(status).toHaveAttribute("role", "status");
+    await expect(status).toContainText("set up on this site yet.");
+
+    // A button that can only fail is worse than none: it, and the divider that headed it,
+    // are gone. The email route is the whole offer, and it is still usable.
+    await expect(googleSignInLink(page)).toHaveCount(0);
+    await expect(page.getByTestId("google-error")).toHaveCount(0);
+    await expect(page.getByLabel("Email")).toBeVisible();
+  });
+
+  test("an unadorned login form shows neither banner", async ({ page }) => {
+    // The banners are conditional on the query, not always-on chrome: without an error the
+    // Google button leads and neither notice appears.
+    await page.goto("/en/auth/login");
+
+    await expect(googleSignInLink(page)).toBeVisible();
+    await expect(page.getByTestId("google-error")).toHaveCount(0);
+    await expect(page.getByTestId("google-unavailable")).toHaveCount(0);
+  });
+
+  test("clicking Google when start refuses lands on the recovery alert", async ({
+    page,
+  }) => {
+    // Narrowly intercept only the redirect entry point and answer as an unconfigured API
+    // does — a 302 back to the login form carrying `error=google`. Everything the browser
+    // does with that redirect (navigate, re-render the form) is real.
+    await page.route("**/api/user/google/start*", (route) =>
+      route.fulfill({
+        status: 302,
+        headers: { location: "/en/auth/login?error=google" },
+      }),
+    );
+
+    await page.goto("/en/auth/login");
+    await googleSignInLink(page).click();
+
+    await expect(page).toHaveURL(/error=google\b/);
+    await expect(page.getByTestId("google-error")).toBeVisible();
+    await expect(page.getByLabel("Email")).toBeVisible();
   });
 });
 

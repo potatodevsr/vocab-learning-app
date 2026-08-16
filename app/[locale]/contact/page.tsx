@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { ArrowRight, BookOpen, ShieldCheck, SpellCheck } from "lucide-react";
+import { ArrowRight, BookOpen, Mail, ShieldCheck, SpellCheck } from "lucide-react";
 
 import { publicMetadata } from "@/lib/seo";
 import { PageSchema } from "@/components/page-schema";
@@ -17,6 +17,14 @@ import { Button } from "@/components/ui/button";
  */
 export const revalidate = 3600;
 
+/**
+ * The one address the site publishes.
+ *
+ * Data, not interface copy — an email address is identical in both locales, so putting it
+ * in the message files would only create two places for it to drift. Same reasoning as
+ * `TICKER_WORDS` on the about page.
+ */
+const CONTACT_EMAIL = "chadapohn.srkn@gmail.com";
 
 type LocalePageProps = { params: Promise<{ locale: string }> };
 
@@ -47,10 +55,15 @@ export default async function ContactPage({ params }: LocalePageProps) {
   const t = await getTranslations("Trust.contact");
 
   /**
-   * Three destinations, not three paragraphs. This page has no form and no address on
-   * purpose — the copy routes every request through the signed-in pathway so it arrives
-   * with account context and without a password or token pasted into a public channel.
-   * Building a form here would contradict the advice the page gives.
+   * Three destinations, not three paragraphs — what to say, depending on why you are
+   * writing. There is still no form: a form here would need somewhere to post to, and the
+   * app has no inbox Worker.
+   *
+   * There is now an address, though. This page used to route everything through "the
+   * support pathway available in the app", which did not exist — the site published
+   * thousands of dictionary claims and offered no way at all to report a wrong one. A
+   * contact page whose only advice is to use a channel that was never built is worse than
+   * no contact page, because it reads as one.
    */
   const routes = [
     {
@@ -88,6 +101,33 @@ export default async function ContactPage({ params }: LocalePageProps) {
         <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
           {t("intro")}
         </p>
+
+        {/*
+          The address is the largest thing on the page, and it is a `mailto:` rather than
+          plain text — on a phone, which is where this audience is, tapping it opens the
+          mail app already addressed. `break-all` because the address is longer than a
+          390px column and must wrap rather than push the page sideways.
+        */}
+        <div
+          className="play-sticker mt-8 max-w-2xl p-6"
+          style={{ ["--tile-block" as string]: "var(--accent-grape)" }}
+        >
+          <h2 className="text-xl font-extrabold tracking-tight">
+            {t("emailHeading")}
+          </h2>
+
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className="play-underline play-focus mt-3 inline-flex min-h-11 items-center gap-2 text-lg font-extrabold break-all text-brand"
+          >
+            <Mail aria-hidden className="size-5 shrink-0" />
+            {CONTACT_EMAIL}
+          </a>
+
+          <p className="mt-3 leading-7 text-muted-foreground">
+            {t("emailBody")}
+          </p>
+        </div>
       </section>
 
       <section className="mx-auto w-full max-w-5xl px-6 pb-14 lg:px-8">

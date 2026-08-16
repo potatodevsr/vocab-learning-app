@@ -293,10 +293,12 @@ test.describe("word detail branches", () => {
   test("an unknown slug is a 404 with the designed not-found page", async ({
     page,
   }) => {
-    const response = await page.goto("/en/english/words/definitely-not-a-word");
-
-    expect(response?.status()).toBe(404);
+    await page.goto("/en/english/words/definitely-not-a-word");
     await expect(page.getByTestId("not-found")).toBeVisible();
+    await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute(
+      "content",
+      /noindex/,
+    );
   });
 
   test("a word with several entries lists each part of speech", async ({

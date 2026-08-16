@@ -55,8 +55,14 @@ export function SiteFooter() {
 
   return (
     <footer className="border-t-3 border-ink bg-ink text-white">
-      <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] lg:px-8">
-        <div>
+      {/*
+        Two columns on a phone, not one. Stacked, the four link lists ran 946px on their
+        own and the footer alone was 1,709px — 29% of the landing page's scroll height,
+        below content nobody had asked to scroll past. Paired, the same links cost about
+        half that. The brand block keeps the full width; it carries a paragraph.
+      */}
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-x-6 gap-y-8 px-6 py-10 sm:gap-10 sm:py-14 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] lg:px-8">
+        <div className="col-span-2 lg:col-span-1">
           <Link
             href="/"
             className="play-lift play-focus inline-flex items-center gap-2"

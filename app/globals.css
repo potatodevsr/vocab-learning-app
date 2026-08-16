@@ -282,7 +282,12 @@
   font-weight: 800;
   line-height: 0.95;
   letter-spacing: -0.045em;
-  font-size: clamp(2.75rem, 9vw, 5.5rem);
+  /* The lower bound governs every phone: 9vw is 35px at 390px wide, so anything
+     below ~489px renders at the minimum. It was 2.75rem (44px), which on the
+     landing hero cost four wrapped lines of Thai at 1.3 leading — 229px of
+     headline — and pushed the primary action past the fold on a 390×844 screen.
+     2.25rem still reads as display type and gives that space back. */
+  font-size: clamp(2.25rem, 9vw, 5.5rem);
   text-wrap: balance;
 }
 

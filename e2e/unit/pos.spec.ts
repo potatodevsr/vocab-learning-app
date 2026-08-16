@@ -4,6 +4,7 @@ import en from "../../messages/en.json";
 import th from "../../messages/th.json";
 import {
   alignPosUsages,
+  hasMultiplePartsOfSpeech,
   isPosUsageFilled,
   parsePosUsages,
   posAdminHeading,
@@ -30,6 +31,35 @@ test.describe("splitPartsOfSpeech", () => {
       expect(splitPartsOfSpeech(input)).toEqual(expected);
     });
   }
+});
+
+test.describe("hasMultiplePartsOfSpeech", () => {
+  test("two distinct parts is multiple", () => {
+    expect(hasMultiplePartsOfSpeech("prep., adv.")).toBe(true);
+  });
+
+  test("a four-part tag is multiple", () => {
+    expect(hasMultiplePartsOfSpeech("adj., n., prep., adv.")).toBe(true);
+  });
+
+  test("a single part is not multiple", () => {
+    expect(hasMultiplePartsOfSpeech("n.")).toBe(false);
+  });
+
+  test("a slashed tag is one part, not multiple", () => {
+    // A slash joins two names of one part of speech; only a comma separates parts.
+    expect(hasMultiplePartsOfSpeech("det./pron.")).toBe(false);
+  });
+
+  test("empty input is not multiple", () => {
+    expect(hasMultiplePartsOfSpeech("")).toBe(false);
+    expect(hasMultiplePartsOfSpeech("   ")).toBe(false);
+  });
+
+  test("a repeated part still counts by comma, without deduping", () => {
+    // splitPartsOfSpeech does not dedupe, so two comma-separated `n.` are two parts.
+    expect(hasMultiplePartsOfSpeech("n., n.")).toBe(true);
+  });
 });
 
 test.describe("posMessageKeys", () => {

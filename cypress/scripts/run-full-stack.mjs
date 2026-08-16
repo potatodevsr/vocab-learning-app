@@ -53,9 +53,11 @@ const assertPortAvailable = (port) =>
 
 const start = (label, command, args, options = {}) => {
   const log = createWriteStream(resolve(LOGS, `${label}.log`), { flags: "w" });
+  const env = { ...process.env, ...options.env };
+  for (const name of options.unsetEnv ?? []) delete env[name];
   const child = spawn(command, args, {
     cwd: options.cwd ?? ROOT,
-    env: { ...process.env, ...options.env },
+    env,
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -288,6 +290,10 @@ try {
       "cypress.config.ts",
       ...(spec ? ["--spec", spec] : []),
     ],
+    // Codex and some Node launchers set this for their own Electron integration. Cypress
+    // is itself an Electron app; inheriting it makes the binary run as plain Node and
+    // reject Cypress' --smoke-test/--no-sandbox launch flags before any spec can start.
+    { unsetEnv: ["ELECTRON_RUN_AS_NODE"] },
   );
   const result = await cypress.done;
   exitCode = result.code ?? 1;

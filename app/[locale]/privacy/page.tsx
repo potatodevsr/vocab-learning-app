@@ -18,7 +18,13 @@ export const revalidate = 3600;
 type LocalePageProps = { params: Promise<{ locale: string }> };
 
 /** Stable anchor ids so a section can be linked to directly, as reference documents are. */
-const SECTION_IDS = ["account-data", "cookies", "analytics", "your-data"];
+const SECTION_IDS = [
+  "account-data",
+  "cookies",
+  "analytics",
+  "your-data",
+  "retention",
+];
 
 export async function generateMetadata({
   params,
@@ -51,6 +57,9 @@ export default async function PrivacyPage({ params }: LocalePageProps) {
     { heading: t("s2Heading"), body: t("s2Body") },
     { heading: t("s3Heading"), body: t("s3Body") },
     { heading: t("s4Heading"), body: t("s4Body") },
+    // A policy that says what it collects but never says when it stops holding it has
+    // answered the easy half. Inactive accounts are deleted after 12 months.
+    { heading: t("s5Heading"), body: t("s5Body") },
   ].map((section, index) => ({ ...section, id: SECTION_IDS[index] }));
 
   return (

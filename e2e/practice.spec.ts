@@ -146,3 +146,38 @@ test.describe("public practice UI branches", () => {
     ).toHaveCount(5);
   });
 });
+
+/**
+ * The practice landing copy that satisfies the search query and the substance floor
+ * before any interactive trial (docs/LEARNER-LIFECYCLE.md §5.3): the "no signup needed"
+ * reassurance, the sample-words preview, and the explore-the-level link. All public.
+ */
+test.describe("public practice landing content", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("the level practice page reassures, previews words, and links back to the level", async ({
+    page,
+  }) => {
+    await page.goto("/en/english/a1/practice");
+
+    await expect(page.getByTestId("no-signup-clause")).toBeVisible();
+
+    // The preview is a real list built from published words — never empty, or the
+    // substance floor is unmet.
+    const samples = page.getByTestId("practice-sample-words");
+    await expect(samples).toBeVisible();
+    expect(await samples.locator("li").count()).toBeGreaterThan(0);
+
+    const explore = page.getByTestId("explore-level-link");
+    await expect(explore).toBeVisible();
+    await expect(explore).toHaveAttribute("href", /\/english\/a1$/);
+  });
+
+  test("the unit practice page carries the same no-signup reassurance", async ({
+    page,
+  }) => {
+    await page.goto(`/en/english/a1/unit/${SEED.unit1.number}/practice`);
+
+    await expect(page.getByTestId("no-signup-clause")).toBeVisible();
+  });
+});

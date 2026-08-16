@@ -88,6 +88,9 @@ const visitHome = (locale: string) => {
   cy.get(ROOT).scrollIntoView().should("be.visible");
   cy.get(STAGE).should("be.visible");
   cy.get(CARDS).should("have.length", 3);
+  // Thai headings change metrics when the web font replaces the fallback. Measure the
+  // final learner-visible stack, not an arbitrary frame during font loading.
+  cy.document().then((document) => document.fonts.ready);
 };
 
 const seekHero = (time: number) => {

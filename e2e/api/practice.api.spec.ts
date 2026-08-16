@@ -124,7 +124,7 @@ test.describe("POST /practice/answer", () => {
 
   test("replaying an already-graded item returns the stored verdict, not a re-grade", async () => {
     const ctx = await newApiContext();
-    const { items } = (await (await start(ctx)).json()) as StartResponse;
+    await start(ctx);
 
     const first = await (
       await ctx.post(`${API}/practice/answer`, {

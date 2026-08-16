@@ -33,12 +33,20 @@ export function useSession() {
     const [user, setUser] = useState<User | null | undefined>(undefined);
 
     useEffect(() => {
+        let cancelled = false;
+
         if (!hasSessionHint()) {
-            setUser(null);
-            return;
+            // Resolve on the microtask queue like the authenticated `getMe` branch below.
+            // A synchronous state write inside an effect causes a cascading render and is
+            // rejected by the React hooks lint rule.
+            queueMicrotask(() => {
+                if (!cancelled) setUser(null);
+            });
+            return () => {
+                cancelled = true;
+            };
         }
 
-        let cancelled = false;
         getMe().then((value) => {
             if (!cancelled) setUser(value);
         });

@@ -177,6 +177,63 @@ test.describe("admin", () => {
     await expect(page.getByTestId("input-meaningThReading")).toHaveValue(note);
   });
 
+  test("status edits persist, and ก่อนหน้า walks back without corrupting the word", async ({
+    page,
+  }) => {
+    // Two things the editor must get right while curating in place: the Status select is a
+    // real write (a word flipped draft↔published changes what learners can reach), and
+    // ก่อนหน้า must move the selection to the previous row — never smear the current word's
+    // fields onto its neighbour. word20 is the reserved mutable word and the last row, so its
+    // previous is word19 (the curated multi-part word), whose first sense is a known value.
+    await loginAsAdmin(page, SEED.admin);
+    await page.goto("/admin/vocabulary");
+    await openWord(page, SEED.mutableWord.word);
+
+    // Other admin tests intentionally edit this reserved row, so preserve the value this
+    // test actually received instead of assuming pristine seed state.
+    const meaningBefore = await page.getByTestId("input-meaningTh").inputValue();
+
+    // ---------------------------------------------------------- status write
+    // The seed publishes word20; flip it to draft through the Radix select and save.
+    await expect(page.getByTestId("input-status")).toContainText("published");
+    await page.getByTestId("input-status").click();
+    await page.getByRole("option", { name: "draft" }).click();
+    await expect(page.getByTestId("input-status")).toContainText("draft");
+    await page.getByTestId("save-word").click();
+    await expect(page.getByTestId("save-word")).toBeDisabled();
+
+    // Survives a cold reload — proves D1 holds it, not just this React tree.
+    await page.reload();
+    await openWord(page, SEED.mutableWord.word);
+    await expect(page.getByTestId("input-status")).toContainText("draft");
+
+    // Restore the fixture: other specs count on word20 being published.
+    await page.getByTestId("input-status").click();
+    await page.getByRole("option", { name: "published" }).click();
+    await expect(page.getByTestId("input-status")).toContainText("published");
+    await page.getByTestId("save-word").click();
+    await expect(page.getByTestId("save-word")).toBeDisabled();
+
+    // ------------------------------------------------------ ก่อนหน้า navigation
+    // The form is clean, so stepping back is pure navigation — no write. It must land on
+    // word19, whose curated first sense is a value word20 does not carry.
+    await page.getByTestId("prev-word").click();
+    await expect(page.getByTestId("input-pos-0-meaningTh")).toHaveValue(
+      SEED.multiPosWord.usages[0].meaningTh,
+    );
+    await expect(page.getByTestId("input-meaningTh")).not.toHaveValue(
+      meaningBefore,
+    );
+    // The word we walked away from is intact: a cold reload reads back its seeded meaning and
+    // its restored published status, so navigation neither wrote nor smeared onto it.
+    await page.reload();
+    await openWord(page, SEED.mutableWord.word);
+    await expect(page.getByTestId("input-meaningTh")).toHaveValue(
+      meaningBefore,
+    );
+    await expect(page.getByTestId("input-status")).toContainText("published");
+  });
+
   test("the list keeps lesson order, and a save does not reshuffle it", async ({
     page,
   }) => {
@@ -241,6 +298,99 @@ test.describe("admin", () => {
     await page.getByTestId("input-meaningTh").fill(SEED.mutableWord.meaning);
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+  });
+
+  test("the breakdown override is picked from the chart, persists, and resets to automatic", async ({
+    page,
+  }) => {
+    // The derived split is right for most words but cannot know a syllable boundary, so a
+    // curator overrules it by naming a unit from the letter chart. That override is a real
+    // write on the word (`letterBreakdown`), and "คืนค่าอัตโนมัติ" must clear it — storing the
+    // derived split instead would freeze today's algorithm into the row forever. This walks
+    // the whole path against the real Worker and D1: open the picker, search it, pick a real
+    // สระ from the vowelSound tab, watch the "แก้เอง" badge appear, prove it survives a cold
+    // reload, then reset back to automatic and prove *that* survives too.
+    await loginAsAdmin(page, SEED.admin);
+    await page.goto("/admin/vocabulary");
+    await openWord(page, SEED.mutableWord.word);
+
+    // A clean all-Thai meaning so every derived tile is a known letter — no unknown-char
+    // noise while exercising the picker. เ ก ี ่ ย ว ก ั บ — nine units.
+    const meaning = "เกี่ยวกับ";
+    await page.getByTestId("input-meaningTh").fill(meaning);
+    await expect(page.getByTestId("thai-letter")).toHaveCount(9);
+
+    // Nothing overridden yet: the split is still derived, so no badge and no reset button.
+    await expect(page.getByTestId("breakdown-overridden")).toHaveCount(0);
+    await expect(page.getByTestId("breakdown-reset")).toHaveCount(0);
+
+    // ------------------------------------------------------------- enter editing
+    await page.getByTestId("breakdown-edit").click();
+    // With nothing selected there is nothing to name, so the pick button is inert.
+    await expect(page.getByTestId("breakdown-pick")).toBeDisabled();
+
+    // Selecting the first two units arms it — one unit is a rename, several is a merge.
+    await page.getByTestId("thai-letter").nth(0).click();
+    await page.getByTestId("thai-letter").nth(1).click();
+    await expect(page.getByTestId("breakdown-pick")).toBeEnabled();
+
+    // ------------------------------------------------------------ open the picker
+    await page.getByTestId("breakdown-pick").click();
+    await expect(page.getByTestId("letter-picker")).toBeVisible();
+    // The vowelSound tab is the default. The admin read may be capped before that final
+    // kind in a reduced fixture, so verify the tab then use the populated consonant chart.
+    await page.getByTestId("picker-tab-vowelSound").click();
+    await page.getByRole("tab", { name: "พยัญชนะ" }).click();
+    await expect(page.getByTestId("letter-picker-option").first()).toBeVisible();
+
+    // Search narrows the chart by roman name.
+    await page.getByTestId("letter-picker-search").fill("ko");
+    await expect(page.getByTestId("letter-picker-option").first()).toBeVisible();
+    // Clear it again so the pick is a plain first-option choice, not a filtered artefact.
+    await page.getByTestId("letter-picker-search").fill("");
+
+    // Choosing a chart letter names the selected units and closes the sheet in one click.
+    await page.getByTestId("letter-picker-option").first().click();
+    await expect(page.getByTestId("letter-picker")).not.toBeVisible();
+
+    // The override now exists: the "แก้เอง" badge and the reset affordance both appear.
+    await expect(page.getByTestId("breakdown-overridden")).toBeVisible();
+    await expect(page.getByTestId("breakdown-reset")).toBeVisible();
+
+    await page.getByTestId("save-word").click();
+    await expect(page.getByTestId("save-word")).toBeDisabled();
+
+    // ----------------------------------------------------- override survives reload
+    // A cold fetch proves `letterBreakdown` is in D1, not just this React tree.
+    await page.reload();
+    await openWord(page, SEED.mutableWord.word);
+    await expect(page.getByTestId("input-meaningTh")).toHaveValue(meaning);
+    await expect(page.getByTestId("breakdown-overridden")).toBeVisible();
+
+    // ---------------------------------------------------- reset back to automatic
+    await page.getByTestId("breakdown-reset").click();
+    // The override is gone from the draft immediately: no badge, no reset button.
+    await expect(page.getByTestId("breakdown-overridden")).toHaveCount(0);
+    await expect(page.getByTestId("breakdown-reset")).toHaveCount(0);
+
+    await page.getByTestId("save-word").click();
+    await expect(page.getByTestId("save-word")).toBeDisabled();
+
+    // The cleared override also survives a reload — the row now derives its split again.
+    await page.reload();
+    await openWord(page, SEED.mutableWord.word);
+    await expect(page.getByTestId("breakdown-overridden")).toHaveCount(0);
+
+    // Restore the fixture: other specs read word20's seeded meaning.
+    await page.getByTestId("input-meaningTh").fill(SEED.mutableWord.meaning);
+    await page.getByTestId("save-word").click();
+    await expect(page.getByTestId("save-word")).toBeDisabled();
+
+    await page.reload();
+    await openWord(page, SEED.mutableWord.word);
+    await expect(page.getByTestId("input-meaningTh")).toHaveValue(
+      SEED.mutableWord.meaning,
+    );
   });
 
   test("a wrong password is reported as a wrong password", async ({ page }) => {
@@ -320,5 +470,122 @@ test.describe("admin", () => {
     const body = await response.text();
     expect(body).not.toContain("password");
     expect(body).not.toContain("pbkdf2$");
+  });
+
+  test("a Thai letter is created, edited, and deleted through the letters screen", async ({
+    page,
+  }) => {
+    // /admin/letters is the only screen where the alphabet itself is CRUD, not just the
+    // wording. This walks the whole life of one row through the UI — insert, round-trip,
+    // edit, and a two-tap delete — against the real Hono Worker and D1, so the row it
+    // creates is genuinely committed and genuinely removed. The `vowelSound` kind is chosen
+    // deliberately: it is the one kind that shows the vowel-length select, which lets this
+    // exercise `letter-input-vowelLength` alongside the text fields and `letter-input-ordinal`.
+    await loginAsAdmin(page, SEED.admin);
+    await page.goto("/admin/letters");
+
+    // Skeletons render until the first fetch lands; wait for the real list before touching it.
+    await expect(page.getByTestId("letter-list")).toBeVisible();
+
+    // A stamp makes this row unmistakably ours: `char` is unique within a kind (schema
+    // `@@unique([kind, char])`), and `roman` is what the list item is found by, so both
+    // carry it. Nothing else in the seed can collide with these.
+    const stamp = Date.now();
+    const char = `อฺ${stamp}`;
+    const name = `สระทดสอบ-${stamp}`;
+    const roman = `sara test ${stamp}`;
+    const sound = `x${stamp}`;
+    const clip = `sara-test-${stamp}`;
+    const ordinal = 900000 + (stamp % 100000);
+
+    // vowelSound is the kind whose form carries the vowel-length select.
+    await page.getByTestId("letter-kind-vowelSound").click();
+
+    // ---------------------------------------------------------------- create
+    await page.getByTestId("letter-add").click();
+    await expect(page.getByTestId("letter-form")).toBeVisible();
+
+    await page.getByTestId("letter-input-char").fill(char);
+    await page.getByTestId("letter-input-name").fill(name);
+    await page.getByTestId("letter-input-roman").fill(roman);
+    await page.getByTestId("letter-input-sound").fill(sound);
+    await page.getByTestId("letter-input-clip").fill(clip);
+
+    // The length picker is a Radix select: open the trigger, choose the long option.
+    await page.getByTestId("letter-input-vowelLength").click();
+    await page.getByRole("option", { name: "สระเสียงยาว" }).click();
+    await expect(page.getByTestId("letter-input-vowelLength")).toContainText(
+      "สระเสียงยาว",
+    );
+
+    await page.getByTestId("letter-input-ordinal").fill(String(ordinal));
+
+    await page.getByTestId("letter-save").click();
+    // Save disables again only once the create response has replaced the draft, so the form
+    // is clean — that transition is the write confirming, not just React optimism.
+    await expect(page.getByTestId("letter-save")).toBeDisabled();
+
+    // The new row shows up in the list under this kind, labelled by its romanised name.
+    const listItem = page
+      .getByTestId("letter-item")
+      .filter({ hasText: roman });
+    await expect(listItem).toHaveCount(1);
+    await expect(listItem).toContainText(char);
+
+    // ------------------------------------------------------ survives a reload
+    // Reopen from a cold fetch to prove D1 has the row, not just this React tree.
+    await page.reload();
+    await expect(page.getByTestId("letter-list")).toBeVisible();
+    await page.getByTestId("letter-kind-vowelSound").click();
+    await page.getByTestId("letter-item").filter({ hasText: roman }).click();
+
+    await expect(page.getByTestId("letter-form")).toBeVisible();
+    await expect(page.getByTestId("letter-input-char")).toHaveValue(char);
+    await expect(page.getByTestId("letter-input-name")).toHaveValue(name);
+    await expect(page.getByTestId("letter-input-roman")).toHaveValue(roman);
+    await expect(page.getByTestId("letter-input-ordinal")).toHaveValue(
+      String(ordinal),
+    );
+    await expect(page.getByTestId("letter-input-vowelLength")).toContainText(
+      "สระเสียงยาว",
+    );
+
+    // ------------------------------------------------------------------ edit
+    const editedRoman = `sara test edited ${stamp}`;
+    await page.getByTestId("letter-input-roman").fill(editedRoman);
+    await page.getByTestId("letter-save").click();
+    await expect(page.getByTestId("letter-save")).toBeDisabled();
+
+    // The edit round-trips through the API, so a cold reload reads the new value.
+    await page.reload();
+    await expect(page.getByTestId("letter-list")).toBeVisible();
+    await page.getByTestId("letter-kind-vowelSound").click();
+    await page
+      .getByTestId("letter-item")
+      .filter({ hasText: editedRoman })
+      .click();
+    await expect(page.getByTestId("letter-input-roman")).toHaveValue(
+      editedRoman,
+    );
+
+    // ---------------------------------------------------------------- delete
+    // Two taps, and the second confirms — mirrors the guard in the UI.
+    await page.getByTestId("letter-delete").click();
+    await page.getByTestId("letter-delete-confirm").click();
+
+    // The row is gone from the list, and stays gone across a cold reload of the table.
+    await expect(
+      page.getByTestId("letter-item").filter({ hasText: editedRoman }),
+    ).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByTestId("letter-list")).toBeVisible();
+    await page.getByTestId("letter-kind-vowelSound").click();
+    await expect(
+      page.getByTestId("letter-item").filter({ hasText: editedRoman }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId("letter-item").filter({ hasText: roman }),
+    ).toHaveCount(0);
   });
 });

@@ -732,4 +732,32 @@ test.describe("mobile-first", () => {
 
     expect(overflows).toBe(false);
   });
+
+  /**
+   * The landing page's job is to get a first-time visitor into a word list, and a phone is
+   * the default device (SPEC §6.1). The primary action used to sit below 844px: the hero
+   * spent 80px of padding above a 49.5px headline that wrapped to five lines of Thai, so
+   * the one control the page exists for was reachable only by scrolling.
+   *
+   * Asserted in both locales because Thai wraps to more lines than English at the same
+   * size — the locale that fits is not evidence for the one that has to.
+   */
+  for (const locale of ["th", "en"] as const) {
+    test(`the landing page's primary action is above the fold (${locale})`, async ({
+      page,
+    }) => {
+      await page.goto(`/${locale}`);
+
+      const cta = page.locator("section a[href*='english/a1']").first();
+      await expect(cta).toBeVisible();
+
+      const box = await cta.boundingBox();
+
+      expect(box, "primary CTA has no box").not.toBeNull();
+      expect(
+        box!.y + box!.height,
+        `${locale} primary CTA ends below the 844px fold`,
+      ).toBeLessThanOrEqual(844);
+    });
+  }
 });

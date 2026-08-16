@@ -113,7 +113,11 @@ export function UserNavbar({
           <DropdownMenuSeparator />
 
           <DropdownMenuItem asChild>
-            <Link href={`/${locale}/profile`} className="cursor-pointer">
+            <Link
+              href={`/${locale}/profile`}
+              prefetch={false}
+              className="cursor-pointer"
+            >
               <UserIcon className="mr-2 size-4" />
               {t("profile")}
             </Link>
