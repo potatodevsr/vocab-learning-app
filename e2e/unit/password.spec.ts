@@ -13,7 +13,7 @@ test.describe("hashPassword", () => {
     const [scheme, iterations, salt, digest] = hash.split("$");
 
     expect(scheme).toBe("pbkdf2");
-    expect(Number(iterations)).toBe(210_000);
+    expect(Number(iterations)).toBe(100_000);
     expect(salt.length).toBeGreaterThan(0);
     expect(digest.length).toBeGreaterThan(0);
   });

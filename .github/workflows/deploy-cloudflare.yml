@@ -56,13 +56,13 @@ jobs:
         run: pnpm --dir backend exec wrangler d1 migrations apply vocab --remote
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: b7e9643a4798eb8d75ab6a5a6f73f783
 
       - name: Deploy API Worker
         run: pnpm --dir backend exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: b7e9643a4798eb8d75ab6a5a6f73f783
 
       # Wrangler preserves existing Worker secrets during deploy. Refuse to continue if
       # production ever loses auth configuration instead of shipping a dead Google button.
@@ -73,7 +73,7 @@ jobs:
           rm api-secrets.json
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: b7e9643a4798eb8d75ab6a5a6f73f783
 
       - name: Verify API is ready for prerendering
         run: curl --fail --retry 5 --retry-all-errors https://vocab-api.hoshiku1997.workers.dev/health
@@ -97,7 +97,7 @@ jobs:
         run: pnpm exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: b7e9643a4798eb8d75ab6a5a6f73f783
 
       # Wrangler Action uploads secrets before running its command. A brand-new Worker
       # must therefore be created by the step above before its first secret upload.
@@ -106,7 +106,7 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          accountId: b7e9643a4798eb8d75ab6a5a6f73f783
           command: deploy
           packageManager: npm
           wranglerVersion: "4.114.0"

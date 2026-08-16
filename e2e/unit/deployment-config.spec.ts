@@ -34,9 +34,20 @@ test.describe("production deployment contract", () => {
 
   test("connects the web Worker to the deployed API Worker", () => {
     const config = readFileSync(resolve(root, "wrangler.jsonc"), "utf8");
+    const workflow = readFileSync(
+      resolve(root, ".github/workflows/deploy-cloudflare.yml"),
+      "utf8",
+    );
 
     expect(config).toMatch(/"binding"\s*:\s*"API"/);
     expect(config).toMatch(/"service"\s*:\s*"vocab-api"/);
+    expect(config).toContain(
+      '"account_id": "b7e9643a4798eb8d75ab6a5a6f73f783"',
+    );
+    expect(workflow).not.toContain("secrets.CLOUDFLARE_ACCOUNT_ID");
+    expect(workflow).toContain(
+      "CLOUDFLARE_ACCOUNT_ID: b7e9643a4798eb8d75ab6a5a6f73f783",
+    );
   });
 
   /**

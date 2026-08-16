@@ -34,5 +34,6 @@ exec pnpm exec wrangler dev --local "${PERSIST[@]}" \
   --port 4100 \
   --var FRONTEND_URL:http://localhost:3100 \
   --var APP_URL:http://localhost:3100 \
+  --var E2E_MODE:true \
   --var MAGIC_LINK_DEV_MODE:true \
   --var GOOGLE_AUTH_DEV_MODE:true

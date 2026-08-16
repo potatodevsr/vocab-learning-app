@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vocab-learning-app",
+  "account_id": "b7e9643a4798eb8d75ab6a5a6f73f783",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-07-27",
   "compatibility_flags": [
