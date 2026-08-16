@@ -52,6 +52,8 @@ jobs:
       # bundles the API Worker.
       - name: Generate API Worker runtime
         run: pnpm --dir backend exec prisma generate --generator client
+        env:
+          DATABASE_URL: file:./dev.db
 
       - name: Type-check
         run: pnpm exec tsc --noEmit

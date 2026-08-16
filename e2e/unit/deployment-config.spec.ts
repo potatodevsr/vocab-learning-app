@@ -15,12 +15,17 @@ test.describe("production deployment contract", () => {
     const migrate = workflow.indexOf("name: Apply API migrations");
     const deployApi = workflow.indexOf("name: Deploy API Worker");
     const generateApi = workflow.indexOf("name: Generate API Worker runtime");
+    const typeCheck = workflow.indexOf("name: Type-check");
     const verifySecrets = workflow.indexOf("name: Verify API auth secrets");
     const verifyHealth = workflow.indexOf("name: Verify API is ready for prerendering");
     const buildWeb = workflow.indexOf("name: Build OpenNext Worker");
 
     expect(migrate).toBeGreaterThan(-1);
     expect(generateApi).toBeGreaterThan(-1);
+    expect(typeCheck).toBeGreaterThan(generateApi);
+    expect(workflow.slice(generateApi, typeCheck)).toContain(
+      "DATABASE_URL: file:./dev.db",
+    );
     expect(migrate).toBeGreaterThan(generateApi);
     expect(deployApi).toBeGreaterThan(migrate);
     expect(verifySecrets).toBeGreaterThan(deployApi);
