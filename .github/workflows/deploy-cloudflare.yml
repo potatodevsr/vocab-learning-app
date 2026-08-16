@@ -66,6 +66,16 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: b7e9643a4798eb8d75ab6a5a6f73f783
 
+      # Both Workers must use the same signing key: the API issues auth cookies and the
+      # web middleware verifies them. Leaving the API's manually configured value in
+      # place creates a successful login followed by a redirect straight back to login.
+      - name: Configure API JWT secret
+        run: printf '%s' "$JWT_SECRET" | pnpm --dir backend exec wrangler secret put JWT_SECRET
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: b7e9643a4798eb8d75ab6a5a6f73f783
+
       - name: Deploy API Worker
         run: pnpm --dir backend exec wrangler deploy
         env:

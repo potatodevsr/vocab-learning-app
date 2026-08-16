@@ -13,6 +13,7 @@ test.describe("production deployment contract", () => {
     );
 
     const migrate = workflow.indexOf("name: Apply API migrations");
+    const configureApiJwt = workflow.indexOf("name: Configure API JWT secret");
     const deployApi = workflow.indexOf("name: Deploy API Worker");
     const generateApi = workflow.indexOf("name: Generate API Worker runtime");
     const typeCheck = workflow.indexOf("name: Type-check");
@@ -27,7 +28,12 @@ test.describe("production deployment contract", () => {
       "DATABASE_URL: file:./dev.db",
     );
     expect(migrate).toBeGreaterThan(generateApi);
+    expect(configureApiJwt).toBeGreaterThan(migrate);
+    expect(workflow.slice(configureApiJwt, deployApi)).toContain(
+      "JWT_SECRET: ${{ secrets.JWT_SECRET }}",
+    );
     expect(deployApi).toBeGreaterThan(migrate);
+    expect(deployApi).toBeGreaterThan(configureApiJwt);
     expect(verifySecrets).toBeGreaterThan(deployApi);
     expect(verifyHealth).toBeGreaterThan(verifySecrets);
     expect(buildWeb).toBeGreaterThan(verifyHealth);
