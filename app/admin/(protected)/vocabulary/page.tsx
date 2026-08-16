@@ -31,13 +31,6 @@ import {
 } from "lucide-react";
 import { API_URL } from "@/constants/config";
 import { LetterBreakdownEditor } from "@/components/admin/letter-breakdown-editor";
-import {
-  alignPosUsages,
-  isPosUsageFilled,
-  posAdminHeading,
-  splitPartsOfSpeech,
-  type PosUsage,
-} from "@/lib/pos";
 
 const LEVELS = ["A1", "A2", "B1", "B2"];
 const STATUSES = ["draft", "published"];
@@ -95,14 +88,6 @@ const GROUPS: FieldGroup[] = [
   },
 ];
 
-/**
- * Shown only for a word with a single part of speech.
- *
- * `across` is `prep., adv.` and its two senses are different lessons — "she walked across
- * the street" versus "the shop is across the street". One pair of boxes can hold one of
- * them, so a multi-part word gets `POS_FIELDS` per part instead, and these two columns
- * become a mirror of the first block (see `save`).
- */
 const EXAMPLE_GROUP: FieldGroup = {
   title: "ตัวอย่างประโยค",
   caption: "",
@@ -120,27 +105,6 @@ const EXAMPLE_GROUP: FieldGroup = {
   ],
 };
 
-/** The same three boxes, repeated once per part of speech. */
-type PosField = {
-  key: keyof Omit<PosUsage, "pos">;
-  label: string;
-  hint: string;
-};
-
-const POS_FIELDS: PosField[] = [
-  {
-    key: "meaningTh",
-    label: "ความหมาย / การใช้งาน",
-    hint: "",
-  },
-  {
-    key: "exampleEn",
-    label: "ตัวอย่าง EN",
-    hint: "",
-  },
-  { key: "exampleTh", label: "ตัวอย่าง TH", hint: "" },
-];
-
 const FIELDS: FieldSpec[] = [...GROUPS, EXAMPLE_GROUP].flatMap(
   (group) => group.fields,
 );
@@ -148,36 +112,11 @@ const FIELDS: FieldSpec[] = [...GROUPS, EXAMPLE_GROUP].flatMap(
 /** Every form field counts toward the "done" tally — there are no scratchpad fields. */
 const SCORED_FIELDS = FIELDS.map((f) => f.key);
 
-const BASE_SCORED_FIELDS = GROUPS.flatMap((group) =>
-  group.fields.map((f) => f.key),
-);
-
-/**
- * How much of a word is curated, and how much there is to curate.
- *
- * The denominator moves: a two-part word has six example boxes instead of two, and
- * showing `4/6` for a word that is really `4/10` would call it nearly done.
- */
 const progressOf = (word: VocabWord): { done: number; total: number } => {
-  const base = BASE_SCORED_FIELDS.filter(
-    (key) => word[key].trim() !== "",
-  ).length;
-
-  if (splitPartsOfSpeech(word.partOfSpeech).length <= 1) {
-    return {
-      done: SCORED_FIELDS.filter((key) => word[key].trim() !== "").length,
-      total: SCORED_FIELDS.length,
-    };
-  }
-
-  const usages = alignPosUsages(word.partOfSpeech, word.posUsages);
-  const done = usages.reduce(
-    (sum, usage) =>
-      sum + POS_FIELDS.filter((f) => usage[f.key].trim() !== "").length,
-    base,
-  );
-
-  return { done, total: base + usages.length * POS_FIELDS.length };
+  return {
+    done: SCORED_FIELDS.filter((key) => word[key].trim() !== "").length,
+    total: SCORED_FIELDS.length,
+  };
 };
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -191,25 +130,6 @@ type Draft = Record<EditableField, string> & {
   status: string;
   /** JSON override for the letter breakdown; empty means derive it. */
   letterBreakdown: string;
-  /** One block per part of speech, always aligned to the word's current `partOfSpeech`. */
-  posUsages: PosUsage[];
-};
-
-/**
- * A word whose parts of speech were never curated separately still has its one example
- * in `exampleEn`/`exampleTh`. Handing that to the first block rather than showing a row
- * of empty boxes means the curator only writes the sense that is actually missing.
- */
-const seedUsages = (word: VocabWord): PosUsage[] => {
-  const usages = alignPosUsages(word.partOfSpeech, word.posUsages);
-
-  if (usages.length <= 1 || usages.some(isPosUsageFilled)) return usages;
-
-  return usages.map((usage, i) =>
-    i === 0
-      ? { ...usage, exampleEn: word.exampleEn, exampleTh: word.exampleTh }
-      : usage,
-  );
 };
 
 const draftOf = (word: VocabWord): Draft => ({
@@ -219,16 +139,7 @@ const draftOf = (word: VocabWord): Draft => ({
   >),
   status: word.status,
   letterBreakdown: word.letterBreakdown,
-  posUsages: seedUsages(word),
 });
-
-const sameUsages = (a: PosUsage[], b: PosUsage[]) =>
-  a.length === b.length &&
-  a.every(
-    (usage, i) =>
-      usage.pos === b[i].pos &&
-      POS_FIELDS.every((f) => usage[f.key] === b[i][f.key]),
-  );
 
 export default function AdminVocabularyPage() {
   const router = useRouter();
@@ -325,11 +236,7 @@ export default function AdminVocabularyPage() {
     return (
       draft.status !== selected.status ||
       draft.letterBreakdown !== selected.letterBreakdown ||
-      FIELDS.some((f) => draft[f.key] !== selected[f.key]) ||
-      // Against the *seeded* blocks, not the stored ones: carrying an old single example
-      // into the first block is a display convenience, and treating it as an edit would
-      // have "ถัดไป" quietly rewrite every multi-part word you walked past.
-      !sameUsages(draft.posUsages, seedUsages(selected))
+      FIELDS.some((f) => draft[f.key] !== selected[f.key])
     );
   }, [selected, draft]);
 
@@ -349,17 +256,13 @@ export default function AdminVocabularyPage() {
       changed.letterBreakdown = draft.letterBreakdown;
     }
 
-    if (!sameUsages(draft.posUsages, seedUsages(selected))) {
-      // Blocks the curator has not reached yet are dropped rather than stored as empty
-      // strings, so `posUsages` says what is curated and nothing more.
-      const filled = draft.posUsages.filter(isPosUsageFilled);
-      changed.posUsages = JSON.stringify(filled);
-
-      // The first block also owns `exampleEn`/`exampleTh`. Unit cards and the page title
-      // read a single example and know nothing about parts of speech; without the mirror
-      // they would keep showing whatever was there before the split.
-      changed.exampleEn = filled[0]?.exampleEn ?? "";
-      changed.exampleTh = filled[0]?.exampleTh ?? "";
+    const sharedUsageChanged = (["meaningTh", "exampleEn", "exampleTh"] as const)
+      .some((key) => draft[key] !== selected[key]);
+    if (sharedUsageChanged && selected.posUsages !== "[]") {
+      // Older rows may still carry per-part-of-speech content. Once an editor chooses the
+      // new single meaning/example set, remove that legacy override so learner pages use
+      // exactly what was just saved instead of continuing to show the old split blocks.
+      changed.posUsages = "[]";
     }
 
     setSaving(true);
@@ -458,7 +361,6 @@ export default function AdminVocabularyPage() {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const index = selected ? words.findIndex((w) => w.id === selected.id) : -1;
-  const multiPos = (draft?.posUsages.length ?? 0) > 1;
 
   if (error) {
     return (
@@ -663,13 +565,7 @@ export default function AdminVocabularyPage() {
               </div>
 
               <div className="space-y-6">
-                {[
-                  ...GROUPS,
-                  // A word with two parts of speech gets a pair of example boxes for each
-                  // of them below instead, so the shared pair would be a third place to
-                  // type the same sentence — and the one nobody would keep up to date.
-                  ...(multiPos ? [] : [EXAMPLE_GROUP]),
-                ].map((group) => (
+                {[...GROUPS, EXAMPLE_GROUP].map((group) => (
                   <div
                     key={group.title}
                     className="rounded-lg border bg-background p-4 sm:p-5"
@@ -719,72 +615,6 @@ export default function AdminVocabularyPage() {
                     </div>
                   </div>
                 ))}
-
-                {multiPos && (
-                  <div
-                    className="rounded-lg border bg-background p-4 sm:p-5"
-                    data-testid="pos-usages"
-                  >
-                    <h3 className="text-sm font-semibold text-foreground">
-                      ความหมายและตัวอย่างตามชนิดของคำ
-                    </h3>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      คำนี้เป็นได้ {draft.posUsages.length} ชนิด —
-                      แต่ละชนิดใช้ต่างกัน จึงต้องมีตัวอย่างของตัวเอง
-                    </p>
-
-                    <div className="mt-4 space-y-4">
-                      {draft.posUsages.map((usage, i) => (
-                        <div
-                          key={`${usage.pos}-${i}`}
-                          data-testid="pos-usage"
-                          className="rounded-md border bg-muted/30 p-3 sm:p-4"
-                        >
-                          <p
-                            data-testid="pos-usage-heading"
-                            className="text-xs font-semibold text-foreground"
-                          >
-                            {posAdminHeading(usage.pos)}
-                          </p>
-
-                          <div className="mt-3 space-y-3">
-                            {POS_FIELDS.map((field) => (
-                              <div key={field.key} className="space-y-1.5">
-                                <Label
-                                  htmlFor={`pos-${i}-${field.key}`}
-                                  className="text-xs"
-                                >
-                                  {field.label}
-                                </Label>
-                                <Input
-                                  id={`pos-${i}-${field.key}`}
-                                  data-testid={`input-pos-${i}-${field.key}`}
-                                  placeholder={field.hint}
-                                  value={usage[field.key]}
-                                  onChange={(e) =>
-                                    setDraft({
-                                      ...draft,
-                                      posUsages: draft.posUsages.map(
-                                        (current, index) =>
-                                          index === i
-                                            ? {
-                                                ...current,
-                                                [field.key]: e.target.value,
-                                              }
-                                            : current,
-                                      ),
-                                    })
-                                  }
-                                  disabled={saving}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="rounded-lg border bg-background p-4 sm:p-5">
                   <Label htmlFor="status" className="text-xs">

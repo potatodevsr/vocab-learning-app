@@ -68,90 +68,72 @@ test.describe("admin", () => {
     await expect(card).toContainText(roman);
   });
 
-  test("a word with two parts of speech is curated one part at a time", async ({
+  test("a word with two parts of speech has one shared meaning and example set", async ({
     page,
   }) => {
-    // `across` is `prep., adv.` and the two senses need different sentences — "she walked
-    // across the street" versus "the shop is across the street". One shared example box
-    // can only hold one of them, so it is replaced by a block per part of speech.
     await loginAsAdmin(page, SEED.admin);
     await page.goto("/admin/vocabulary");
     await openWord(page, SEED.multiPosWord.word);
 
-    const blocks = page.getByTestId("pos-usage");
-    await expect(blocks).toHaveCount(SEED.multiPosWord.usages.length);
-
-    // ...and the shared pair is gone, rather than sitting there as a third place to type
-    // the same sentence.
-    await expect(page.getByTestId("input-exampleEn")).toHaveCount(0);
-
-    for (const [i, usage] of SEED.multiPosWord.usages.entries()) {
-      await expect(blocks.nth(i).getByTestId("pos-usage-heading")).toContainText(
-        `(${usage.pos})`,
-      );
-      await expect(page.getByTestId(`input-pos-${i}-meaningTh`)).toHaveValue(
-        usage.meaningTh,
-      );
-      await expect(page.getByTestId(`input-pos-${i}-exampleEn`)).toHaveValue(
-        usage.exampleEn,
-      );
-      await expect(page.getByTestId(`input-pos-${i}-exampleTh`)).toHaveValue(
-        usage.exampleTh,
-      );
-    }
-
-    // A word with one part of speech is untouched by any of this.
-    await openWord(page, SEED.unit1.firstWord);
+    await expect(page.getByText("prep., adv.", { exact: true })).toBeVisible();
     await expect(page.getByTestId("pos-usages")).toHaveCount(0);
+    await expect(page.getByTestId("input-meaningTh")).toHaveCount(1);
+    await expect(page.getByTestId("input-exampleEn")).toHaveCount(1);
+    await expect(page.getByTestId("input-exampleTh")).toHaveCount(1);
     await expect(page.getByTestId("input-exampleEn")).toHaveValue(
-      SEED.unit1.firstExampleEn,
+      SEED.multiPosWord.usages[0].exampleEn,
     );
   });
 
-  test("both parts of speech survive the round trip and reach the learner", async ({
+  test("the shared set replaces legacy per-part content and reaches the learner", async ({
     page,
   }) => {
     await loginAsAdmin(page, SEED.admin);
+
+    // Give the reserved mutable row the old shape first. This proves saving the shared
+    // fields removes a real legacy override without mutating word19, which other specs
+    // deliberately use as the read-only example of historical per-part content.
+    const legacy = SEED.mutableWord.partsOfSpeech.map((pos, i) => ({
+      pos,
+      meaningTh: `old meaning ${i}`,
+      exampleEn: `Old example ${i}.`,
+      exampleTh: `ตัวอย่างเก่า ${i}`,
+    }));
+    const legacyResponse = await page.request.put("http://localhost:4100/vocabword", {
+      data: {
+        where: { id: "e2e-a1-0020" },
+        data: { posUsages: JSON.stringify(legacy) },
+      },
+    });
+    expect(legacyResponse.ok()).toBeTruthy();
+
     await page.goto("/admin/vocabulary");
     await openWord(page, SEED.mutableWord.word);
 
     const stamp = Date.now();
-    const typed = SEED.mutableWord.partsOfSpeech.map((pos, i) => ({
-      pos,
-      meaningTh: `ความหมาย-${pos}-${stamp}`,
-      exampleEn: `Sentence ${i + 1} for ${pos} ${stamp}.`,
-      exampleTh: `ประโยค-${pos}-${stamp}`,
-    }));
+    const meaningTh = `ความหมายชุดเดียว-${stamp}`;
+    const exampleEn = `One shared example ${stamp}.`;
+    const exampleTh = `ตัวอย่างชุดเดียว-${stamp}`;
 
-    for (const [i, usage] of typed.entries()) {
-      await page.getByTestId(`input-pos-${i}-meaningTh`).fill(usage.meaningTh);
-      await page.getByTestId(`input-pos-${i}-exampleEn`).fill(usage.exampleEn);
-      await page.getByTestId(`input-pos-${i}-exampleTh`).fill(usage.exampleTh);
-    }
+    await page.getByTestId("input-meaningTh").fill(meaningTh);
+    await page.getByTestId("input-exampleEn").fill(exampleEn);
+    await page.getByTestId("input-exampleTh").fill(exampleTh);
 
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
 
-    // The whole array came back from the API, not just React state.
     await page.reload();
     await openWord(page, SEED.mutableWord.word);
-    for (const [i, usage] of typed.entries()) {
-      await expect(page.getByTestId(`input-pos-${i}-meaningTh`)).toHaveValue(
-        usage.meaningTh,
-      );
-      await expect(page.getByTestId(`input-pos-${i}-exampleEn`)).toHaveValue(
-        usage.exampleEn,
-      );
-    }
+    await expect(page.getByTestId("input-meaningTh")).toHaveValue(meaningTh);
+    await expect(page.getByTestId("input-exampleEn")).toHaveValue(exampleEn);
+    await expect(page.getByTestId("input-exampleTh")).toHaveValue(exampleTh);
 
-    // And the learner sees both senses, not just the first one.
+    // Clearing the legacy JSON matters: otherwise the learner page would continue to
+    // prefer its two old per-part blocks over the single set the admin just saved.
     await page.goto(`/en/english/words/${SEED.mutableWord.word}`);
-    const shown = page.getByTestId("pos-usage");
-    await expect(shown).toHaveCount(typed.length);
-    for (const [i, usage] of typed.entries()) {
-      await expect(shown.nth(i)).toContainText(usage.meaningTh);
-      await expect(shown.nth(i)).toContainText(usage.exampleEn);
-    }
+    await expect(page.getByTestId("pos-usages")).toHaveCount(0);
+    await expect(page.getByText(meaningTh, { exact: true })).toBeVisible();
+    await expect(page.getByText(exampleEn, { exact: true })).toBeVisible();
   });
 
   test("stepping to the next word saves the one you were on", async ({
@@ -218,9 +200,6 @@ test.describe("admin", () => {
     // The form is clean, so stepping back is pure navigation — no write. It must land on
     // word19, whose curated first sense is a value word20 does not carry.
     await page.getByTestId("prev-word").click();
-    await expect(page.getByTestId("input-pos-0-meaningTh")).toHaveValue(
-      SEED.multiPosWord.usages[0].meaningTh,
-    );
     await expect(page.getByTestId("input-meaningTh")).not.toHaveValue(
       meaningBefore,
     );

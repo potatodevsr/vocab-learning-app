@@ -371,15 +371,18 @@ test.describe("hover states — admin pages", () => {
       page,
     }) => {
       // /admin/vocabulary above only ever shows the list — the editor mounts once a word
-      // is picked, and it is where all the typing happens. The multi-part word brings the
-      // per-part-of-speech blocks along with it.
+      // is picked, and it is where all the typing happens. A multi-part word deliberately
+      // uses the same single meaning/example set as every other word.
       await page.goto("/admin/vocabulary");
       await page
         .getByTestId("word-item")
         .filter({ hasText: SEED.multiPosWord.word })
         .first()
         .click();
-      await expect(page.getByTestId("pos-usages")).toBeVisible();
+      await expect(page.getByTestId("input-meaningTh")).toBeVisible();
+      await expect(page.getByTestId("input-exampleEn")).toBeVisible();
+      await expect(page.getByTestId("input-exampleTh")).toBeVisible();
+      await expect(page.getByTestId("pos-usages")).toHaveCount(0);
 
       await checkPage(page, "admin-vocabulary-editor");
     });
