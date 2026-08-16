@@ -47,6 +47,12 @@ jobs:
       - name: Install API type dependencies
         run: pnpm --dir backend install --frozen-lockfile
 
+      # Prisma's generated TypeScript imports Worker runtime JS/WASM files that are
+      # intentionally gitignored. A clean runner must generate them before Wrangler
+      # bundles the API Worker.
+      - name: Generate API Worker runtime
+        run: pnpm --dir backend exec prisma generate --generator client
+
       - name: Type-check
         run: pnpm exec tsc --noEmit
 
