@@ -3,6 +3,20 @@ import { expect, test } from "@playwright/test";
 import { loginThroughUi, registerThroughUi } from "./support/actions";
 
 test.describe("authentication", () => {
+  test("auth shells are cacheable and keep query state in the client island", async ({
+    request,
+  }) => {
+    for (const path of [
+      "/en/auth/login?from=%2Fen%2Fprofile&error=google",
+      "/th/auth/register?from=%2Fth%2Fprofile",
+    ]) {
+      const response = await request.get(path);
+      expect(response.ok()).toBe(true);
+      expect(response.headers()["cache-control"] ?? "").not.toContain("private");
+      expect(response.headers()["cache-control"] ?? "").not.toContain("no-store");
+    }
+  });
+
   test("registering writes a real account that can log in again", async ({
     page,
     context,
@@ -20,6 +34,24 @@ test.describe("authentication", () => {
     await expect(page.getByText(user.username)).toBeVisible();
   });
 
+  test("a failed email-link delivery explains the password fallback", async ({ page }) => {
+    await page.route("**/api/user/magic-link/request", (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "unavailable" }),
+      }),
+    );
+
+    await page.goto("/en/auth/login");
+    await page.fill("#email", "delivery-failure@example.com");
+    await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+
+    await expect(page.getByText("Email links are unavailable right now", { exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Log in with password" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Email me a sign-in link" })).toHaveCount(0);
+  });
+
   /**
    * An unknown address now receives a sign-up link rather than nothing, so the screen it
    * lands on must be the one a registered address sees — that sameness is the point. It is
@@ -28,7 +60,7 @@ test.describe("authentication", () => {
   test("an unknown email gets the same inbox confirmation", async ({ page }) => {
     await page.goto("/en/auth/login");
     await page.fill("#email", `no-account-${Date.now()}@example.com`);
-    await page.click('button[type="submit"]');
+    await page.getByRole("button", { name: "Email me a sign-in link" }).click();
 
     await expect(page.getByTestId("magic-link-sent")).toBeVisible();
     await expect(page).toHaveURL(/\/auth\/login/);
@@ -41,7 +73,7 @@ test.describe("authentication", () => {
 
     await page.goto("/en/auth/login");
     await page.fill("#email", email);
-    await page.click('button[type="submit"]');
+    await page.getByRole("button", { name: "Email me a sign-in link" }).click();
 
     await page.getByTestId("dev-magic-link").click();
 
@@ -67,7 +99,7 @@ test.describe("authentication", () => {
 
     await page.goto("/en/auth/login?from=%2Fen%2Fprofile");
     await page.fill("#email", user.email);
-    await page.click('button[type="submit"]');
+    await page.getByRole("button", { name: "Email me a sign-in link" }).click();
     await page.getByTestId("dev-magic-link").click();
 
     await expect(page).toHaveURL(/\/en\/profile$/, { timeout: 20_000 });

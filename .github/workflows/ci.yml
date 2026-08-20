@@ -52,6 +52,9 @@ jobs:
       - name: Audit test coverage contract
         run: pnpm test:coverage-audit
 
+      - name: Validate production migrations
+        run: pnpm check:production-migrations
+
       - name: Lint
         run: pnpm lint
 

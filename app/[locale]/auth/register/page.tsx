@@ -1,15 +1,14 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 
 import { RegisterForm } from "@/components/auth/register-form";
-import { safeReturnPath } from "@/lib/return-path";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { privateMetadata } from "@/lib/seo";
 
 type RegisterPageProps = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ from?: string | string[] }>;
 };
 
 /** Its own title — see the note on the login page. */
@@ -20,19 +19,10 @@ export async function generateMetadata({ params }: RegisterPageProps) {
   return privateMetadata(t("registerTitle"), locale, "auth/register");
 }
 
-/**
- * Server wrapper so the return target is resolved once, server-side, from the awaited
- * `searchParams` Promise (Next 16) — never read from `window.location.search` in a
- * client `useEffect`, which needed a lint-suppressed post-mount `setState` just to avoid
- * a hydration mismatch. `safeReturnPath` runs here, so `RegisterForm` only ever receives
- * an already-validated destination, not the raw attacker-controllable query value.
- */
-export default async function RegisterPage({ params, searchParams }: RegisterPageProps) {
+/** Static shell: the client form validates its optional return destination. */
+export default async function RegisterPage({ params }: RegisterPageProps) {
   const { locale } = await params;
   const t = await getTranslations("Auth");
-  const { from: rawFrom } = await searchParams;
-  const raw = Array.isArray(rawFrom) ? rawFrom[0] : rawFrom;
-  const from = raw ? safeReturnPath(raw, locale) : null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-brand px-4">
@@ -60,7 +50,9 @@ export default async function RegisterPage({ params, searchParams }: RegisterPag
           <p className="mt-2 text-sm text-white">{t("registerSubtitle")}</p>
         </div>
 
-        <RegisterForm from={from} />
+        <Suspense fallback={null}>
+          <RegisterForm />
+        </Suspense>
       </div>
     </div>
   );

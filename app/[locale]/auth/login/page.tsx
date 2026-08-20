@@ -1,15 +1,14 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 
 import { LoginForm } from "@/components/auth/login-form";
-import { safeReturnPath } from "@/lib/return-path";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { privateMetadata } from "@/lib/seo";
 
 type LoginPageProps = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ from?: string | string[]; error?: string | string[] }>;
 };
 
 /**
@@ -24,31 +23,10 @@ export async function generateMetadata({ params }: LoginPageProps) {
   return privateMetadata(t("loginTitle"), locale, "auth/login");
 }
 
-/**
- * Server wrapper so the return target is resolved once, server-side, from the awaited
- * `searchParams` Promise (Next 16) — never read from `window.location.search` in a
- * client `useEffect`, which needed a lint-suppressed post-mount `setState` just to avoid
- * a hydration mismatch. `safeReturnPath` runs here, so `LoginForm` only ever receives an
- * already-validated destination, not the raw attacker-controllable query value.
- */
-export default async function LoginPage({ params, searchParams }: LoginPageProps) {
+/** Static shell: the client form validates query-dependent return and error state. */
+export default async function LoginPage({ params }: LoginPageProps) {
   const { locale } = await params;
   const t = await getTranslations("Auth");
-  const { from: rawFrom, error: rawError } = await searchParams;
-  const raw = Array.isArray(rawFrom) ? rawFrom[0] : rawFrom;
-  const from = raw ? safeReturnPath(raw, locale) : null;
-  /**
-   * The Google callback bounces here on any failure, deliberately without saying which
-   * check rejected it (see `google-auth.ts`) — naming the failing check would tell an
-   * attacker which half of the handshake to work on.
-   *
-   * `google_unavailable` is the one case worth distinguishing, because it is not a
-   * failure the visitor can do anything about: no OAuth credentials are configured, so
-   * the button could never have worked. Saying "try again" there would be a lie.
-   */
-  const errorCode = Array.isArray(rawError) ? rawError[0] : rawError;
-  const googleFailed = errorCode === "google";
-  const googleUnavailable = errorCode === "google_unavailable";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-brand px-4">
@@ -76,11 +54,12 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
           <p className="mt-2 text-sm text-white">{t("magicSubtitle")}</p>
         </div>
 
-        <LoginForm
-          from={from}
-          googleFailed={googleFailed}
-          googleUnavailable={googleUnavailable}
-        />
+        {/* Query-dependent return/error state belongs to the client island. Keeping it
+            out of this server page lets both locale variants be emitted once at build
+            time instead of spending Worker CPU on every sign-in visit. */}
+        <Suspense fallback={null}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

@@ -1,0 +1,20 @@
+{
+  "lockedMigrations": {
+    "0001_baseline.sql": "695314ca5986b080d025856619910c61d15445c9a0ac2994f852c411c0f037cc",
+    "0002_magic_link_auth.sql": "501a2e522104609c571583cc9027ce34ad40ce7e008c1b80644770c6ffd2fe92",
+    "0003_meaning_th_reading.sql": "e659f0dd5195d9488de5398bc823020c94bf03730fd3d12bc51514c4f3bb5301",
+    "0004_meaning_th_spelling.sql": "1b38cfd30094a8776a9da2199cc25d88af4842cc137e18006b20538f8d07d0ea",
+    "0005_drop_meaning_th_spelling.sql": "e329908c08b588576bf7b54c584f9260509e7bb640a360122c918218fb537be7",
+    "0006_pos_usages.sql": "e0aa5f6c37b97b827eed25d886e3e38567b2129f7858dbbfdd3cdccd073f79b1",
+    "0007_practice_trial.sql": "25912781b9659dae90884a40a635ca6f4a8f362fa9afa4daf5a648d4924eccce",
+    "0008_mixed_session.sql": "33e3218b9c9ae6d0416d72129e9910408c6b34b6b73900321c7c7728b8bdf04b",
+    "0009_session_reward_idempotency.sql": "b56a4f5e288f711fcf794e28ad6a41bc405584b94cca5080b51139e6f1c77a19",
+    "0010_quiz_reward_idempotency.sql": "ceff478f50cd927031faf24584bc168749de16d86ee43899960b06d5d5471b6e",
+    "0011_thai_letter.sql": "5c8ec97eae04a20f432dca64648a096939779f70c24a882dc90abc91cda69e0d",
+    "0012_completion_ledger.sql": "bed44df0c5668332acd81b8cd8ad05cfbed8a157ccce2fc115a2f868cfb342a8",
+    "0013_session_mode.sql": "43ad5a1b1bc8c76210e653541cc91aef2eff7d4d2f591a9de53fea3b55391060",
+    "0014_unit_checkpoint.sql": "0c9d1f83c188fd227971ee5d33720a1a21c421ef1aef137b4cd2e0a07f3b5300",
+    "0015_letter_breakdown.sql": "0bc85009cffcadb79c60acf4ad34ecfc0255aeb730715e9563f105e549bf2284",
+    "0016_google_auth_and_signup_links.sql": "70f684d6574517d619fb7937757dfa52cedce076dea6f8ad96abf6d40da9fcaa"
+  }
+}

@@ -19,8 +19,9 @@
     "test:e2e:cypress:open": "node cypress/scripts/run-full-stack.mjs --open",
     "test:release": "pnpm test:e2e && pnpm test:e2e:cypress",
     "e2e:seed": "node backend/scripts/generate-e2e-seed.mjs > backend/seed/e2e.sql",
+    "check:production-migrations": "node scripts/validate-production-migrations.mjs",
     "test:coverage-audit": "node scripts/check-test-coverage.mjs",
-    "test:all": "pnpm test:coverage-audit && pnpm exec tsc --noEmit && pnpm test:release"
+    "test:all": "pnpm check:production-migrations && pnpm test:coverage-audit && pnpm exec tsc --noEmit && pnpm test:release"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",

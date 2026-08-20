@@ -29,8 +29,8 @@ export const loginThroughUi = async (
 ) => {
   await page.goto("/en/auth/login");
   await page.fill("#email", user.email);
-  await page.click('button[type="submit"]');
-  await page.getByTestId("dev-magic-link").click();
+  await page.fill("#password", user.password);
+  await page.getByRole("button", { name: "Log in with password" }).click();
   await page.waitForURL((url) => !url.pathname.includes("/auth/"), {
     timeout: 20_000,
   });

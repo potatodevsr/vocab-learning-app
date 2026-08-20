@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { expect, test } from "@playwright/test";
@@ -13,6 +15,12 @@ test.describe("production deployment contract", () => {
     );
 
     const migrate = workflow.indexOf("name: Apply API migrations");
+    const validateMigrations = workflow.indexOf(
+      "name: Validate production migrations",
+    );
+    const recoveryBookmark = workflow.indexOf(
+      "name: Capture D1 recovery bookmark",
+    );
     const configureApiJwt = workflow.indexOf("name: Configure API JWT secret");
     const deployApi = workflow.indexOf("name: Deploy API Worker");
     const generateApi = workflow.indexOf("name: Generate API Worker runtime");
@@ -22,6 +30,12 @@ test.describe("production deployment contract", () => {
     const buildWeb = workflow.indexOf("name: Build OpenNext Worker");
 
     expect(migrate).toBeGreaterThan(-1);
+    expect(validateMigrations).toBeGreaterThan(typeCheck);
+    expect(recoveryBookmark).toBeGreaterThan(validateMigrations);
+    expect(migrate).toBeGreaterThan(recoveryBookmark);
+    expect(workflow.slice(recoveryBookmark, migrate)).toContain(
+      "wrangler d1 time-travel info vocab --json",
+    );
     expect(generateApi).toBeGreaterThan(-1);
     expect(typeCheck).toBeGreaterThan(generateApi);
     expect(workflow.slice(generateApi, typeCheck)).toContain(
@@ -43,6 +57,116 @@ test.describe("production deployment contract", () => {
       "GOOGLE_CLIENT_SECRET",
     ]) {
       expect(workflow).toContain(secret);
+    }
+
+    expect(workflow).not.toMatch(/d1 execute vocab --remote/);
+    expect(workflow).not.toMatch(/db:seed|seed:vocab|seed:oxford/);
+    expect(workflow).not.toMatch(/prisma migrate (?:deploy|reset)/);
+
+    const ci = readFileSync(resolve(root, ".github/workflows/ci.yml"), "utf8");
+    expect(ci).toContain("name: Validate production migrations");
+    expect(ci).toContain("run: pnpm check:production-migrations");
+  });
+
+  test("accepts the locked production migration history", () => {
+    expect(() =>
+      execFileSync("node", ["scripts/validate-production-migrations.mjs"], {
+        cwd: root,
+        encoding: "utf8",
+      }),
+    ).not.toThrow();
+  });
+
+  test("blocks changed history, out-of-order files, and data-rewriting SQL", ({}, testInfo) => {
+    const fixture = testInfo.outputPath("migration-safety");
+    const migrations = resolve(fixture, "migrations");
+    const manifest = resolve(fixture, "manifest.json");
+    mkdirSync(migrations, { recursive: true });
+
+    const lockedSql = 'CREATE TABLE "Safe" ("id" TEXT PRIMARY KEY);';
+    const lockedFile = resolve(migrations, "0016_safe.sql");
+    writeFileSync(lockedFile, lockedSql, "utf8");
+    writeFileSync(
+      manifest,
+      JSON.stringify({
+        lockedMigrations: {
+          "0016_safe.sql": createHash("sha256")
+            .update(lockedSql)
+            .digest("hex"),
+        },
+      }),
+      "utf8",
+    );
+    writeFileSync(
+      resolve(migrations, "0017_additive.sql"),
+      [
+        "-- DROP and DELETE in comments are documentation, not executable SQL.",
+        'ALTER TABLE "Safe" ADD COLUMN "label" TEXT;',
+        'INSERT OR IGNORE INTO "Safe" ("id", "label") VALUES (\'seed\', \'DROP -- DELETE UPDATE\');',
+      ].join("\n"),
+      "utf8",
+    );
+
+    const runAudit = () =>
+      spawnSync(
+        "node",
+        [
+          "scripts/validate-production-migrations.mjs",
+          "--migrations-dir",
+          migrations,
+          "--manifest",
+          manifest,
+        ],
+        { cwd: root, encoding: "utf8" },
+      );
+
+    expect(runAudit().status).toBe(0);
+
+    writeFileSync(lockedFile, `${lockedSql}\n-- edited after apply`, "utf8");
+    let result = runAudit();
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("applied production migration was modified");
+    writeFileSync(lockedFile, lockedSql, "utf8");
+
+    writeFileSync(
+      resolve(migrations, "0015_out_of_order.sql"),
+      'ALTER TABLE "Safe" ADD COLUMN "old" TEXT;',
+      "utf8",
+    );
+    result = runAudit();
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      "new migration number must be greater than 0016",
+    );
+
+    writeFileSync(
+      resolve(migrations, "0018_destructive.sql"),
+      [
+        'DROP TABLE "Safe";',
+        'DELETE FROM "Safe";',
+        'TRUNCATE TABLE "Safe";',
+        'UPDATE "Safe" SET "label" = \'changed\';',
+        'INSERT OR REPLACE INTO "Safe" ("id") VALUES (\'seed\');',
+        'INSERT INTO "Safe" ("id") VALUES (\'x\') ON CONFLICT DO UPDATE SET "label" = \'x\';',
+        'ALTER TABLE "Safe" RENAME TO "Unsafe";',
+        "PRAGMA foreign_keys = OFF;",
+      ].join("\n"),
+      "utf8",
+    );
+    result = runAudit();
+
+    expect(result.status).toBe(1);
+    for (const label of [
+      "DROP statement",
+      "DELETE statement",
+      "TRUNCATE statement",
+      "UPDATE statement",
+      "REPLACE statement",
+      "upsert that rewrites rows",
+      "table rename",
+      "PRAGMA statement",
+    ]) {
+      expect(result.stderr).toContain(`contains ${label}`);
     }
   });
 

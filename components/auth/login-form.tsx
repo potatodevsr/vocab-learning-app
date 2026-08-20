@@ -4,63 +4,76 @@ import { useState } from "react";
 import { CheckCircle2, Mail } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { requestMagicLink } from "@/lib/user-api";
+import { requestMagicLink, userLogin } from "@/lib/user-api";
 import { GoogleButton, AuthDivider } from "@/components/auth/google-button";
+import { safeReturnPath } from "@/lib/return-path";
 
 const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
-type LoginFormProps = {
-  /**
-   * The validated return target, already resolved server-side by `safeReturnPath`
-   * (`app/[locale]/auth/login/page.tsx`) — never the raw, attacker-controllable query
-   * value. `null` when there is none.
-   */
-  from: string | null;
-  /** True when the Google callback bounced back here after failing. */
-  googleFailed?: boolean;
-  /** No OAuth credentials configured — the button cannot work, so it is not shown. */
-  googleUnavailable?: boolean;
-};
-
-export function LoginForm({
-  from,
-  googleFailed = false,
-  googleUnavailable = false,
-}: LoginFormProps) {
+export function LoginForm() {
   const locale = useLocale();
   const t = useTranslations("Auth");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = safeReturnPath(searchParams.get("from"), locale);
+  const errorCode = searchParams.get("error");
+  const googleFailed = errorCode === "google";
+  const googleUnavailable = errorCode === "google_unavailable";
   const [email, setEmail] = useState("");
-  const [pending, setPending] = useState(false);
+  const [password, setPassword] = useState("");
+  const [pending, setPending] = useState<"password" | "magic" | null>(null);
   const [sent, setSent] = useState(false);
+  const [magicUnavailable, setMagicUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devMagicLink, setDevMagicLink] = useState<string | null>(null);
 
-  const submit = async (event: React.FormEvent) => {
+  const validateEmail = () => {
+    if (isValidEmail(email)) return true;
+    setError(t("validation.emailInvalidText"));
+    return false;
+  };
+
+  const submitPassword = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
-    if (!isValidEmail(email)) {
-      setError(t("validation.emailInvalidText"));
-      return;
-    }
+    if (!validateEmail()) return;
+    if (!password) return setError(t("validation.passwordRequiredText"));
 
-    setPending(true);
+    setPending("password");
+    try {
+      await userLogin({ email: email.trim(), password });
+      router.push(from);
+      router.refresh();
+    } catch {
+      setError(t("error.loginFailed"));
+      setPending(null);
+    }
+  };
+
+  const submitMagicLink = async () => {
+    setError(null);
+    if (!validateEmail()) return;
+
+    setPending("magic");
     try {
       const result = await requestMagicLink({
         email: email.trim(),
         locale,
-        from: from ?? undefined,
+        from,
       });
       setDevMagicLink(result.devMagicLink ?? null);
       setSent(true);
     } catch {
-      setError(t("error.generic"));
+      setMagicUnavailable(true);
+      setError(t("magicUnavailable"));
     } finally {
-      setPending(false);
+      setPending(null);
     }
   };
 
@@ -110,13 +123,13 @@ export function LoginForm({
               </p>
             ) : (
               <>
-                <GoogleButton from={from ?? undefined} />
+                <GoogleButton from={from} />
 
                 <AuthDivider />
               </>
             )}
 
-            <form onSubmit={submit} className="space-y-4" noValidate>
+            <form onSubmit={submitPassword} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="email">{t("email")}</Label>
               <div className="relative">
@@ -125,11 +138,20 @@ export function LoginForm({
               </div>
               {error && <p className="text-sm font-medium text-danger" role="alert">{error}</p>}
             </div>
-            <Button type="submit" disabled={pending} className="play-key h-14 w-full rounded-2xl bg-brand text-base font-extrabold text-white hover:bg-brand">
-              {pending ? t("magicSending") : t("magicSubmit")}
+            <div className="space-y-2">
+              <Label htmlFor="password">{t("password")}</Label>
+              <Input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" aria-invalid={!!error} />
+            </div>
+            <Button type="submit" disabled={pending !== null} className="play-key h-14 w-full rounded-2xl bg-brand text-base font-extrabold text-white hover:bg-brand">
+              {pending === "password" ? t("loadingLogin") : t("passwordSubmit")}
             </Button>
+            {!magicUnavailable && (
+              <Button type="button" variant="outline" disabled={pending !== null} onClick={submitMagicLink} className="h-12 w-full rounded-2xl font-bold">
+                {pending === "magic" ? t("magicSending") : t("magicSubmit")}
+              </Button>
+            )}
             <p className="text-center text-sm text-muted-foreground">
-              {t("noAccount")} <Link href={from ? `/${locale}/auth/register?from=${encodeURIComponent(from)}` : `/${locale}/auth/register`} className="play-focus font-semibold text-brand underline-offset-4 hover:underline">{t("register")}</Link>
+              {t("noAccount")} <Link href={searchParams.has("from") ? `/${locale}/auth/register?from=${encodeURIComponent(from)}` : `/${locale}/auth/register`} className="play-focus font-semibold text-brand underline-offset-4 hover:underline">{t("register")}</Link>
             </p>
             </form>
           </div>

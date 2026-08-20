@@ -20,7 +20,7 @@ describe("magic-link authentication boundaries", () => {
     cy.clearCookie("user_token");
     cy.visit("/en/auth/login?from=%2Fen%2Fprofile");
     cy.get("#email").type(user.email);
-    cy.get('button[type="submit"]').click();
+    cy.contains("button", "Email me a sign-in link").click();
     cy.get("[data-testid=dev-magic-link]").click();
 
     cy.location("pathname", { timeout: 20_000 }).should("equal", "/en/profile");

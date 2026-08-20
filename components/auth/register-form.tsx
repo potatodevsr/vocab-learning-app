@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { track } from "@/lib/analytics";
 import { safeReturnPath } from "@/lib/return-path";
@@ -64,18 +64,11 @@ const PASSWORD_RULES = [
   { key: "Special", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
 ] as const;
 
-type RegisterFormProps = {
-  /**
-   * The validated return target, already resolved server-side by `safeReturnPath`
-   * (`app/[locale]/auth/register/page.tsx`) — never the raw, attacker-controllable query
-   * value. `null` when there is none.
-   */
-  from: string | null;
-};
-
-export function RegisterForm({ from }: RegisterFormProps) {
+export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const locale = useLocale();
+  const from = safeReturnPath(searchParams.get("from"), locale);
   const t = useTranslations("Auth");
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [error, setError] = useState("");
@@ -137,10 +130,9 @@ export function RegisterForm({ from }: RegisterFormProps) {
 
       setSuccess(true);
       // Return the learner to where they were headed, never blindly to `/` — but only to
-      // a target we have proven safe (docs/LEARNER-LIFECYCLE.md §3.3). `from` was already
-      // validated server-side; re-validate here too since it still crosses a client
-      // boundary before reaching the router.
-      router.push(safeReturnPath(from, locale));
+      // a target we have proven safe (docs/LEARNER-LIFECYCLE.md §3.3). The query value is
+      // attacker-controlled, so `safeReturnPath` validates it before it reaches router.
+      router.push(from);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("error.generic"));
       setLoading(false);
@@ -354,7 +346,7 @@ export function RegisterForm({ from }: RegisterFormProps) {
             {t("haveAccount")}{" "}
             <Link
               href={
-                from
+                searchParams.has("from")
                   ? `/${locale}/auth/login?from=${encodeURIComponent(from)}`
                   : `/${locale}/auth/login`
               }
