@@ -17,6 +17,24 @@ test.describe("authentication", () => {
     }
   });
 
+  test("auth shells do not spend Worker CPU prefetching alternative pages", async ({
+    page,
+  }) => {
+    const speculativeRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.headers()["next-router-prefetch"] === "1") {
+        speculativeRequests.push(request.url());
+      }
+    });
+
+    await page.goto("/th/auth/login?from=%2Fth%2Fprofile");
+    await page.waitForTimeout(1_000);
+    await page.goto("/en/auth/register");
+    await page.waitForTimeout(1_000);
+
+    expect(speculativeRequests).toEqual([]);
+  });
+
   test("registering writes a real account that can log in again", async ({
     page,
     context,

@@ -74,7 +74,7 @@ export function HeroWordIllustration({ mode }: { mode: LearnerMode }) {
           <article
             key={card.word}
             data-hero-word={card.word}
-            className="hero-card-cycle play-card absolute left-0 top-0 w-full rounded-[24px] p-5 text-foreground"
+            className="hero-card-cycle play-card absolute left-0 top-0 h-full w-full rounded-[24px] p-5 text-foreground"
             style={{ animationDelay: card.delay }}
           >
             <div className="flex items-center justify-between">

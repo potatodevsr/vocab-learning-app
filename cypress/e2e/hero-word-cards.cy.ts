@@ -91,6 +91,17 @@ const visitHome = (locale: string) => {
   // Thai headings change metrics when the web font replaces the fallback. Measure the
   // final learner-visible stack, not an arbitrary frame during font loading.
   cy.document().then((document) => document.fonts.ready);
+  cy.window().then(
+    (win) =>
+      new Cypress.Promise<void>((resolve) => {
+        win.requestAnimationFrame(() =>
+          win.requestAnimationFrame(() => {
+            (win as Window & { __heroLayoutShift?: number }).__heroLayoutShift = 0;
+            resolve();
+          }),
+        );
+      }),
+  );
 };
 
 const seekHero = (time: number) => {
@@ -190,13 +201,16 @@ const readHero = (): Cypress.Chainable<HeroState> =>
       const heading = card.querySelector("h3");
       if (!heading) return false;
       const rect = heading.getBoundingClientRect();
-      const stack = win.document.elementsFromPoint(
-        rect.left + rect.width / 2,
-        rect.top + rect.height / 2,
+      const centreX = rect.left + rect.width / 2;
+      const centreY = rect.top + rect.height / 2;
+      return (
+        centreX >= frontRect.left &&
+        centreX <= frontRect.right &&
+        centreY >= frontRect.top &&
+        centreY <= frontRect.bottom &&
+        Number(win.getComputedStyle(front).zIndex) >
+          Number(win.getComputedStyle(card).zIndex)
       );
-      const frontIndex = stack.indexOf(front);
-      const rearIndex = stack.indexOf(card);
-      return frontIndex >= 0 && rearIndex >= 0 && frontIndex < rearIndex;
     });
     const contrast = [...front.querySelectorAll<HTMLElement>("h3, p, span")]
       .filter((node) => node.textContent?.trim())

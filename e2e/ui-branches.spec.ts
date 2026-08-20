@@ -295,6 +295,7 @@ test.describe("word detail branches", () => {
   }) => {
     await page.goto("/en/english/words/definitely-not-a-word");
     await expect(page.getByTestId("not-found")).toBeVisible();
+    await expect(page).toHaveTitle(/No words found/);
     await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute(
       "content",
       /noindex/,

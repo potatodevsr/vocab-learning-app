@@ -40,13 +40,14 @@ export default async function LoginPage({ params }: LoginPageProps) {
         <div className="mb-6 flex items-center justify-between gap-3">
           <Link
             href={`/${locale}`}
+            prefetch={false}
             className="play-underline play-focus inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-white"
           >
             <ArrowLeft className="size-4" />
             {t("backHome")}
           </Link>
 
-          <LanguageSwitcher tone="onColor" />
+          <LanguageSwitcher tone="onColor" prefetch={false} />
         </div>
 
         <div className="mb-8 text-center">

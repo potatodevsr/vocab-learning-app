@@ -70,7 +70,8 @@ export async function generateMetadata({
 
   if (!head) {
     // A missing word must not be indexed as a real page.
-    return { title: "ไม่พบคำศัพท์", robots: { index: false, follow: false } };
+    const t = await getTranslations({ locale, namespace: "Lesson" });
+    return { title: t("emptyTitle"), robots: { index: false, follow: false } };
   }
 
   /**

@@ -29,8 +29,10 @@ const LANG_TAG: Record<string, string> = { en: "en", th: "th" };
  */
 export function LanguageSwitcher({
   tone = "onSurface",
+  prefetch = true,
 }: {
   tone?: "onColor" | "onSurface";
+  prefetch?: boolean;
 }) {
   const locale = useLocale();
   const pathname = usePathname();
@@ -66,6 +68,7 @@ export function LanguageSwitcher({
             locale={item.value}
             lang={LANG_TAG[item.value]}
             hrefLang={LANG_TAG[item.value]}
+            prefetch={prefetch}
             aria-current={isActive ? "true" : undefined}
             className={cn(
               "play-lift play-focus flex min-h-11 items-center rounded-full px-2.5 text-sm font-bold transition-colors sm:px-3",

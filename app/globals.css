@@ -387,13 +387,13 @@
   33.333%,
   63.333% {
     z-index: 20;
-    transform: translate3d(12px, 10px, 0) scale(0.97) rotate(1.5deg);
+    transform: translate3d(0, 0, 0) scale(0.97) rotate(1.5deg);
   }
 
   66.666%,
   96.666% {
     z-index: 10;
-    transform: translate3d(-12px, -8px, 0) scale(0.94) rotate(-1.5deg);
+    transform: translate3d(0, 0, 0) scale(0.94) rotate(-1.5deg);
   }
 
   100% {
@@ -423,12 +423,12 @@
 
   .hero-card-cycle:nth-child(2) {
     z-index: 20;
-    transform: translate3d(12px, 10px, 0) scale(0.97) rotate(1.5deg);
+    transform: translate3d(0, 0, 0) scale(0.97) rotate(1.5deg);
   }
 
   .hero-card-cycle:nth-child(3) {
     z-index: 10;
-    transform: translate3d(-12px, -8px, 0) scale(0.94) rotate(-1.5deg);
+    transform: translate3d(0, 0, 0) scale(0.94) rotate(-1.5deg);
   }
 }
 .app-swal-popup {

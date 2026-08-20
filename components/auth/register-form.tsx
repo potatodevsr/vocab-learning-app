@@ -330,12 +330,12 @@ export function RegisterForm() {
           <p className="text-center text-xs text-muted-foreground">
             {t.rich("legalNotice", {
               terms: (chunks) => (
-                <Link href={`/${locale}/terms`} className="play-underline font-semibold">
+                <Link prefetch={false} href={`/${locale}/terms`} className="play-underline font-semibold">
                   {chunks}
                 </Link>
               ),
               privacy: (chunks) => (
-                <Link href={`/${locale}/privacy`} className="play-underline font-semibold">
+                <Link prefetch={false} href={`/${locale}/privacy`} className="play-underline font-semibold">
                   {chunks}
                 </Link>
               ),
@@ -345,6 +345,7 @@ export function RegisterForm() {
           <p className="text-center text-sm text-muted-foreground">
             {t("haveAccount")}{" "}
             <Link
+              prefetch={false}
               href={
                 searchParams.has("from")
                   ? `/${locale}/auth/login?from=${encodeURIComponent(from)}`

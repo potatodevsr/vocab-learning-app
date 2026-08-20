@@ -151,7 +151,7 @@ export function LoginForm() {
               </Button>
             )}
             <p className="text-center text-sm text-muted-foreground">
-              {t("noAccount")} <Link href={searchParams.has("from") ? `/${locale}/auth/register?from=${encodeURIComponent(from)}` : `/${locale}/auth/register`} className="play-focus font-semibold text-brand underline-offset-4 hover:underline">{t("register")}</Link>
+              {t("noAccount")} <Link prefetch={false} href={searchParams.has("from") ? `/${locale}/auth/register?from=${encodeURIComponent(from)}` : `/${locale}/auth/register`} className="play-focus font-semibold text-brand underline-offset-4 hover:underline">{t("register")}</Link>
             </p>
             </form>
           </div>

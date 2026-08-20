@@ -30,10 +30,37 @@ echo "[e2e] seeding deterministic fixtures"
 pnpm exec wrangler d1 execute vocab --local "${PERSIST[@]}" --file=seed/e2e.sql >/dev/null
 
 echo "[e2e] starting worker on :4100"
-exec pnpm exec wrangler dev --local "${PERSIST[@]}" \
-  --port 4100 \
-  --var FRONTEND_URL:http://localhost:3100 \
-  --var APP_URL:http://localhost:3100 \
-  --var E2E_MODE:true \
-  --var MAGIC_LINK_DEV_MODE:true \
-  --var GOOGLE_AUTH_DEV_MODE:true
+worker_pid=""
+
+stop_worker() {
+  if [[ -n "$worker_pid" ]] && kill -0 "$worker_pid" 2>/dev/null; then
+    kill "$worker_pid" 2>/dev/null || true
+    wait "$worker_pid" 2>/dev/null || true
+  fi
+  exit 0
+}
+
+trap stop_worker INT TERM
+
+while true; do
+  pnpm exec wrangler dev --local "${PERSIST[@]}" \
+    --port 4100 \
+    --var FRONTEND_URL:http://localhost:3100 \
+    --var APP_URL:http://localhost:3100 \
+    --var E2E_MODE:true \
+    --var MAGIC_LINK_DEV_MODE:true \
+    --var GOOGLE_AUTH_DEV_MODE:true &
+  worker_pid="$!"
+
+  set +e
+  wait "$worker_pid"
+  status="$?"
+  set -e
+  worker_pid=""
+
+  if [[ "$status" -eq 0 ]]; then
+    exit 0
+  fi
+
+  echo "[e2e] worker exited with status $status; restarting against existing isolated state"
+done

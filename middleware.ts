@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 
@@ -32,16 +31,63 @@ const getSecret = () => {
 
     if (!secret) throw new Error("JWT_SECRET is missing");
 
-    return new TextEncoder().encode(secret);
+    return secret;
 };
 
 type Role = "admin" | "user";
 
+const decodeBase64Url = (value: string) => {
+    const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const binary = atob(padded);
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+};
+
+const decodeJson = (value: string) =>
+    JSON.parse(new TextDecoder().decode(decodeBase64Url(value))) as Record<
+        string,
+        unknown
+    >;
+
+/**
+ * This boundary only needs HS256 signature + time + role validation. Pulling the full
+ * `jose` verifier into middleware made every localized static request initialize that
+ * dependency on the Worker's free CPU budget. The API still performs authoritative
+ * authorization; this compact WebCrypto check keeps redirects secure and cheap.
+ */
 const hasRole = async (token: string | undefined, role: Role) => {
     if (!token) return false;
 
     try {
-        const { payload } = await jwtVerify(token, getSecret());
+        const [encodedHeader, encodedPayload, encodedSignature, extra] =
+            token.split(".");
+        if (!encodedHeader || !encodedPayload || !encodedSignature || extra) {
+            return false;
+        }
+
+        const header = decodeJson(encodedHeader);
+        if (header.alg !== "HS256") return false;
+
+        const key = await crypto.subtle.importKey(
+            "raw",
+            new TextEncoder().encode(getSecret()),
+            { name: "HMAC", hash: "SHA-256" },
+            false,
+            ["verify"],
+        );
+        const valid = await crypto.subtle.verify(
+            "HMAC",
+            key,
+            decodeBase64Url(encodedSignature),
+            new TextEncoder().encode(`${encodedHeader}.${encodedPayload}`),
+        );
+        if (!valid) return false;
+
+        const payload = decodeJson(encodedPayload);
+        const now = Math.floor(Date.now() / 1000);
+        if (typeof payload.exp === "number" && payload.exp <= now) return false;
+        if (typeof payload.nbf === "number" && payload.nbf > now) return false;
+
         return payload.role === role;
     } catch {
         return false;
