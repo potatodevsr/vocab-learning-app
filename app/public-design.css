@@ -1,0 +1,478 @@
+/* ── The public art direction: "two-ink press" ────────────────────────────────
+   Scope: everything under `[data-ad="public"]` — the marketing and SEO surfaces
+   (landing, /english/*, the word entries, the static pages). The learner app
+   (/learn, /quiz, /review, /profile) and /admin keep the `play-*` language in
+   `globals.css`; nothing in this file may leak into them, which is why every
+   rule below is nested under the scope attribute and why this file defines its
+   own `--pd-*` tokens rather than redefining `--brand`, `--ink` or `--accent-*`.
+
+   The idea: a Thai exercise book run through a two-colour press. Pale acid
+   paper, one near-black green ink for everything structural, and two spot inks
+   that are allowed to overprint. No gradients, no blur shadows, no third hue.
+
+   The structure comes from Thai itself. Thai stacks three registers around the
+   baseline — vowels and tone marks above, descenders below — so every unit of
+   content on these pages is set as a stack: mono metadata above the rule, the
+   word on it, the meaning hanging below. That is what `.pd-entry` is, and it is
+   the same object whether it is one word, one unit, or one CEFR level.        */
+
+[data-ad="public"] {
+  /* ── Stock and inks ──────────────────────────────────────────────────────
+     Two tiers, and the tier decides what may be written on a colour — the same
+     discipline `globals.css` documents for the play palette, re-derived for
+     these inks and measured, not guessed:
+
+     ON PAPER (#f5f6db):  ink 16.30 · ink-2 7.57 · mark 4.69 · blue 8.79
+     ON INK   (#071b0f):  paper 16.30 · paper-2 14.71 · mark-lit 5.76 · blue-lit 7.22
+     ON MARK  (#d32704):  white 5.16
+     ON BLUE  (#2d399c):  white 9.68
+
+     `--pd-mark` and `--pd-blue` are unreadable on the ink ground (3.48 and
+     1.85). That is what the `-lit` pair is for: the same ink, mixed for dark
+     stock. Never use the paper-tier ink on an ink ground.                    */
+  --pd-paper: oklch(0.965 0.035 108);
+  --pd-paper-2: oklch(0.93 0.05 108);
+  --pd-ink: oklch(0.2 0.035 155);
+  --pd-ink-2: oklch(0.42 0.03 155);
+  --pd-mark: oklch(0.56 0.21 32);
+  --pd-mark-lit: oklch(0.68 0.19 38);
+  --pd-blue: oklch(0.4 0.16 272);
+  --pd-blue-lit: oklch(0.72 0.14 255);
+
+  /* Hairlines are for broadsheets. This press prints heavy. */
+  --pd-rule: 2px;
+  --pd-rule-heavy: 4px;
+
+  /* One motion language: two durations, one curve, and a press-like ease that
+     overshoots a little on the way in and not at all on the way out. */
+  --pd-ease: cubic-bezier(0.16, 0.84, 0.28, 1);
+  --pd-fast: 180ms;
+  --pd-slow: 620ms;
+
+  background: var(--pd-paper);
+  color: var(--pd-ink);
+  font-family: var(--font-anuphan), var(--font-geist-sans), ui-sans-serif,
+    system-ui, sans-serif;
+  /* Anuphan's Thai sits comfortably at a tighter leading than Noto's, and the
+     global `:lang(th) { line-height: 1.65 }` rule is tuned for Noto. */
+  line-height: 1.6;
+}
+
+/* The exercise-book substrate. Two repeating gradients at 4% ink, so it reads
+   as paper stock rather than as a visible grid — at full strength it competes
+   with the type, which is the failure mode of every "graph paper" background. */
+[data-ad="public"] .pd-stock {
+  background-image: repeating-linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--pd-ink) 7%, transparent) 0 1px,
+      transparent 1px 28px
+    ),
+    repeating-linear-gradient(
+      to right,
+      color-mix(in oklab, var(--pd-ink) 4%, transparent) 0 1px,
+      transparent 1px 28px
+    );
+}
+
+/* ── Type ────────────────────────────────────────────────────────────────────
+   Three roles, and each one is a different family on purpose.
+
+   Chonburi (Cadson Demak) is a Thai display face with a Latin companion drawn
+   to match it, so a bilingual headline is one voice rather than a Thai fallback
+   glued to a Latin grotesque — which is exactly what the old hero was. It ships
+   one weight; that is a constraint, and the design leans on size and colour for
+   hierarchy instead of on weight.
+
+   Anuphan carries body and UI in both scripts. Geist Mono carries data only —
+   CEFR codes, part-of-speech tags, IPA, counts — and never a Thai glyph.      */
+[data-ad="public"] .pd-display {
+  font-family: var(--font-chonburi), var(--font-geist-sans), Georgia, serif;
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  font-size: clamp(2.5rem, 7.5vw, 5rem);
+}
+
+/* Thai display type needs the room its upper and lower registers ask for, and
+   negative tracking pushes tone marks into their neighbours. Both are undone
+   here rather than in a `:lang()` rule in a layer, which a utility would beat. */
+[data-ad="public"] .pd-display:lang(th) {
+  line-height: 1.28;
+  letter-spacing: 0;
+}
+
+[data-ad="public"] .pd-display-sm {
+  font-family: var(--font-chonburi), var(--font-geist-sans), Georgia, serif;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-size: clamp(1.75rem, 3.4vw, 2.75rem);
+}
+
+[data-ad="public"] .pd-display-sm:lang(th) {
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+/* The press mark: mono, small, wide, and always sitting on a rule. It is where
+   every number on these pages lives, so a reader learns in one page that
+   anything set this way is data they can check. */
+[data-ad="public"] .pd-mono {
+  font-family: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+[data-ad="public"] .pd-lede {
+  font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
+  line-height: 1.7;
+  max-width: 42ch;
+}
+
+/* ── The rule, and what rides on it ──────────────────────────────────────────
+   Sections are divided by a rule with its label sitting on the line, the way a
+   plate is captioned — not by another band of colour. This is the one
+   structural device the whole public site is built from. */
+[data-ad="public"] .pd-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+[data-ad="public"] .pd-rule-row::after {
+  content: "";
+  flex: 1;
+  height: var(--pd-rule);
+  background: currentColor;
+  opacity: 0.35;
+}
+
+/* ── The entry: three registers ──────────────────────────────────────────────
+   Metadata above the rule, the thing itself on it, the meaning hanging below.
+   Every list on the public site — levels, units, letters, words — is a stack of
+   these, which is what makes six unrelated pages read as one document. */
+[data-ad="public"] .pd-entry {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.25rem 0 1.5rem;
+  border-top: var(--pd-rule) solid var(--pd-ink);
+  transition: background-color var(--pd-fast) var(--pd-ease),
+    padding-inline var(--pd-fast) var(--pd-ease);
+}
+
+[data-ad="public"] a.pd-entry:hover,
+[data-ad="public"] a.pd-entry:focus-visible {
+  background: var(--pd-paper-2);
+  padding-inline: 0.75rem;
+}
+
+/* ── The signature: a word that reveals its meaning ──────────────────────────
+   This is the product's entire promise — an English word you cannot read yet,
+   and the Thai that unlocks it — made into one object, and it is deliberately
+   the only interaction on the public site with a personality.
+
+   A vermilion block wipes left to right and the Thai is painted inside the
+   wipe. Both strings are in the DOM and neither is hidden from assistive tech,
+   so a screen reader always reads "culture, วัฒนธรรม" regardless of pointer.  */
+[data-ad="public"] .pd-word {
+  /* Both registers occupy the same grid cell, so the chip is as wide as the
+     wider of the two strings and the reveal never clips the Thai. An absolutely
+     positioned overlay cannot do this: it has no say in its parent's size, so a
+     long Thai meaning behind a short English word was cropped at both ends. */
+  display: inline-grid;
+  grid-template-areas: "stack";
+  align-items: center;
+  isolation: isolate;
+  border: var(--pd-rule) solid var(--pd-ink);
+  border-radius: 0.25rem;
+  background: var(--pd-paper);
+  color: var(--pd-ink);
+  font-weight: 600;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+/* The padding lives on the children, not on the chip, so the wipe's colour
+   reaches the rule instead of stopping short of it. */
+[data-ad="public"] .pd-word > span {
+  grid-area: stack;
+  padding: 0.35rem 0.7rem;
+}
+
+[data-ad="public"] .pd-word__th {
+  z-index: 1;
+  justify-self: stretch;
+  text-align: center;
+  background: var(--pd-mark);
+  color: oklch(1 0 0);
+  white-space: nowrap;
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path var(--pd-slow) var(--pd-ease);
+}
+
+[data-ad="public"] .pd-word:hover .pd-word__th,
+[data-ad="public"] .pd-word:focus-visible .pd-word__th,
+[data-ad="public"] .pd-word:focus-within .pd-word__th {
+  clip-path: inset(0 0 0 0);
+}
+
+/* On a touch screen there is no pointer to reveal with, and making the meaning
+   cost a tap would hide the one thing the visitor came for. The registers
+   simply stack instead — the same information, in the layout Thai already
+   uses, rather than an interaction that does not exist on the device. */
+@media (hover: none) {
+  [data-ad="public"] .pd-word {
+    grid-template-areas: "en" "th";
+    justify-items: start;
+  }
+
+  [data-ad="public"] .pd-word__en {
+    grid-area: en;
+    padding-bottom: 0.1rem;
+  }
+
+  [data-ad="public"] .pd-word__th {
+    grid-area: th;
+    justify-self: start;
+    padding-top: 0;
+    background: transparent;
+    color: var(--pd-mark);
+    clip-path: none;
+    white-space: normal;
+    text-align: left;
+    font-weight: 500;
+  }
+}
+
+/* ── Controls ────────────────────────────────────────────────────────────────
+   A button is a block of ink with a hard offset behind it in the second spot
+   colour. Pressing it drives the block home — the same physical model the app
+   already teaches, re-cut in this palette so the two halves of the product feel
+   related without looking identical. */
+[data-ad="public"] .pd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  /* 48px floor: WCAG 2.2 target size, and this audience is thumb-first. */
+  min-height: 3rem;
+  padding: 0 1.4rem;
+  border: var(--pd-rule) solid var(--pd-ink);
+  border-radius: 0.375rem;
+  background: var(--pd-ink);
+  color: var(--pd-paper);
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 5px 5px 0 0 var(--pd-mark);
+  transition: transform var(--pd-fast) var(--pd-ease),
+    box-shadow var(--pd-fast) var(--pd-ease),
+    background-color var(--pd-fast) var(--pd-ease);
+}
+
+[data-ad="public"] .pd-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 0 var(--pd-mark);
+}
+
+[data-ad="public"] .pd-btn:active {
+  transform: translate(5px, 5px);
+  box-shadow: 0 0 0 0 var(--pd-mark);
+}
+
+/* The quiet twin: paper fill, ink rule, and the offset block in the same ink.
+   Used where a second action must be available without competing. */
+[data-ad="public"] .pd-btn-ghost {
+  background: var(--pd-paper);
+  color: var(--pd-ink);
+  box-shadow: 5px 5px 0 0 var(--pd-ink);
+}
+
+[data-ad="public"] .pd-btn-ghost:hover {
+  background: var(--pd-paper-2);
+  box-shadow: 7px 7px 0 0 var(--pd-ink);
+}
+
+[data-ad="public"] .pd-btn-ghost:active {
+  box-shadow: 0 0 0 0 var(--pd-ink);
+}
+
+/* On the ink ground the offset block has to be the dark-stock mix, and the
+   quiet twin inverts: paper rule, transparent fill. */
+[data-ad="public"] .pd-on-ink .pd-btn {
+  background: var(--pd-paper);
+  color: var(--pd-ink);
+  border-color: var(--pd-paper);
+  box-shadow: 5px 5px 0 0 var(--pd-mark-lit);
+}
+
+[data-ad="public"] .pd-on-ink .pd-btn:hover {
+  box-shadow: 7px 7px 0 0 var(--pd-mark-lit);
+}
+
+[data-ad="public"] .pd-on-ink .pd-btn:active {
+  box-shadow: 0 0 0 0 var(--pd-mark-lit);
+}
+
+[data-ad="public"] .pd-on-ink .pd-btn-ghost {
+  background: transparent;
+  color: var(--pd-paper);
+  border-color: var(--pd-paper);
+  box-shadow: 5px 5px 0 0 var(--pd-blue-lit);
+}
+
+[data-ad="public"] .pd-on-ink .pd-btn-ghost:hover {
+  background: color-mix(in oklab, var(--pd-paper) 14%, transparent);
+  box-shadow: 7px 7px 0 0 var(--pd-blue-lit);
+}
+
+[data-ad="public"] .pd-on-ink .pd-btn-ghost:active {
+  box-shadow: 0 0 0 0 var(--pd-blue-lit);
+}
+
+/* A text link is underlined from the start — on a page this dense, an
+   underline that only appears on hover is a link nobody found. The offset
+   thickens under the pointer instead. */
+[data-ad="public"] .pd-link {
+  color: var(--pd-blue);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-thickness var(--pd-fast) var(--pd-ease),
+    text-underline-offset var(--pd-fast) var(--pd-ease),
+    color var(--pd-fast) var(--pd-ease);
+}
+
+[data-ad="public"] .pd-link:hover,
+[data-ad="public"] .pd-link:focus-visible {
+  color: var(--pd-mark);
+  text-decoration-thickness: 4px;
+  text-underline-offset: 0.26em;
+}
+
+[data-ad="public"] .pd-on-ink .pd-link {
+  color: var(--pd-blue-lit);
+}
+
+[data-ad="public"] .pd-on-ink .pd-link:hover,
+[data-ad="public"] .pd-on-ink .pd-link:focus-visible {
+  color: var(--pd-mark-lit);
+}
+
+/* One focus ring for the whole art direction, drawn rather than inherited. */
+[data-ad="public"] :focus-visible {
+  outline: 3px solid var(--pd-mark);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+[data-ad="public"] .pd-on-ink :focus-visible {
+  outline-color: var(--pd-mark-lit);
+}
+
+/* ── The tag: a chip of data, not a decoration ───────────────────────────────
+   Carries CEFR levels, part-of-speech, counts. Mono, boxed, never coloured for
+   its own sake — the colour is the second ink and it means "structure". */
+[data-ad="public"] .pd-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.55rem;
+  border: var(--pd-rule) solid currentColor;
+  border-radius: 0.25rem;
+  color: var(--pd-blue);
+}
+
+[data-ad="public"] .pd-tag-mark {
+  color: var(--pd-mark);
+}
+
+[data-ad="public"] .pd-on-ink .pd-tag {
+  color: var(--pd-blue-lit);
+}
+
+[data-ad="public"] .pd-on-ink .pd-tag-mark {
+  color: var(--pd-mark-lit);
+}
+
+/* ── Overprint ───────────────────────────────────────────────────────────────
+   The one flourish the press metaphor earns: where the two spot inks cross,
+   they multiply into a third colour the palette never declares. Used on the
+   hero plate only — spend the boldness in one place. */
+[data-ad="public"] .pd-overprint {
+  mix-blend-mode: multiply;
+}
+
+/* ── Entrance ────────────────────────────────────────────────────────────────
+   Scroll-linked, declared in CSS with no observer and no JavaScript. Browsers
+   without `animation-timeline` simply see the finished state, which is the
+   correct fallback for content that must be readable by a crawler. */
+@keyframes pd-ink-in {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-ad="public"] .pd-in {
+      animation: pd-ink-in linear both;
+      animation-timeline: view();
+      animation-range: entry 8% cover 26%;
+    }
+  }
+}
+
+/* The hero plate prints itself once on load: the rule draws across, then the
+   type arrives on it. One orchestrated moment, not scattered effects. */
+@keyframes pd-draw {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-ad="public"] .pd-draw {
+    transform-origin: left center;
+    animation: pd-draw var(--pd-slow) var(--pd-ease) both;
+  }
+
+  [data-ad="public"] .pd-arrive {
+    animation: pd-ink-in var(--pd-slow) var(--pd-ease) both;
+    animation-delay: var(--pd-delay, 0ms);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-ad="public"] .pd-word__th,
+  [data-ad="public"] .pd-btn,
+  [data-ad="public"] .pd-entry,
+  [data-ad="public"] .pd-link {
+    transition: none !important;
+  }
+
+  [data-ad="public"] .pd-btn:hover,
+  [data-ad="public"] .pd-btn:active {
+    transform: none;
+  }
+
+  /* The reveal still happens — it is the content, not the decoration. It just
+     arrives rather than travels. */
+  [data-ad="public"] .pd-word:hover .pd-word__th,
+  [data-ad="public"] .pd-word:focus-within .pd-word__th {
+    clip-path: inset(0 0 0 0);
+  }
+}

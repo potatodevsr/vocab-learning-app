@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* The public art direction — scoped to `[data-ad="public"]`, see the file header. */
+@import "./public-design.css";
 
 /* Angsana New is a licensed system font rather than a Google Font. Restrict this local
    face to Thai Unicode so mixed EN/TH copy keeps Geist for Latin while every Thai glyph

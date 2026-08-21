@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Noto_Sans_Thai } from "next/font/google";
+import { Anuphan, Chonburi, Geist, Geist_Mono, Noto_Sans_Thai } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -31,6 +31,29 @@ const geistMono = Geist_Mono({
 const notoSansThai = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
   subsets: ["thai"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+/**
+ * The public art direction's two faces (`app/public-design.css`).
+ *
+ * Both are Cadson Demak families that draw Thai and Latin as one design, which is the
+ * point: a bilingual headline set in a Latin grotesque with a Thai fallback glued on is
+ * two voices, and that is what the old hero was. Chonburi ships a single weight and
+ * carries display only; Anuphan carries body and UI. Four weights between them, both
+ * subsets — the same budget the removed Sarabun used to spend on nothing.
+ */
+const chonburi = Chonburi({
+  variable: "--font-chonburi",
+  subsets: ["latin", "thai"],
+  weight: ["400"],
+  display: "swap",
+});
+
+const anuphan = Anuphan({
+  variable: "--font-anuphan",
+  subsets: ["latin", "thai"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
@@ -95,7 +118,7 @@ export default async function LocaleLayout({
     // which silently dropped the whole app to Times.
     <html
       lang={locale}
-      className={`${geistSans.variable} ${geistMono.variable} ${notoSansThai.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoSansThai.variable} ${chonburi.variable} ${anuphan.variable}`}
     >
       {/*
         `<GoogleAnalytics />` used to sit here, between `</body>` and `</html>`, where it
