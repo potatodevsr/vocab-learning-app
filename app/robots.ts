@@ -8,7 +8,9 @@ import { absoluteUrl } from "@/lib/seo";
  * login has no business in an index either.
  */
 export default function robots(): MetadataRoute.Robots {
-  const private_ = ["/learn", "/quiz", "/review", "/profile", "/auth"];
+  // `/today` is the signed-in half of `/`, reached only by an internal rewrite from
+  // `middleware.ts`. It is a protected path there, so it is a disallowed one here.
+  const private_ = ["/learn", "/quiz", "/review", "/profile", "/progress", "/auth", "/today"];
 
   const disallow = [
     "/admin",

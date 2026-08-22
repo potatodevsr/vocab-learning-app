@@ -25,6 +25,33 @@ export const SEED = {
     number: 2,
     readyWordCount: 3,
   },
+
+  /**
+   * The two rows a quality heuristic doubted (`reviewState = 'flagged'`).
+   *
+   * `readOnly` proves the split the state exists for: a doubted row keeps working for the
+   * learner who is already using the app, and leaves the search index. `mutable` is the
+   * one the admin review queue may approve — approving is a write, so no read-only test
+   * may assert on its review state.
+   */
+  /**
+   * The two rows with pre-generated audio (`backend/seed/audio/fixture.mp3`, put into the
+   * local R2 bucket by `e2e/scripts/start-api.sh`). Everything else has none on purpose:
+   * "no clip" is the state most of the corpus is in, and the UI must show no player at all
+   * rather than one that 404s.
+   */
+  audio: {
+    /** Shown on the word page and in a written session prompt. */
+    word: "word1",
+    /** The fifth item of a fresh unit-1 session — the `listen-choose` schedule slot. */
+    listeningWord: "word5",
+    listeningItemIndex: 4,
+  },
+
+  flagged: {
+    readOnly: { word: "word22", flags: ["latin-in-thai"] },
+    mutable: { word: "word23", flags: ["meaning-dupe", "length-outlier"] },
+  },
   /**
    * Reserved for tests that WRITE. The suite shares one database, so a mutating test
    * must not touch a word the read-only tests assert on — that is exactly how the admin

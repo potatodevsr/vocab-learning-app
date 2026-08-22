@@ -29,6 +29,9 @@ const makeWord = (index: number, overrides: Partial<OxfordWord> = {}): OxfordWor
   posUsages: "[]",
   letterBreakdown: "",
   status: "published",
+  audioKeyEn: "",
+  audioKeyExample: "",
+  reviewState: "unreviewed",
   ...overrides,
 });
 

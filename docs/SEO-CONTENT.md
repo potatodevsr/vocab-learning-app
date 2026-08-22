@@ -25,7 +25,7 @@ Verified in the repo on 2026-07-28, not assumed:
 | Thing | State |
 | --- | --- |
 | `lib/seo.ts` | `publicMetadata` / `privateMetadata` / `alternatesFor` / `jsonLd`, `SITE_URL` |
-| `app/sitemap.ts` | Generated from D1: landing, faq, level hubs, unit hubs, every published word × both locales. `force-dynamic`, unsharded. |
+| `app/sitemap.ts` | Generated from D1: landing, faq, level hubs, unit hubs, every published word × both locales. `revalidate = 3600`, unsharded. |
 | `app/robots.ts` | Allows `/`, disallows `/admin`, `/api`, and the private routes under both locale prefixes. |
 | Public pages | `/`, `/faq`, `/english/[level]`, `/english/[level]/unit/[unit]`, `/english/words/[word]` |
 | Private pages | `/learn`, `/quiz`, `/review`, `/profile`, `/auth/*`, `/admin/*` |
@@ -298,6 +298,7 @@ trust signal. The root is the hub every other family hangs off:
 
 - `/[locale]/english/words` — the index · 2 URLs
 - `/[locale]/english/words/letter/[letter]` — 25 letters (no `X`) · 50 URLs
+- `/[locale]/english/words/letter/[letter]/[page]` — pages 2+ of a long letter
 
 **52 URLs · new · needs D7**
 
@@ -305,9 +306,18 @@ Serves "คำศัพท์ภาษาอังกฤษ ขึ้นต้�
 cheapest way to make 2,972 word pages reachable within three clicks of the home page.
 
 Letter pages carry 13–345 words, so **they paginate at 100** (the guard `take.max`).
-Pagination rule for the whole site: `?page=n` is **self-canonical and indexable**, appears
-in the sitemap, and every page carries prev/next links. No `noindex` on page 2 — that
-strands two thirds of the S words.
+Pagination rule for the whole site: page 1 is the bare URL and later pages are a **path
+segment** — `/english/words/letter/s/2` — each **self-canonical and indexable**, with
+prev/next links on every page. No `noindex` on page 2: that strands two thirds of the S
+words. `/letter/s/1` is a 404, not a redirect, so page 1 keeps exactly one address.
+
+It was `?page=n`, which cost more than a URL shape. `searchParams` is a request-time API,
+so it forced a dynamic render on all 52 letter URLs — every one of them in the sitemap —
+and each crawler hit paid ~30 sequential `/vocabword` reads and ~180 KB of render with
+`Cache-Control: private, no-cache, no-store`. That was the last uncached caller of
+`getAllPublishedWords` and the same class of load behind the `1102 Worker exceeded resource
+limits` errors production was serving. A path segment is statically renderable, so both
+routes now carry `revalidate = 3600` and are served from the incremental cache.
 
 `/english/words/letter/x` does not exist and must 404, not render an empty page. Letters
 below the floor (Z has 2 words, Y has 13) render `noindex, follow` and stay linked.
@@ -533,8 +543,19 @@ forgets. The graph is a deliverable, not a side effect:
 
 ## 6. Sitemap and robots changes
 
-`app/sitemap.ts` is currently one `force-dynamic` route that walks every published word at
-100 rows per request. At 3,000 words that is 30 sequential API calls per crawler request.
+`app/sitemap.ts` is one route that walks every published word at 100 rows per request. At
+3,000 words that is 30 sequential API calls, and a 3.2 MB body assembled in one isolate.
+
+It was `force-dynamic`, so it paid that on **every** crawler request — the largest payload
+any route here builds, and one of the loads behind the `1102 Worker exceeded resource
+limits` errors production was serving. It is now `revalidate = 3600`, purged by
+`app/admin/revalidate/route.ts` when a word is published. The sharding below is still worth
+doing — it bounds the cost of a single miss — but it is a latency improvement now rather
+than the availability fix it would have been.
+
+The same walk used to be uncached on `/[locale]/english/words/letter/[letter]`; §E explains
+how moving pagination from `?page=` into a path segment fixed that. Every caller of
+`getAllPublishedWords` is now behind the incremental cache.
 
 **Change to `generateSitemaps()` sharding**, one shard per family, with the word shard
 split by level:
@@ -552,6 +573,10 @@ from `VocabWord.updatedAt` (already implemented — keep it), **and nothing that
 `noindex`**. The substance floors in §4 must be evaluated in the sitemap builder, not just
 in the page — a sitemap that lists a `noindex` URL is a contradiction crawlers report back
 in Search Console.
+
+`app/robots.ts` disallows `/{locale}/today`, the signed-in half of `/` that `middleware.ts`
+rewrites to. Its disallow list and `middleware.ts`'s protected list are one boundary stated
+twice; a route added to either belongs in both.
 
 `app/robots.ts` gains: `/`*`/practice` for unit and topic scopes stays allowed (they are
 `noindex`, not disallowed — a disallowed page cannot be read, so its `noindex` is never

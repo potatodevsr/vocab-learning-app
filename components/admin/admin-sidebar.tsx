@@ -20,6 +20,8 @@ import {
   Languages,
   LogOut,
   GraduationCap,
+  ShieldCheck,
+  Library,
 } from "lucide-react";
 import { API_URL } from "@/constants/config";
 
@@ -29,6 +31,8 @@ const NAV_ITEMS = [
     items: [
       { label: "ภาพรวม", href: "/admin/dashboard", icon: LayoutDashboard },
       { label: "คำศัพท์", href: "/admin/vocabulary", icon: BookOpen },
+      { label: "ตรวจทานความหมาย", href: "/admin/review", icon: ShieldCheck },
+      { label: "คลังคำศัพท์", href: "/admin/lists", icon: Library },
       { label: "ตัวอักษรไทย", href: "/admin/letters", icon: Languages },
     ],
   },

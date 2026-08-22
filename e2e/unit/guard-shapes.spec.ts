@@ -139,6 +139,15 @@ test.describe("guard shape contents", () => {
       "letterBreakdown",
       "notes",
       "status",
+      // Curation verdict, written by /admin/review in the same PATCH that fixes the Thai —
+      // splitting them would leave a window where the row is approved with the old text.
+      "reviewState",
+      "reviewFlags",
+      "reviewedAt",
+      // Written by the audio generation route, so the table has one privileged writer
+      // rather than a second admin surface.
+      "audioKeyEn",
+      "audioKeyExample",
     ]);
 
     for (const immutable of ["id", "word", "level", "unit", "sourceKey"]) {

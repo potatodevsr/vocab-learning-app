@@ -48,17 +48,22 @@ const request = async <T>(
         body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
     });
 
-    const json = await res.json().catch(() => ({ message: "Unexpected response" }));
+    // `Response.json()` is `unknown` under the Workers types; state the shape rather than
+    // letting the DOM lib's `any` hide it.
+    const json = (await res.json().catch(() => ({ message: "Unexpected response" }))) as T & {
+        message?: string;
+        // A 422 carries it (CheckpointNotReady); a success body does not.
+        recoveryCount?: unknown;
+    };
+
     if (!res.ok) {
-        // A 422 carries `recoveryCount` (CheckpointNotReady); surface it so the screen can
-        // tell the learner how many more words to practise rather than a bare error.
+        // Surface `recoveryCount` so the screen can tell the learner how many more words to
+        // practise rather than showing a bare error.
         const recoveryCount =
-            typeof (json as { recoveryCount?: unknown })?.recoveryCount === "number"
-                ? (json as { recoveryCount: number }).recoveryCount
-                : undefined;
+            typeof json?.recoveryCount === "number" ? json.recoveryCount : undefined;
         throw new CheckpointApiError(res.status, json?.message ?? "Request failed", recoveryCount);
     }
-    return json as T;
+    return json;
 };
 
 /**

@@ -122,3 +122,41 @@ test.describe("Today card", () => {
     expect(box?.y).toBeLessThan(700);
   });
 });
+
+test.describe("streak", () => {
+  /**
+   * A streak is a memory aid, not a threat (`docs/LEARNER-LIFECYCLE.md` §1.2), and the two
+   * assertions here are the two halves of that: nothing is shown to someone who has done
+   * nothing wrong yet, and what is shown after a real session states what the learner has
+   * rather than what they are about to lose.
+   */
+  test("is absent for a learner who has done nothing, and appears after a session", async ({
+    page,
+  }) => {
+    await registerThroughUi(page);
+    await page.goto("/en");
+
+    await expect(page.getByTestId("today-card")).toBeVisible();
+    // Day one. A zero on the card would be a scolding.
+    await expect(page.getByTestId("today-streak")).toHaveCount(0);
+
+    await completeOneSession(page);
+    await page.goto("/en");
+
+    await expect(page.getByTestId("today-streak")).toBeVisible();
+    await expect(page.getByTestId("today-streak-days")).toContainText("1");
+
+    // No countdown, no "don't lose it" anywhere near it.
+    await expect(page.getByTestId("today-streak")).not.toContainText(/lose|hours|left/i);
+  });
+
+  test("the progress page agrees with the Today card", async ({ page }) => {
+    await registerThroughUi(page);
+    await completeOneSession(page);
+
+    await page.goto("/en/progress");
+    // Same read, same number — a streak that disagrees with itself across two screens is
+    // worse than no streak.
+    await expect(page.getByTestId("progress-streak")).toContainText("1");
+  });
+});

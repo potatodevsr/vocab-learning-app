@@ -10,7 +10,19 @@ import { routing } from "./i18n/routing";
 // Hreflang behaviour lives in `i18n/routing.ts` (`alternateLinks: false`) — it is a
 // routing option in next-intl 4, not a middleware argument.
 const intlMiddleware = createMiddleware(routing);
-const PROTECTED_USER_PATHS = ["/learn", "/quiz", "/profile"];
+const PROTECTED_USER_PATHS = ["/learn", "/quiz", "/profile", "/progress", "/today"];
+
+/**
+ * `/en` and `/th` — the localized home page, and the only route that branches on whether
+ * the visitor is signed in.
+ *
+ * No optional trailing slash on purpose. Matching `/en/` here would answer it with the
+ * rewrite and the learner would sit on a non-canonical URL forever; letting it fall
+ * through instead means Next answers `/en/` with its own `308` to `/en` (verified against
+ * the deployed app for both locales), and the redirected request matches this and gets
+ * the Today card at the one address the canonical tag names.
+ */
+const HOME_PATH = /^\/(en|th)$/;
 
 /**
  * The unit checkpoint is a private graded gate (`docs/LEARNER-LIFECYCLE.md` §3.8) nested
@@ -110,6 +122,33 @@ export default async function proxy(request: NextRequest) {
         }
 
         return NextResponse.next();
+    }
+
+    /**
+     * The §8 L2 gate, moved out of the page.
+     *
+     * `app/[locale]/page.tsx` used to read `cookies()` to decide between the marketing
+     * page and the learner's Today card. That made the site's most-requested URL dynamic
+     * for everyone, so every anonymous visit and every crawler hit re-rendered ~140 KB of
+     * identical HTML on the Worker — one of the loads that pushed the isolate into
+     * `1102 Worker exceeded resource limits`. Deciding here keeps `/` a cacheable ISR
+     * entry for the anonymous case, and a rewrite (not a redirect) means the signed-in
+     * learner still sees `/` in the address bar.
+     */
+    const home = pathname.match(HOME_PATH);
+
+    if (home) {
+        const isUser = await hasRole(
+            request.cookies.get("user_token")?.value,
+            "user",
+        );
+
+        if (isUser) {
+            const url = request.nextUrl.clone();
+            url.pathname = `/${home[1]}/today`;
+
+            return NextResponse.rewrite(url);
+        }
     }
 
     const isProtected =

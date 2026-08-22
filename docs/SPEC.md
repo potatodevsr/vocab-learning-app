@@ -136,8 +136,12 @@ fixed, and replaced by the verbs in §5.3.
 | `API` (service, web→api) | The `/api/*` forwarder |
 | `AUDIO` (R2) | Pre-generated word/example MP3s |
 | `KV` | Rate-limit counters, ephemeral session scratch |
-| `AI` (Workers AI) | Content pipeline: TTS, Thai meaning cleanup drafts |
-| Cron Trigger | Not needed for streaks or leagues (both derived on read). Reserved for future digest emails / content jobs. |
+| `NEXT_INC_CACHE_KV` / `NEXT_TAG_CACHE_KV` (web) | OpenNext's incremental cache and tag cache. **Not optional.** Without them `open-next.config.ts` falls back to the `"dummy"` overrides, whose `get`/`set` *throw*: every `revalidate` in the app is inert and the web Worker re-renders every ISR route on every request — which is how production started answering `1102 Worker exceeded resource limits` under a dozen concurrent requests. One namespace serves both bindings (the incremental cache prefixes its keys `incremental-cache/`, the tag cache uses the build id). KV is eventually consistent, so `revalidatePath` can take up to 60s to apply everywhere. R2 would be the better store; it is not enabled on the account. |
+| `WORKER_SELF_REFERENCE` (web → web) | Already present, and now load-bearing: OpenNext's `memoryQueue` uses it to re-request a route when its cached entry goes stale. The default `"dummy"` queue throws from `send` instead — caught and logged, not a 500, which is what makes it easy to miss: ISR simply stops regenerating, and every request after an entry goes stale pays a full render again. |
+| `AUDIO` (R2, api Worker) | Pre-generated word and example MP3s, keyed `audio/en/{wordId}.mp3`. `wrangler dev --local` simulates it, so dev and e2e exercise the real serving path. Deliberately **no** `preview_bucket_name`: wrangler applies that in local dev too, and the binding then resolves to a different bucket than `wrangler r2 object put --local` writes to. |
+| `AI` (Workers AI, api Worker) | TTS at publish time, driven by `scripts/generate-audio.mjs` through the admin-only `POST /audio/generate`. Never on a learner request path. Declared `remote: true` — Workers AI has no local simulator, and `wrangler dev --local` reports `env.AI  not supported` and leaves the binding undefined. `pnpm dev` therefore drops `--local` (which disables remote bindings wholesale) and relies on the default local runtime: D1 and R2 stay local, AI goes to Cloudflare. |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` (secrets, api Worker) | Web push. Absent means the push routes answer 503 and reminders fall back to email — the channel is optional, the reminder is not. |
+| Cron Trigger (api Worker, hourly) | Reminder and weekly-recap email (`src/reminders.ts`). Hourly because the send time is the learner's own local hour; still nothing to do with streaks or leagues, which stay derived on read. |
 
 Secrets (`JWT_SECRET`, admin bootstrap) live in `wrangler secret`. Both sides now use the
 single name `JWT_SECRET`, and `proxy.ts` checks the `role` claim rather than assuming a
@@ -563,12 +567,20 @@ technical one.
 
 #### 5.4.6 What currently limits variety
 
-Two content facts cap how many question types can be generated, and both should be fixed
-before investing in listening or matching modes:
+Two content facts cap how many question types can be generated:
 
 - Every sense of a word shares one Thai meaning (`about (adv.)` and `about (prep.)` are
-  identical) — see §4.4.
-- There is no audio yet (§5.6), which rules out listening questions entirely.
+  identical) — see §4.4. Still open.
+- ~~There is no audio yet (§5.6), which rules out listening questions entirely.~~
+  **Resolved as far as code goes.** The schedule now carries `listen-choose` (hear the
+  word, choose the meaning) and `cloze` (the example sentence with the word removed).
+  Both **fall back to `choose-meaning` per item** when the word has no clip or no usable
+  example, so they are silent no-ops on a word the content pipeline has not reached rather
+  than broken questions. The fallback is derived from stored data, so `/answer` re-derives
+  the same type for the same session.
+
+The item schedule is now: `choose-meaning`, `choose-meaning`, `choose-word`, `spelling`,
+`listen-choose`, `match-pairs`, `speed-round`, `cloze`.
 
 #### 5.4.7 Build order
 
@@ -586,12 +598,35 @@ SM-2 lite on `UserWordProgress` (add `easeFactor`, `intervalDays`, `repetitions`
 `nextReviewAt` and `mastery` already exist). Due words are injected into practice lessons
 before new words. A word is "mastered" at repetitions ≥ 5 and no lapse in 21 days.
 
-### 5.6 Audio
+### 5.6 Audio — **built**
 
-Browser `speechSynthesis` is a placeholder — voice quality is inconsistent, Thai coverage
-is worse, and it cannot be used in a listening question type. Replace with pre-generated
-MP3s: at publish time, Workers AI TTS → R2 (`audio/en/{wordId}.mp3`), served through the
-API with immutable cache headers. Publishing a word without audio is blocked.
+Browser `speechSynthesis` was a placeholder — voice quality is inconsistent, Thai coverage
+is worse, and it cannot be used in a listening question type, because a graded item has to
+sound the same for every learner.
+
+The pipeline is now in place: `VocabWord.audioKeyEn` / `audioKeyExample` hold R2 object
+keys, `POST /audio/generate` (admin-only) synthesises one clip through Workers AI and
+writes both the object and the key, `backend/scripts/generate-audio.mjs` drives it in
+batches, and `GET /audio/*` serves the object with a one-year immutable cache. The web side
+renders `components/play/word-audio.tsx` **only where a key exists** — an absent control,
+never a disabled one.
+
+**Model choice was not free.** `@cf/myshell-ai/melotts` is listed in `wrangler ai models`
+and answers `3043: Internal server error` for every request; a model being in the catalogue
+is not a model that runs. `@cf/deepgram/aura-2-en` works and is the better English voice, so
+the route tries it first and falls back to MeloTTS. The two return different shapes (Aura
+streams raw mp3, MeloTTS returns base64 in JSON), which `synthesise` normalises — anything
+unrecognised is a failure rather than bytes written to R2, because an object of the wrong
+bytes looks generated and is never retried.
+
+Verified against the real model on 2026-08-22: 40 A1 clips generated into local R2, served
+back at 200 `audio/mpeg`, and playable (`MPEG ADTS, layer III, 48 kbps, 24 kHz`).
+
+What is *not* true yet: **R2 is still disabled on the account** (`wrangler r2 bucket list`
+answers `Please enable R2 through the Cloudflare Dashboard`), so nothing can be generated
+for production. Until then every word simply renders no player, which is the same code path
+as a word whose turn has not come. Publishing a word without audio is therefore **not**
+blocked — blocking it would have kept the whole corpus dark.
 
 ---
 
@@ -771,11 +806,11 @@ the web origin only, and the route relays to the api Worker over the `API` servi
 binding when one is bound, over `API_ORIGIN` otherwise. `/api` is excluded from the
 locale middleware — without that, `POST /api/user/register` was answered with
 `307 → /en/api/user/register`, which is why sign-up 404'd in the first deploy.
-Still open: binding `API` in `wrangler.jsonc` (it is commented out until `vocab-api` has
-been deployed once — `wrangler deploy` refuses a binding to a service that does not
-exist), deploying the api Worker at all (its `d1_databases.database_id` is still the
-placeholder and it has no CI), retiring the API's dev-only CORS middleware once nothing
-but the forwarder calls it, and a staging deploy.
+Both Workers are now deployed and the `API` binding in `wrangler.jsonc` is live — the
+chicken-and-egg it describes (`wrangler deploy` refuses a binding to a service that does
+not exist) was resolved by deploying `vocab-api` first. Still open: CI for either Worker,
+retiring the API's dev-only CORS middleware once nothing but the forwarder calls it, and a
+staging deploy.
 
 **P2 — Security + content.** Guard shapes on every operation (§5.2), each with a
 `resolveVariant` that never returns `undefined`; `@scope-root` on `User` *plus* an explicit
@@ -806,11 +841,112 @@ zero hardcoded strings, keyboard support.
 > (daily loop)** come *before* the later P4 reward layers, and L2 subsumes P4's "short sessions"
 > item. P4 then resumes at mastery pips and the XP ledger.
 
+**P4.5 — Reach, content trust and the missing surfaces (2026-08-22).** Landed together:
+
+- **Audio** (§5.6) end to end, plus the `listen-choose` and `cloze` item types built on it.
+- **Thai review queue.** `VocabWord.reviewState` / `reviewFlags`,
+  `backend/scripts/flag-thai-quality.mjs` (204 of 3,295 rows flagged on the dev corpus),
+  `/admin/review`, and the indexing rule in `lib/review.ts`: a flagged row keeps working in
+  the app and leaves the search index until a human clears it. Nothing is auto-approved.
+- **Reminder + weekly-recap email** (`backend/src/reminders.ts`), on an hourly cron, at the
+  learner's own local hour, never to someone who already practised that day, opt-in only,
+  with a one-click unsubscribe that needs no login.
+- **The public placement test** at `/english/test` — answering open question 4 the way
+  LEARNER-LIFECYCLE.md §3.4 specified: public, indexable, no account, ends on a public
+  level page. Server-graded through a signed token; the browser never receives an answer
+  key.
+- **`/progress`** — the route the navbar used to point at an empty directory: a twelve-week
+  activity calendar (`/progress/history`, derived on read), the collection meter, the
+  counts, and a share button.
+- **Service worker** (`public/sw.js`): immutable assets and word audio cache-first,
+  navigations network-first, and **nothing else under `/api`, ever** — no learner data in a
+  cache on a shared phone.
+- **Word lists as entities** (`Wordlist`, `VocabWord.wordlistId`, `User.wordlistId`), with
+  every session selection query scoped to the learner's list. One list exists today; the
+  point is that the second one is an import rather than a refactor. `isFree` +
+  `canStudyList` are the entitlement seam, and everything is free (open question 2).
+
+**P4.6 — The rest of the reach layer (2026-08-22).**
+
+- **Web push** (`backend/src/push.ts`, `public/sw.js`): opt-in per browser, VAPID-signed,
+  and deliberately **payload-free** — the service worker fetches `/reminders/preview` with
+  the learner's own cookie when a push arrives, so personal wording never passes through a
+  push service and encrypting aes128gcm on a Worker is not needed. Push replaces the
+  reminder email for that learner rather than adding to it.
+- **`/english/test/[level]`**: the level-scoped half of the placement family, six questions
+  from one level, `dynamicParams = false` so an unknown level is a hard 404 rather than a
+  soft one.
+- **Word-list import and curation**: `backend/scripts/import-wordlist.mjs` (CSV → drafts in
+  an unpublished list, with no flag to skip that) and `/admin/lists` to publish one. The API
+  refuses to publish a list with no published words. The learner-facing picker renders only
+  when more than one list is published.
+
+**P4.7 — Measurement and content depth (2026-08-22).**
+
+- **The admin overview is real** (`backend/src/stats.ts`, `/admin/dashboard`): content
+  readiness as fractions with their denominators visible, and the learner counts the
+  lifecycle doc asks for — activated, active this week, *returning* this week (active now
+  **and** before this week began, so a first visit is never counted as a return). Derived on
+  read; no counter table to drift.
+- **Per-sense example sentences** (`backend/scripts/generate-pos-usages.mjs`) for the 260
+  words whose `partOfSpeech` is a list. The Thai gloss per sense is deliberately **not**
+  generated — that is the plausible-looking wrong Thai the review queue exists to catch —
+  so the script hands a curator an empty box next to a sentence that demonstrates the sense.
+- **The landing page now offers the level test.** "Which level am I?" was answerable only
+  from the footer.
+
+**P4.8 — Streaks and CI (2026-08-22).**
+
+- **Both streaks are live and visible**, derived on read from the same distinct-active-days
+  query the weekly goal already used (one definition of "an active day", not two). The
+  weekly count leads, the daily one is secondary, and neither breaks at midnight: the daily
+  count runs back from today when today is active and from yesterday otherwise, so it only
+  breaks once a whole day has genuinely been missed. Nothing renders at zero — a streak
+  card on day one is a scolding.
+- **CI runs the gate.** `.github/workflows/ci.yml` gained two e2e jobs (behaviour and
+  interaction, split by file so the ~36-minute suite runs as two ~18-minute halves), with
+  no Cloudflare credentials in either: `wrangler dev --local` disables remote bindings, so
+  a test run can never reach a billed model.
+- **The API repo has CI at all**, for the first time: schema generates, the *committed*
+  generated tree matches the schema, every migration applies to a fresh local D1, and the
+  Worker actually serves the OpenAPI document the web repo generates its types from.
+
+**P4.9 — Unit unlocking and crowns (2026-08-22).** The last structural gap in the learner
+path, and the gate is deliberately soft:
+
+- **Unlocking is derived, never stored.** Unit 1 is always open; unit N+1 opens when unit N
+  has a `CompletionLedger` row (the checkpoint's exactly-once insert). A `locked` column
+  would be a second source of truth that some write has to remember to flip, and with no
+  transactions in D1 a missed flip strands a learner on a unit they finished.
+- **The order is guidance, not enforcement.** The first attempt had `/progress/session/start`
+  silently serve unit 1 to a learner who asked for unit 7. It broke three tests in
+  `units.spec`, and those tests were right: "each unit serves its own twenty words" is the
+  invariant behind AGENTS.md rule 9, and a lesson teaching unit 1 under a unit 7 request is
+  a lie no response field makes honest. So the order lives where a learner can act on it —
+  `nextUnit` from `/progress/units`, which the Today card and level page point at — and an
+  explicit request is always honoured. The public level test exists precisely to let
+  someone skip ahead on purpose.
+- **A crown is a passed checkpoint**, not a second fact about the same unit.
+- Review and comeback sessions are never gated: one is level-wide by definition and the
+  other exists to be easy.
+
+**P4.10 — Notifications speak the learner's language (2026-08-22).** `User.locale`, captured
+silently at registration exactly as the timezone is, and read by the two surfaces that have
+no request to infer it from: the cron-sent reminder email and the notification text the
+service worker fetches. Both were hard-coded Thai — right for most of this audience and
+wrong for the English-interface learner, who would have received a Thai push about a course
+they read in English, opening the wrong half of a bilingual app.
+
+CI timeouts were widened at the same time (60s per test, 20s per expectation, **only** when
+`CI` is set): across four full local runs, five different tests failed once each on timeouts
+and every one passed alone. That is CPU starvation reading as failure, and a red build
+nobody trusts costs more than a slow one.
+
 **P6 — Production. 🟡 partly done.** The e2e suite has landed: 309 tests over the real
 stack (Next build + Hono Worker + D1), plus an export-reachability audit
 (`pnpm test:coverage-audit`) and `docs/TEST-COVERAGE.md` mapping every handler and branch
-to its test. Still open: GitHub Actions CI on both repos, rate limits on auth, error
-tracking, and admin dashboard stats (currently "เร็วๆ นี้").
+to its test. Still open: rate limits on auth, and error tracking. **CI now runs on both repos**
+(P4.8 above). **Admin dashboard stats are done** (P4.7 above).
 
 ### MVP definition of done
 
@@ -827,7 +963,10 @@ league against labelled pacers. On Cloudflare. With no endpoint that leaks a pas
 1. Do hearts apply to review lessons, or only new material? (Duolingo: yes to both — it is
    the thing people complain about most.) See §5.4.5: hearts may not suit this audience at
    all.
-2. Free-tier limits: is there a paid tier at all, and does it remove hearts?
+2. Free-tier limits: is there a paid tier at all, and does it remove hearts? **Deferred by
+   decision (2026-08-22): everything ships free.** The seam is `Wordlist.isFree` +
+   `canStudyList` in `backend/src/wordlists.ts` — one function, so turning a tier on later
+   is a change there rather than an audit of every read.
 3. Do we keep `en` as a UI locale, or is the app Thai-only with English as content?
 4. ~~Placement test at signup, or does everyone start at A1 Unit 1?~~ **Answered by
    [`LEARNER-LIFECYCLE.md`](LEARNER-LIFECYCLE.md) §3.4: neither.** Starting level is inferred from the page the
@@ -918,9 +1057,15 @@ declares which side of that line it is on — there is no default.
 - **`app/sitemap.ts`** generated from D1: every published word, every unit, every level,
   both locales, with `lastModified` from `VocabWord.updatedAt`. At ~3,000 words × 2 locales
   it stays under the 50,000-URL limit, but it should use `generateSitemaps` to shard by
-  level so a single request never has to page through everything.
+  level so a single request never has to page through everything. It is `revalidate = 3600`
+  and no longer `force-dynamic`: rebuilding a 3.2 MB body plus ~30 sequential `/vocabword`
+  reads per crawler hit was the largest payload any route here builds.
+  `app/admin/revalidate/route.ts` purges it when a word is published, so the sharding above
+  is a latency improvement now rather than an availability fix.
 - **`app/robots.ts`**: allow public paths, disallow `/admin`, `/learn`, `/quiz`, `/review`,
-  `/profile`, `/auth`, and point at the sitemap.
+  `/profile`, `/auth`, `/today`, and point at the sitemap. Its disallow list and
+  `middleware.ts`'s protected list are one boundary written twice — a route added to either
+  belongs in both.
 - Word pages should be **statically generated where possible** (`generateStaticParams` over
   published words) so crawlers get fast HTML — but only after the content is proofread
   (§4.4), because publishing wrong Thai at 3,000-page scale is worse than not publishing.

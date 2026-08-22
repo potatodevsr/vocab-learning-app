@@ -298,7 +298,15 @@ test.describe("taxonomy invariants", () => {
 
   test("ITEM_TYPES covers every mixed-session variant", () => {
     expect([...ITEM_TYPES].sort()).toEqual(
-      ["choose-meaning", "choose-word", "match-pairs", "speed-round", "spelling"],
+      [
+        "choose-meaning",
+        "choose-word",
+        "cloze",
+        "listen-choose",
+        "match-pairs",
+        "speed-round",
+        "spelling",
+      ],
     );
   });
 

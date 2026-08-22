@@ -53,7 +53,13 @@ const unsafePatterns = [
   ["DROP statement", /\bDROP\b/i],
   ["DELETE statement", /\bDELETE\s+FROM\b/i],
   ["TRUNCATE statement", /\bTRUNCATE\b/i],
-  ["UPDATE statement", /\bUPDATE\s+[\w"'`\[]/i],
+  // `ON UPDATE CASCADE` is a foreign-key referential action, not a data rewrite, and
+  // every FK Prisma emits carries one. The `DELETE FROM` rule above dodges `ON DELETE`
+  // the same way by requiring the `FROM`; an UPDATE statement has no such keyword, so the
+  // exclusion has to be explicit. Without it a plain `CREATE TABLE` with a foreign key —
+  // `0020_push_subscriptions.sql`, which adds a table and two indexes and nothing else —
+  // is rejected as data-rewriting SQL.
+  ["UPDATE statement", /(?<!\bON\s)\bUPDATE\s+[\w"'`\[]/i],
   ["REPLACE statement", /\b(?:REPLACE\s+INTO|INSERT\s+OR\s+REPLACE)\b/i],
   ["upsert that rewrites rows", /\bON\s+CONFLICT\b[\s\S]*?\bDO\s+UPDATE\b/i],
   ["table rename", /\bALTER\s+TABLE\b[^;]*\bRENAME\b/i],

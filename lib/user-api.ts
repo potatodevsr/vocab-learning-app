@@ -17,6 +17,18 @@ export type User = {
 };
 
 /**
+ * The parsed body of a `/user/*` response: the success shape, or the API's error envelope
+ * when the status is not ok.
+ *
+ * `Response.json()` is `Promise<unknown>` under the Workers runtime types — the DOM lib
+ * says `any`, which is why these four call sites typechecked before `wrangler types` had
+ * ever been run against this repo. The shape is stated here rather than assumed at each
+ * site.
+ */
+const parse = async <T>(res: Response): Promise<T & { message?: string }> =>
+    (await res.json()) as T & { message?: string };
+
+/**
  * Server-side variant of {@link getMe}: Server Components have no ambient cookie jar, so
  * the caller forwards the `user_token` explicitly.
  */
@@ -43,6 +55,12 @@ export const userRegister = async (data: {
      * back to `Asia/Bangkok` when absent or invalid; never a form field.
      */
     timezone?: string;
+    /**
+     * The interface language the learner is registering in, captured the same silent way.
+     * The API only ever reads it back on surfaces that have no request to infer it from —
+     * a cron-sent reminder, and the notification text a service worker fetches.
+     */
+    locale?: string;
 }): Promise<User> => {
     const res = await fetch(`${API_URL}/user/register`, {
         method: "POST",
@@ -50,7 +68,7 @@ export const userRegister = async (data: {
         credentials: "include",
         body: JSON.stringify(data),
     });
-    const json = await res.json();
+    const json = await parse<User>(res);
     if (!res.ok) throw new Error(json.message);
     return json;
 };
@@ -65,7 +83,7 @@ export const userLogin = async (data: {
         credentials: "include",
         body: JSON.stringify(data),
     });
-    const json = await res.json();
+    const json = await parse<User>(res);
     if (!res.ok) throw new Error(json.message);
     return json;
 };
@@ -81,7 +99,7 @@ export const requestMagicLink = async (data: {
         credentials: "include",
         body: JSON.stringify(data),
     });
-    const json = await res.json();
+    const json = await parse<MagicLinkRequestAccepted>(res);
     if (!res.ok) throw new Error(json.message);
     return json;
 };
@@ -93,7 +111,7 @@ export const verifyMagicLink = async (token: string): Promise<MagicLinkVerifiedU
         credentials: "include",
         body: JSON.stringify({ token }),
     });
-    const json = await res.json();
+    const json = await parse<MagicLinkVerifiedUser>(res);
     if (!res.ok) throw new Error(json.message);
     return json;
 };

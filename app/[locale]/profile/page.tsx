@@ -7,6 +7,10 @@ import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ReminderSettingsCard } from "@/components/play/reminder-settings";
+import { getReminderSettingsWithToken } from "@/lib/reminders-api";
+import { WordlistPicker } from "@/components/play/wordlist-picker";
+import { getCurrentWordlistWithToken, getWordlists } from "@/lib/wordlists-api";
 import { getMeWithToken } from "@/lib/user-api";
 import { getProgressSummaryWithToken } from "@/lib/progress-api";
 import { getPublishedWordCount } from "@/lib/oxford-words";
@@ -48,11 +52,15 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // proxy.ts already gates this route; reading the cookie here is what lets a Server
   // Component call the API as the signed-in user.
   const token = (await cookies()).get("user_token")?.value;
-  const [user, summary, publishedWords] = await Promise.all([
-    token ? getMeWithToken(token) : null,
-    token ? getProgressSummaryWithToken(token) : null,
-    getPublishedWordCount(),
-  ]);
+  const [user, summary, publishedWords, reminderSettings, wordlists, currentWordlist] =
+    await Promise.all([
+      token ? getMeWithToken(token) : null,
+      token ? getProgressSummaryWithToken(token) : null,
+      getPublishedWordCount(),
+      token ? getReminderSettingsWithToken(token) : null,
+      getWordlists(),
+      token ? getCurrentWordlistWithToken(token) : null,
+    ]);
 
   if (!user) {
     redirect(`/${locale}/auth/login?from=/${locale}/profile`);
@@ -288,6 +296,34 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </Button>
           </CardContent>
         </Card>
+
+        {/*
+          The only place the app asks for a way to interrupt the learner's day. It sits
+          after the progress card on purpose: the ask lands better next to the thing the
+          reminder is protecting, and a learner who has not seen their own numbers yet has
+          no reason to say yes. A failed settings read simply omits the card rather than
+          rendering a switch whose state we do not know.
+        */}
+        {/*
+          Only when there is a real choice. One published list means the picker is a
+          control that teaches the learner their settings do nothing, so it is not
+          rendered at all until a second list is published in /admin/lists.
+        */}
+        {wordlists.length > 1 && currentWordlist ? (
+          <Card className="play-sticker rounded-3xl [--tile-block:var(--accent-sky)]">
+            <CardContent className="p-6 sm:p-8">
+              <WordlistPicker lists={wordlists} current={currentWordlist} />
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {reminderSettings && (
+          <Card className="play-sticker rounded-3xl [--tile-block:var(--accent-sun)]">
+            <CardContent className="p-6 sm:p-8">
+              <ReminderSettingsCard initial={reminderSettings} />
+            </CardContent>
+          </Card>
+        )}
       </section>
     </main>
   );

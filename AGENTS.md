@@ -59,6 +59,24 @@ in R2. Details and reasoning: `docs/SPEC.md` §2–3.
    page. Use `getWordsByUnit` / `getLevelWordCount` from `lib/oxford-words.ts`.
 10. **API paths are lowercase and have no trailing slash.** Hono routes strictly, unlike
    the Express API it replaced: `/VocabWord` and `/vocabword/` both 404.
+11. **`revalidate` only works if `open-next.config.ts` has an incremental cache.** With the
+   default `"dummy"` cache every ISR route re-renders on every request, which is how the
+   deployed Worker started returning `1102 Worker exceeded resource limits`. The cache is
+   KV-backed and needs the `NEXT_INC_CACHE_KV` and `NEXT_TAG_CACHE_KV` bindings in
+   `wrangler.jsonc`; a deploy without them is a deploy that will fall over under load.
+12. **Two states per word, and they answer different questions.** `status` decides whether a
+   learner may see a row; `reviewState` decides whether a human has confirmed its Thai.
+   Only the second gates *indexing* (`lib/review.ts`) — a flagged row keeps working in the
+   app and leaves the search index until someone clears it in `/admin/review`. Never
+   auto-approve: a shape check cannot tell a wrong meaning from a right one.
+13. **A question type that needs content degrades per item.** `listen-choose` without a clip
+   and `cloze` without a usable example both fall back to `choose-meaning` in `buildItems`,
+   derived from stored data so `/answer` re-derives the same type for the same session. A
+   feature that needs the whole corpus before it can ship never ships.
+14. **The service worker caches assets and audio, never learner data.** `public/sw.js` may
+   have `/_next/static/*`, `/api/audio/*` and public navigations. Everything else under
+   `/api`, and every private route, goes straight to the network — a stale profile page on
+   a shared phone is a bug nobody can see.
 
 ## Schema changes are a two-repo dance
 
@@ -111,10 +129,39 @@ is reserved for tests that write; read-only tests must not assert on it.
 ```bash
 pnpm dev                  # next dev (expects the API on :4000 — see backend/AGENTS.md)
 pnpm build                # next build (Turbopack) — must be green before any PR
-pnpm exec tsc --noEmit    # must be clean
+                          # ⚠ needs a reachable API: it prerenders ~50 routes by fetching it
+pnpm exec tsc --noEmit    # must be clean — with and without `cloudflare-env.d.ts`
+pnpm cf:typegen           # writes the gitignored `cloudflare-env.d.ts` from wrangler.jsonc
 pnpm lint
 pnpm extract:oxford       # regenerate data/oxford-3000-seed.json from the PDF
 ```
+
+The content pipeline lives in the API repo. All three need a running API and
+`ADMIN_PASSWORD`, and all three are resumable — each only touches rows that are still
+empty, so an interrupted run is restarted rather than repaired:
+
+```bash
+cd backend
+pnpm qa:thai              # flag OCR damage into the /admin/review queue (--dry to report only)
+pnpm gen:audio            # Workers AI TTS -> R2, one clip at a time
+pnpm gen:examples         # draft example sentences with a local Ollama model — drafts, read them
+pnpm gen:pos-usages       # one example sentence per part of speech, for multi-sense words
+pnpm import:wordlist      # CSV -> a new, unpublished list of draft words
+```
+
+**`pnpm build` is not offline.** Around fifty routes carry `revalidate` and are prerendered
+at build time, and each one fetches `NEXT_PUBLIC_API_URL` — `/[locale]/sitemap` and the two
+`/english/words` indexes walk every published word, 100 rows per read. With no API
+listening, the build does not fail fast: every route retries three times at 60s and the
+error reads `Failed to build … because it took more than 60 seconds`, which names a timeout
+and not the missing server. Start the API first (`backend`: `pnpm dev`).
+
+`cloudflare-env.d.ts` is generated and gitignored, and `tsconfig.json` picks it up through
+`**/*.ts` — so `tsc` sees a **different** standard library depending on whether anyone has
+run `cf:typegen` on that machine. The Workers runtime types are the accurate ones
+(`Response.json()` is `unknown` there; the DOM lib says `any`), and the whole `lib/*-api.ts`
+family once typechecked green only because nobody had generated the file. Run `cf:typegen`
+before trusting a clean `tsc`.
 
 ## Layout
 
@@ -136,7 +183,8 @@ P0 is cleared and P1 is largely done: the build and typecheck are green, the API
 Hono + D1 under Workers, guard shapes are enforced, and the e2e suite passes. The browser
 now talks to one origin only — `app/api/[...path]/route.ts` forwards `/api/*` to the api
 Worker (service binding when bound, `API_ORIGIN` otherwise), and `/api` is excluded from
-the locale middleware. What has *not* happened yet: deploying the api Worker (its D1
-`database_id` is a placeholder, and it has no CI), so `API` in `wrangler.jsonc` stays
-commented out until it exists; retiring the API's dev-only CORS middleware; and
-everything from P3 onward. See `docs/SPEC.md` §7.
+the locale middleware. Both Workers are deployed and the `API` service binding in
+`wrangler.jsonc` is live — the note that it "stays commented out until `vocab-api` exists"
+was true when it was written and is not now. What has *not* happened yet: CI for either
+Worker; retiring the API's dev-only CORS middleware; and everything from P3 onward. See
+`docs/SPEC.md` §7.

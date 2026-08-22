@@ -21,6 +21,22 @@ no mocked network, server reuse, retry, or concurrent suite execution.
 | --- | --- |
 | A fresh backend generates only the Prisma client with a fallback `DATABASE_URL` before migrate, seed and Worker startup | `unit/e2e-launcher`; every full-stack test also exercises the launcher |
 | Playwright owns ports 3100/4100 and `.wrangler/e2e-state`; Cypress owns 3200/4200 and `.wrangler/cypress-state` | both full-stack launchers reject occupied ports, create fresh state, and tear down their processes |
+| A second Playwright run refuses instead of wiping the state a live run is using, and a lock left by a killed run is cleared rather than blocking forever | `unit/e2e-launcher` |
+
+**A run needs a quiet tree, not just a free port.** Two things break a run that has already
+started, and neither announces itself as the cause:
+
+* **Another run.** They share ports 3100/4100, `.next`, and `.wrangler/e2e-state` — which
+  `e2e/scripts/start-api.sh` wipes on entry. The lock added there turns that into a one-
+  second refusal naming the owning pid; before it, the second run deleted the first one's
+  database mid-flight and the symptoms were a killed `migrations apply`, `worker exited
+  with status 143`, and wrangler `internal error` lines that named nothing to do with it.
+* **Editing `backend/` while a run is in flight.** `wrangler dev` watches its sources and
+  reloads, so the Worker picks up a new Prisma schema — but nothing re-runs migrations, and
+  the D1 file was migrated at startup. A field added mid-run gives every write
+  `D1_ERROR: table main.User has no column named <field>` and a wall of 500s that looks
+  like a broken API rather than a moving tree. `wrangler dev` has no flag to pin its
+  sources, so the only remedy is not to edit while the gate runs.
 
 ## Cypress release coverage
 
@@ -239,7 +255,7 @@ Running it found dead code: `backend/src/middleware/auth.ts` (the Express-era
 | `constants/config.ts` | server-side `API_URL` is the API origin; the browser only ever sees `/api` | `api-forwarder.spec` |
 | Translations | both locales valid; key parity both ways; no empty values; Thai actually translated; placeholder parity | `unit/messages` |
 | `i18n/routing.ts` | locale list, default locale is one of them | `unit/messages` |
-| `proxy.ts` | 3 protected paths × anonymous redirect; `from` preserved; Thai locale; signed-in passthrough; tampered learner cookie; 5 public paths; unknown locale prefix; admin login reachable; 3 admin paths redirect; admin passthrough; tampered admin cookie | `proxy.spec` (16) |
+| `proxy.ts` | 4 protected paths × anonymous redirect (`/learn`, `/quiz`, `/profile`, `/today`); `from` preserved; Thai locale; signed-in passthrough; tampered learner cookie; 5 public paths; unknown locale prefix; admin login reachable; 3 admin paths redirect; admin passthrough; tampered admin cookie; anonymous `/` served as cacheable content; signed-in `/` rewritten to the Today card without leaving `/`, in both locales | `proxy.spec` (23) |
 
 ## Gamification (SPEC §5.4 step 1)
 
@@ -304,6 +320,104 @@ Two things it is deliberately strict about: it measures contrast with the pointe
 away from the page (a hover state is not the rest state), and it scopes itself to the open
 menu when one is open, because an open dropdown covers the page behind it on purpose.
 
+## Delivery and caching
+
+The contract that `1102 Worker exceeded resource limits` broke. Every row here is a header
+or a route mode, because that is the only thing a test can see from outside — the isolate's
+CPU and memory are not observable from a browser.
+
+| Condition | Test |
+| --- | --- |
+| `/th/faq`, `/th/english/a1` and a word URL are edge-cacheable (`s-maxage`, no `no-store`) | `seo.spec` → public content is edge-cacheable |
+| Anonymous `/` is cacheable, i.e. the session branch is not in the page | `seo.spec` → the home page is cacheable…; `proxy.spec` → an anonymous / is served as cacheable content |
+| Signed-in `/` still resolves to the lifecycle CTA (§8 L2), by rewrite rather than by a `cookies()` read | `proxy.spec` (both locales); `today.spec` |
+| Logging out flips `/` back to the marketing render | `auth.spec` → logging out clears the session |
+| `/sitemap.xml` is served from the incremental cache, not rebuilt per crawler | `seo.spec` → is cached rather than rebuilt for every crawler |
+| A–Z letter page 1 is cacheable, and canonicalises with no page segment | `seo-pages.spec` (2) |
+| A letter's page `/1`, a past-the-end page, a non-numeric page and a letter with no words are each a 404 rather than an empty page | `seo-pages.spec` (4) |
+| No font is preloaded that nothing renders — checked on three pages, not one | `seo.spec` → no font is preloaded that nothing renders |
+| `/{locale}/today` is disallowed in `robots.txt` and absent from the sitemap | `seo.spec` (2) |
+
+**Not covered here:** the incremental cache itself. `pnpm test:e2e` runs `next start`, which
+uses Next's own cache handler — the OpenNext KV cache, its regional Cache API layer, cache
+interception and the revalidation queue (`open-next.config.ts`) only exist on the Worker.
+Nothing in the suite can see them, and a green run says nothing about whether the deployed
+Worker is caching. That has to be checked against a deployment.
+
+---
+
+## Audio, review state, reminders, placement, lists (2026-08-22)
+
+| Condition | Test |
+| --- | --- |
+| A generated clip is served from R2 with `Cache-Control: immutable`, and a key with no object is a 404 | `audio.spec` |
+| `POST /audio/generate` refuses an unauthenticated caller (401, or 503 with no bucket bound) | `audio.spec` |
+| A word with a clip shows a player; a word without one shows no control at all | `audio.spec` |
+| The `listen-choose` item withholds the written word and still grades | `audio.spec` |
+| `listen-choose` / `cloze` fall back to `choose-meaning` per item when the word has no clip or no usable example | implicitly, every session test that walks eight items on words without audio; `cloze.spec` covers the positive case |
+| The cloze prompt contains the sentence and *not* the word, and its options are English words | `cloze.spec` |
+| An audio key outside the `audio/` namespace is refused rather than proxied | `unit/audio` |
+| Only a `flagged` row loses indexability; `unreviewed` and `approved` keep it | `unit/review` |
+| One flagged entry keeps a whole word page out of the index | `unit/review` |
+| A flagged word still renders for a learner and is `noindex`; the sitemap omits it | `seo.spec` |
+| Approving in `/admin/review` writes the corrected Thai and returns the page to the index | `admin.spec` |
+| Every flag code the flagger can write survives parsing, in queue order | `unit/review` |
+| Reminders are off until the learner opts in, and the choice survives a reload | `reminders.spec` |
+| An opted-in learner is mailed at their own local hour, and not an hour later | `reminders.spec` |
+| A learner who already practised today is not mailed | `reminders.spec` |
+| Unsubscribe works from the link alone, with no session, and stops the next send | `reminders.spec` |
+| The placement test is public, indexable, playable with no account, and ends on a public level page | `placement.spec` |
+| The browser never receives the placement answer key, and a forged token is refused | `placement.spec` |
+| An unanswered placement item scores as wrong rather than being skipped | `placement.spec` |
+| `/progress` redirects signed-out, is `noindex`, and shows an honest empty state | `progress.page.spec` |
+| A finished session appears in the counts and on today's calendar square | `progress.page.spec` |
+| No share button until there is something to share | `progress.page.spec` |
+| The service worker takes control, caches word audio, and caches **nothing else** under `/api` | `offline.spec` |
+| Private routes never enter the page cache | `offline.spec` |
+| The word-list catalogue is public, counts published words only, and exposes `isFree` | `wordlists.spec` |
+| A new learner is on the course list; switching to a list that does not exist is refused | `wordlists.spec` |
+| Scoping every selection query by list does not empty a session for a learner on the default list | `wordlists.spec` |
+
+## Push, level tests, list curation (2026-08-22)
+
+| Condition | Test |
+| --- | --- |
+| A push subscription cannot be registered by an anonymous caller | `push.spec` |
+| A non-https push endpoint is refused — the table is a list of URLs the Worker POSTs to | `push.spec` |
+| Subscribe and unsubscribe are both idempotent (a browser re-subscribes with the same endpoint; a browser can drop one without telling us) | `push.spec` |
+| One learner cannot unsubscribe another learner's device | `push.spec` |
+| `/reminders/preview` — what the service worker reads when a payload-free push arrives — is signed-in only, and returns a same-origin path | `push.spec` |
+| `/english/test/[level]` is indexable, asks six questions from that level only, and offers the full test beside it | `placement.spec` |
+| An unknown level is a hard 404, not a 200 with a not-found body | `placement.spec` |
+| The admin list screen sees lists the public catalogue does not | `wordlists.spec` |
+| A list that does not exist cannot be published; curation routes refuse a learner | `wordlists.spec` |
+| Switching to a free list clears the entitlement gate rather than 402ing | `wordlists.spec` |
+
+## Streaks (2026-08-22)
+
+| Condition | Test |
+| --- | --- |
+| No streak is shown to a learner who has not practised yet — a zero on the card is a scolding | `today.spec` |
+| A completed session produces a one-day streak, with no countdown or loss language near it | `today.spec` |
+| The progress page and the Today card show the same streak, from the same read | `today.spec` |
+
+## Unit unlocking and crowns (2026-08-22)
+
+| Condition | Test |
+| --- | --- |
+| A fresh learner has unit 1 open, unit 2 closed, no crowns, and `nextUnit` 1 | `units.progress.spec` |
+| `/progress/units` is the caller's own — anonymous is 401 | `units.progress.spec` |
+| An explicitly requested unit is served whatever its turn — order is guidance, not enforcement | `units.progress.spec` |
+| `nextUnit` still points at the unit the learner is ready for | `units.progress.spec` |
+| A locked unit's public page is still readable | `units.progress.spec` |
+| Crowns render for a signed-in learner and are absent for a visitor (the page stays one cached document) | `units.progress.spec` |
+
+## Notification language (2026-08-22)
+
+| Condition | Test |
+| --- | --- |
+| The notification text is in the language the learner registered under, and links into that locale | `push.spec` |
+
 ## Known gaps
 
 Stated rather than hidden:
@@ -314,7 +428,20 @@ Stated rather than hidden:
   removed rather than left dangling, so the audit stays honest about what is covered.
 - **`loading.tsx` states are not asserted** — they are transient by nature; their real
   contract (`role="status"`) is what ships.
-- **Cron/streak/XP/leagues** do not exist yet (roadmap P4), so there is nothing to test.
+- **The reminder cron itself is not triggered in the suite.** The pass is driven through
+  `POST /reminders/run` (dev-mode only, always a dry run), so what is tested is the
+  decision — who would be mailed and why — not Cloudflare's scheduler or Resend's delivery.
+- **No test delivers a real push.** That needs a real push service, a real browser
+  subscription and a wait. What is covered is registration, scoping and the text endpoint —
+  the parts that fail quietly. Delivery was verified by hand.
+- **No test generates real audio.** Workers AI is a billed, remote, non-deterministic
+  dependency; `backend/seed/audio/fixture.mp3` stands in for a generated clip and the
+  serving path is real.
+- **Streaks/XP/leagues** do not exist yet (roadmap P4), so there is nothing to test.
 - **`prisma-guard` and the generated routers** are trusted; we test our shapes and our
   route config, not the libraries.
 - **Legacy `backend/scripts/*`** (the pre-D1 content pipeline) are untested one-offs.
+- **`seo.spec` and `seo-pages.spec` are not enumerated in this document.** Between them they
+  own the whole indexability contract — canonicals, hreflang, JSON-LD, robots, the sitemap,
+  the page inventory of `SEO-CONTENT.md` — and only the delivery rows above are listed. The
+  tests exist and run; this ledger has never described them.

@@ -72,6 +72,8 @@ export const ITEM_TYPES = [
     "choose-meaning",
     "choose-word",
     "spelling",
+    "listen-choose",
+    "cloze",
     "match-pairs",
     "speed-round",
 ] as const;

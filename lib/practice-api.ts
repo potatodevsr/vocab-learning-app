@@ -34,13 +34,17 @@ const postJson = async <T>(path: string, body?: unknown): Promise<T> => {
         body: body === undefined ? undefined : JSON.stringify(body),
     });
 
-    const json = await res.json().catch(() => ({ message: "Unexpected response" }));
+    // `Response.json()` is `unknown` under the Workers types; state the shape rather than
+    // letting the DOM lib's `any` hide it.
+    const json = (await res
+        .json()
+        .catch(() => ({ message: "Unexpected response" }))) as T & { message?: string };
 
     if (!res.ok) {
         throw new PracticeApiError(res.status, json?.message ?? "Request failed");
     }
 
-    return json as T;
+    return json;
 };
 
 /** `POST /practice/start` — no user progress write; rate-limited server-side. */

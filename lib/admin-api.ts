@@ -1,4 +1,5 @@
 import { API_URL } from "@/constants/config";
+import type { ReviewState } from "@/lib/types";
 
 export type VocabWord = {
     id: string;
@@ -29,6 +30,18 @@ export type VocabWord = {
     letterBreakdown: string;
     notes: string;
     status: string;
+    /** R2 keys for the pre-generated speech; empty until the audio script has run. */
+    audioKeyEn: string;
+    audioKeyExample: string;
+    /**
+     * The curation verdict on this row's Thai, and the detail behind it. `status` says
+     * whether a learner may see the row; these say whether a human has confirmed it, which
+     * is what `/admin/review` works through and what decides indexability.
+     */
+    reviewState: ReviewState;
+    /** JSON `ReviewFlag[]` — which heuristics objected. Read it with `parseReviewFlags`. */
+    reviewFlags: string;
+    reviewedAt: string | null;
 };
 
 export type PaginatedResult = {
@@ -42,11 +55,14 @@ export const fetchWordsPage = async (params: {
     skip: number;
     level?: string;
     status?: string;
+    /** `/admin/review` reads this same list filtered to the rows a heuristic doubted. */
+    reviewState?: ReviewState;
     search?: string;
 }): Promise<PaginatedResult> => {
     const where: Record<string, unknown> = {};
     if (params.level) where.level = { equals: params.level };
     if (params.status) where.status = { equals: params.status };
+    if (params.reviewState) where.reviewState = { equals: params.reviewState };
     if (params.search) where.word = { contains: params.search };
 
     const query = new URLSearchParams({
@@ -112,7 +128,12 @@ export const fetchLetters = async (): Promise<AdminThaiLetter[]> => {
     });
     if (!res.ok) throw new Error("Failed to fetch letters");
 
-    const body = await res.json();
+    // Either a bare array or the paginated envelope, depending on the read. `.json()` is
+    // `unknown` under the Workers runtime types, so say which.
+    const body = (await res.json()) as
+        | AdminThaiLetter[]
+        | { data?: AdminThaiLetter[] };
+
     return Array.isArray(body) ? body : (body.data ?? []);
 };
 
@@ -169,6 +190,9 @@ export const updateWord = async (
             | "letterBreakdown"
             | "notes"
             | "status"
+            | "reviewState"
+            | "reviewedAt"
+            | "reviewFlags"
         >
     >
 ): Promise<VocabWord> => {

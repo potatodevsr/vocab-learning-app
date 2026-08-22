@@ -15,13 +15,19 @@ const FETCH_SEGMENTS = [
   "[locale]/english/[level]/unit/[unit]",
   "[locale]/english/words",
   "[locale]/english/words/[word]",
+  "[locale]/english/test",
+  "[locale]/english/test/[level]",
   "[locale]/profile",
+  "[locale]/progress",
   "[locale]/review",
   "[locale]/learn",
   "[locale]/quiz",
   "admin/(protected)/vocabulary",
   "admin/(protected)/users",
   "admin/(protected)/letters",
+  "admin/(protected)/review",
+  "admin/(protected)/lists",
+  "admin/(protected)/dashboard",
 ];
 
 const REEXPORT = /export\s*\{\s*default\s*\}\s*from\s*["'](.+?)["'];?/;

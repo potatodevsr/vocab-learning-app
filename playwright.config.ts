@@ -32,14 +32,37 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["list"]] : [["list"]],
-  timeout: 30_000,
-  expect: { timeout: 10_000 },
+  /**
+   * Deliberately roomier where the machine is shared.
+   *
+   * Across four full runs on a laptop that was also indexing the repo, five different
+   * tests failed once each on a 10–22 second timeout and every one passed alone. That is
+   * not flakiness in the tests — it is CPU starvation reading as failure, and the cost of
+   * being wrong is a red build nobody trusts. Locally the tighter numbers stay, because a
+   * slow test on an idle machine is a real signal worth seeing.
+   */
+  timeout: process.env.CI ? 60_000 : 30_000,
+  expect: { timeout: process.env.CI ? 20_000 : 10_000 },
 
   use: {
     baseURL: `http://localhost:${WEB_PORT}`,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     locale: "en-US",
+    /**
+     * No service worker, except where one is the thing under test.
+     *
+     * `public/sw.js` passes `/api/*` straight through — it never calls `respondWith` for
+     * those — but a *controlled* page's requests still leave through the worker, and
+     * Playwright's `page.route` cannot intercept those. Every test that stubs or delays an
+     * API response would silently stop stubbing: `checkpoint.spec.ts`'s loading-spinner
+     * test failed exactly that way, asserting on a spinner whose 800ms delay was no longer
+     * being applied.
+     *
+     * `e2e/offline.spec.ts` opts back in with `test.use({ serviceWorkers: "allow" })`,
+     * which keeps the worker covered without letting it sit under the other 300 tests.
+     */
+    serviceWorkers: "block",
   },
 
   projects: [

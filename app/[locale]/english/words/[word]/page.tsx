@@ -7,6 +7,8 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { getWordsBySlug, getWordsByUnit } from "@/lib/oxford-words";
 import { distinctMeanings, isTrustworthyThai, trustedThai } from "@/lib/thai-text";
+import { isIndexableEntries } from "@/lib/review";
+import { WordAudio } from "@/components/play/word-audio";
 import type { OxfordWord } from "@/lib/types";
 import { getWrittenLetters, type ThaiLetter } from "@/lib/thai-letters";
 import { alignPosUsages, isPosUsageFilled, posMessageKeys } from "@/lib/pos";
@@ -98,8 +100,12 @@ export async function generateMetadata({
    * a reader who followed a link deserves an explanation rather than a 404, but it stays
    * out of the index. `follow` remains on so the crawler walks onward to the entries that
    * do qualify.
+   *
+   * `isIndexableEntries` is the second half of the same floor and covers what a shape test
+   * cannot: a gloss that reads as perfectly good Thai and is the wrong word. Anything a
+   * heuristic flagged in `/admin/review` stays out until a human clears it.
    */
-  const indexable = meanings.length > 0;
+  const indexable = meanings.length > 0 && isIndexableEntries(entries);
 
   const title = indexable
     ? isThai
@@ -335,8 +341,11 @@ export default async function WordPage({ params }: WordPageProps) {
             on "ability". The word keeps its own `lang` so it is still pronounced as
             English; the meaning rides along as the answer.
           */}
-          <h1 className="play-word mt-8">
+          <h1 className="play-word mt-8 flex flex-wrap items-center gap-4">
             <span lang="en">{head.displayWord}</span>
+            {/* Pronunciation the learner can hear, where the word is largest. Renders
+                nothing until this row's clip has been generated. */}
+            <WordAudio audioKey={head.audioKeyEn} word={head.displayWord} size="large" />
             {pageMeanings.length > 0 && (
               <span className="font-thai mt-2 block text-2xl font-bold sm:text-3xl" lang="th">
                 {t("h1Meaning", { meaning: pageMeanings.join(" · ") })}

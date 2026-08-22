@@ -60,3 +60,84 @@ jobs:
 
       - name: Type-check
         run: pnpm exec tsc --noEmit
+
+  # The commit gate itself (AGENTS.md "Testing"): a real production build, the real Hono
+  # Worker on `wrangler dev --local`, and a real D1. Until now it only ever ran on a
+  # laptop, which meant the one check that can catch a behaviour regression was the one
+  # check CI did not perform.
+  #
+  # Split in two because the suite is ~36 minutes on one worker and the interaction sweep
+  # is more than half of it — two jobs run them side by side instead of end to end.
+  # `fullyParallel: false` and `workers: 1` stay as they are: one shared database, and
+  # parallel writers would race.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Everything except the interaction/design sweeps. Split by *file* rather than
+          # by `--grep`: the sweeps' test titles are page names ("home-en answers the
+          # pointer everywhere"), so a title pattern that catches them all would also
+          # catch behaviour tests by accident.
+          - name: behaviour
+            command: >-
+              pnpm exec playwright test
+              $(ls e2e/*.spec.ts | grep -vE 'hover-states|design|typography')
+              e2e/unit e2e/api
+          # The sweeps themselves: every route, every control, photographed.
+          - name: interaction
+            command: >-
+              pnpm exec playwright test
+              e2e/hover-states.spec.ts e2e/design.spec.ts e2e/typography.spec.ts
+
+    name: e2e (${{ matrix.name }})
+
+    steps:
+      - name: Check out repository and backend submodule
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Enable pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            backend/pnpm-lock.yaml
+
+      - name: Install web dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install API dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+
+      # The browser only. `--with-deps` pulls the system libraries Chromium needs on a
+      # bare runner.
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      # No Cloudflare credentials anywhere in this job on purpose. The e2e launcher runs
+      # `wrangler dev --local`, which disables remote bindings, so D1 and R2 are simulated
+      # and Workers AI is simply absent — a test gate must never reach a billed model.
+      - name: Run the gate
+        run: ${{ matrix.command }}
+
+      - name: Upload failure artefacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-${{ matrix.name }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

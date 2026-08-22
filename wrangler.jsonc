@@ -23,11 +23,33 @@
     }
   ],
   "vars": {
-    // Fallback for the forwarder while the `API` binding above is commented out: the
-    // public origin of the deployed api Worker. Overridable per-deploy without a
-    // rebuild; ignored entirely once the binding exists.
+    // Not a fallback for the forwarder any more — the `API` service binding above is live,
+    // and `app/api/[...path]/route.ts` prefers it. This is the origin server-side rendering
+    // uses (`constants/config.ts`), which has no page origin to be relative to, and it is
+    // what a build resolves `getAllPublishedWords` against. Overridable per-deploy without
+    // a rebuild.
     "API_ORIGIN": "https://vocab-api.hoshiku1997.workers.dev"
   },
+  // The OpenNext incremental cache and its tag cache (see `open-next.config.ts`). Both
+  // bindings point at the one `vocab-learning-app-cache` namespace on purpose: their keys
+  // cannot collide — the incremental cache prefixes everything `incremental-cache/`, the
+  // tag cache keys on the build id — and a second namespace would only double the number
+  // of things that can be missing on a deploy.
+  //
+  // Neither is optional. Without them OpenNext falls back to its `"dummy"` overrides,
+  // every `revalidate` in the app goes inert, and the Worker re-renders each ISR route on
+  // each request — which is what had production answering 1102 under load.
+  "kv_namespaces": [
+    {
+      "binding": "NEXT_INC_CACHE_KV",
+      "id": "be6ed27a135f404ba26f9a425bca238c"
+    },
+    {
+      "binding": "NEXT_TAG_CACHE_KV",
+      "id": "be6ed27a135f404ba26f9a425bca238c"
+    }
+  ],
+
   "images": {
     "binding": "IMAGES"
   },

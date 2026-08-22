@@ -9,7 +9,9 @@ import { loginAsAdmin } from "./support/actions";
  * is the file where a missing `role` check let a learner into /admin.
  */
 test.describe("proxy: learner-protected paths", () => {
-  for (const path of ["/learn?level=A1&unit=1", "/quiz?level=A1&unit=1", "/profile"]) {
+  // `/today` is the signed-in half of `/`, reached only by an internal rewrite. Typing it
+  // directly must behave like every other private route rather than exposing the shell.
+  for (const path of ["/learn?level=A1&unit=1", "/quiz?level=A1&unit=1", "/profile", "/today"]) {
     test(`anonymous is redirected away from ${path.split("?")[0]}`, async ({
       page,
     }) => {
@@ -119,5 +121,62 @@ test.describe("proxy: admin paths", () => {
 
     await page.goto("/admin/vocabulary");
     await expect(page).toHaveURL(/\/admin\/login/);
+  });
+});
+
+/**
+ * The home page's session branch, and the caching it exists to protect.
+ *
+ * `app/[locale]/page.tsx` used to read `cookies()` so it could serve a signed-in learner
+ * their Today card. That made the site's most-requested URL dynamic for everyone, and a
+ * Worker that re-renders ~140 KB of identical HTML per visit is a Worker that answers
+ * `1102 Worker exceeded resource limits` as soon as a few heavy requests overlap. The
+ * branch now lives in the middleware as a rewrite, so `/` stays one URL with two renders:
+ * a cacheable one and a private one.
+ */
+test.describe("proxy: the home page session branch", () => {
+  test("an anonymous / is served as cacheable content, not a per-visitor render", async ({
+    page,
+  }) => {
+    const response = await page.goto("/en");
+
+    expect(response?.status()).toBe(200);
+    // The exact directive Next.js emits for a dynamic render. Its return here would mean
+    // the page has started reading cookies or headers again.
+    expect(response?.headers()["cache-control"]).not.toContain("no-store");
+    expect(response?.headers()["cache-control"]).toContain("s-maxage");
+  });
+
+  test("a signed-in / renders the Today card without leaving /", async ({ page }) => {
+    await registerThroughUi(page);
+
+    await page.goto("/en");
+
+    // A rewrite, not a redirect: the learner is on `/en`, looking at `/en/today`.
+    await expect(page).toHaveURL(/\/en$/);
+    await expect(page.getByTestId("today-card")).toBeVisible();
+  });
+
+  test("a trailing slash still lands on the Today card, at the canonical URL", async ({
+    page,
+  }) => {
+    await registerThroughUi(page);
+
+    await page.goto("/en/");
+
+    // `HOME_PATH` deliberately does not match `/en/`, so this is two hops: Next's own 308
+    // to the canonical `/en`, and then the rewrite. Matching the slash in the middleware
+    // would serve the card and leave the learner on a URL no canonical tag names.
+    await expect(page).toHaveURL(/\/en$/);
+    await expect(page.getByTestId("today-card")).toBeVisible();
+  });
+
+  test("the same branch applies under the Thai locale", async ({ page }) => {
+    await registerThroughUi(page);
+
+    await page.goto("/th");
+
+    await expect(page).toHaveURL(/\/th$/);
+    await expect(page.getByTestId("today-card")).toBeVisible();
   });
 });

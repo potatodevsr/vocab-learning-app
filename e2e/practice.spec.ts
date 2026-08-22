@@ -50,7 +50,7 @@ test.describe("public practice journey", () => {
     await expect(page.getByTestId("practice-result")).toBeVisible();
     await expect(page.getByTestId("practice-saved")).toBeVisible();
 
-    const summary = await page.evaluate(async () =>
+    const summary = await page.evaluate<{ wordsSeen: number }>(async () =>
       fetch("/api/progress/summary", { credentials: "include" }).then((response) =>
         response.json(),
       ),

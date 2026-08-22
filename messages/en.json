@@ -46,7 +46,8 @@
     "proofFreeLabel": "account saves your progress",
     "pathBadge": "How a day looks",
     "pathTitle": "Four steps, then again tomorrow.",
-    "pathBody": "The loop is the product: a short lesson, immediate feedback, and the words you missed coming back on their own."
+    "pathBody": "The loop is the product: a short lesson, immediate feedback, and the words you missed coming back on their own.",
+    "levelTestCta": "Not sure where to start? Take the two-minute level test →"
   },
   "Common": {
     "backToPath": "Back to path",
@@ -95,6 +96,9 @@
     "roundLabel": "Round {round}/{total}",
     "nextRound": "Next round",
     "masteryLabel": "Mastery {mastery} of {max}"
+  },
+  "Audio": {
+    "play": "Listen to “{word}”"
   },
   "Quiz": {
     "notReadyTitle": "Quiz is not ready yet",
@@ -219,7 +223,23 @@
     "collectionCaption": "Words you have mastered so far",
     "statMastered": "words mastered",
     "statMistakes": "to practise",
-    "reviewMistakes": "Practise mistakes"
+    "reviewMistakes": "Practise mistakes",
+    "reminderTitle": "Practice reminder",
+    "reminderBody": "One short email on days you have not practised, at the hour you choose. Nothing on the days you already showed up.",
+    "reminderOn": "On",
+    "reminderOff": "Off",
+    "reminderHourLabel": "Send it around",
+    "reminderHourValue": "{hour}:00",
+    "reminderSaved": "Saved",
+    "reminderFailed": "Could not save that. Try again.",
+    "pushTitle": "On this device",
+    "pushBody": "Get the reminder as a notification instead of an email. It replaces the email — you will never get both.",
+    "pushOn": "Notifications on",
+    "pushOff": "Turn on notifications",
+    "wordlistTitle": "What you are studying",
+    "wordlistBody": "Switching changes what your next session draws from. Every word you have already learned stays learned.",
+    "wordlistCount": "{count, plural, one {# word} other {# words}}",
+    "wordlistFailed": "Could not switch lists. Try again."
   },
   "Review": {
     "title": "Your mistakes",
@@ -231,6 +251,32 @@
     "practise": "Practise these words",
     "timesWrong": "{count}× wrong",
     "masteryLabel": "Mastery {mastery} of {max}"
+  },
+  "Progress": {
+    "title": "Your progress",
+    "subtitle": "Consistency first, totals second. Both are counted from what you actually finished.",
+    "weeklyGoal": "{done} of {goal} days this week",
+    "statSessions": "Sessions finished",
+    "statWordsSeen": "Words met",
+    "statWordsKnown": "Words known",
+    "statWordsMastered": "Words mastered",
+    "calendarTitle": "The last twelve weeks",
+    "calendarCaption": "One square per day. Darker means more items answered.",
+    "calendarEmpty": "Nothing here yet — the first square appears the day you finish a session.",
+    "calendarDay": "{day}: {items, plural, =0 {no practice} one {# item} other {# items}}",
+    "collectionTitle": "Your Oxford 3000",
+    "collectionCaption": "A word joins the collection once you can recall it, not once you have seen it.",
+    "mistakesTitle": "{count, plural, one {# word to put right} other {# words to put right}}",
+    "mistakesCaption": "Practise the ones you got wrong, on their own.",
+    "cta": "Back to today",
+    "streakWeeks": "{weeks, plural, one {# week in a row} other {# weeks in a row}}",
+    "streakDays": "{days, plural, one {# day in a row} other {# days in a row}}"
+  },
+  "Share": {
+    "title": "My Oxford 3000 progress",
+    "cta": "Share this",
+    "copied": "Copied",
+    "text": "I can recall {owned} of the {total} Oxford 3000 English words."
   },
   "Nav": {
     "brand": "Vocab Learning",
@@ -250,7 +296,8 @@
     "skipToContent": "Skip to content",
     "homeLabel": "Vocab Learning — home",
     "sections": "Sections",
-    "tryFree": "Try free"
+    "tryFree": "Try free",
+    "progress": "Progress"
   },
   "Level": {
     "metaTitle": "Learn Thai with {count} familiar Oxford 3000 {level} English prompts",
@@ -290,7 +337,10 @@
     "wordsCount": "{count} words",
     "allUnitsTitle": "Every {level} unit",
     "allUnitsBody": "{count} units · {size} words each",
-    "unitAria": "Unit {unit}"
+    "unitAria": "Unit {unit}",
+    "crownCount": "{count, plural, =0 {No crowns yet} one {# crown} other {# crowns}}",
+    "continueAtUnit": "Continue at unit {unit}",
+    "lockedNote": "Unit {first} onward opens as you finish the ones before it. Every unit page stays readable."
   },
   "EnglishHub": {
     "metaTitle": "Learn Thai with the Oxford 3000 — A1 to B2 English words with Thai meanings",
@@ -448,7 +498,11 @@
     "q5": "Do I need an account?",
     "a5": "You can read the words and their meanings without one. To have the app remember where you got to, which words you know and which need review, you need an account.",
     "q6": "How does the review system work?",
-    "a6": "Every correct answer pushes that word's next review further out; a wrong answer pulls it closer. Words you got wrong are collected on the mistakes page so you can practise them straight away."
+    "a6": "Every correct answer pushes that word's next review further out; a wrong answer pulls it closer. Words you got wrong are collected on the mistakes page so you can practise them straight away.",
+    "q7": "Will you email me?",
+    "a7": "Only if you ask us to. Reminders are off until you turn them on in your profile, you choose the hour, and nothing is sent on a day you have already practised. Every reminder carries a one-click unsubscribe that needs no login.",
+    "q8": "Which level should I start at?",
+    "a8": "Take the free level test — twelve words spread across A1 to B2, about two minutes, no account. It tells you the first level you are not already comfortable with, and every level stays open to browse whatever it says."
   },
   "NotFound": {
     "code": "404",
@@ -468,7 +522,8 @@
     "review": "Your mistakes",
     "account": "Account",
     "faqTitle": "Frequently asked questions — Oxford 3000 English vocabulary",
-    "faqDescription": "What the Oxford 3000 is, how many words to learn a day, how A1/A2/B1/B2 differ, and how the review system works."
+    "faqDescription": "What the Oxford 3000 is, how many words to learn a day, how A1/A2/B1/B2 differ, and how the review system works.",
+    "progress": "Your progress"
   },
   "Footer": {
     "blurb": "Learn the Oxford 3000 — the 3,000 English words that carry most of the language — with Thai meanings, pronunciation and short daily lessons.",
@@ -488,7 +543,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "sitemap": "Sitemap",
-    "credit": "Built on the Oxford 3000 word list. Vocabulary data is used for study purposes."
+    "credit": "Built on the Oxford 3000 word list. Vocabulary data is used for study purposes.",
+    "levelTest": "Level test"
   },
   "Practice": {
     "badge": "{level} level",
@@ -545,6 +601,32 @@
     "saveProgressCta": "Save my progress",
     "continueWithoutAccount": "Continue without an account"
   },
+  "Placement": {
+    "metaTitle": "English level test — find your CEFR starting point",
+    "metaDescription": "Twelve questions across A1–B2 from the Oxford 3000. No account needed, and it takes about two minutes.",
+    "h1": "Which level should you start at?",
+    "intro": "Twelve words, three from each level. No account, no email, about two minutes.",
+    "introBody": "You will see an English word and pick its Thai meaning. Wrong answers are fine — that is how the test finds your level.",
+    "beginCta": "Start the test",
+    "question": "Choose the Thai meaning",
+    "counter": "{current} of {total}",
+    "resultEyebrow": "Start here",
+    "resultScore": "{correct} of {total} correct",
+    "resultLevelRow": "{level}: {correct}/{total}",
+    "resultCta": "Start {level} words",
+    "resultSaveCta": "Save my progress",
+    "startFailed": "Could not start the test. Try again.",
+    "scoreFailed": "Could not score the test. Try again.",
+    "levelsHeading": "What each level covers",
+    "levelsCaption": "Every level is free to browse, whatever the test says.",
+    "levelWordCount": "{count, plural, one {# word} other {# words}}",
+    "levelMetaTitle": "{level} English level test — are you ready?",
+    "levelMetaDescription": "Six {level} words from the Oxford 3000, about a minute, no account. Find out whether {level} is where you should be.",
+    "levelH1": "Are you ready for {level}?",
+    "levelIntro": "Six words drawn from the {count} published {level} words. If most of them land, {level} is behind you.",
+    "levelFullTestCta": "Test every level instead",
+    "levelWordsCta": "Browse {level} words"
+  },
   "Trust": {
     "about": {
       "metaTitle": "About this vocabulary course",
@@ -562,9 +644,9 @@
       "sourcingHeading": "Where the words and meanings come from",
       "sourcingBody": "The word list is the Oxford 3000, a published list of the English words that matter most to a learner, grouped here by CEFR level. The list tells us which words to teach; it does not come with Thai. Every Thai meaning and every Thai pronunciation on this site is written by us, which is also why we are the ones accountable for them.",
       "reviewHeading": "How Thai meanings are checked",
-      "reviewBody": "A meaning is drafted, then read again character by character before it is published — Thai written with the wrong vowel or a missing tone mark looks almost right and teaches the wrong word. Entries that have not cleared that reading are held back from search results and from our sitemap rather than published as filler. If a word page tells you its meaning is still being reviewed, that is literal: we would rather show you nothing than show you a guess.",
+      "reviewBody": "A meaning is drafted, then read again character by character before it is published — Thai written with the wrong vowel or a missing tone mark looks almost right and teaches the wrong word. Entries that have not cleared that reading are held back from search results and from our sitemap rather than published as filler. If a word page tells you its meaning is still being reviewed, that is literal: we would rather show you nothing than show you a guess. Automatic checks read every entry for the damage a scan leaves behind — Latin letters inside a Thai word, a tone mark with no consonant under it, one meaning copied across dozens of entries — and anything they doubt goes into a review queue, and out of search, until a person has read it.",
       "limitsHeading": "What this course does not have yet",
-      "limitsBody": "There are no example sentences and no IPA transcriptions yet, and no recorded audio. We would rather say so here than imply otherwise on the pages themselves. Pronunciation is currently written in Thai script, which is what a Thai reader can actually act on without learning a second notation first.",
+      "limitsBody": "There are no example sentences and no IPA transcriptions yet. Audio is being added word by word, starting at A1: where a clip exists you will see a speaker button, and where it does not there is nothing to press — we would rather show you that than a control that plays silence. Pronunciation is also written in Thai script, which is what a Thai reader can act on without learning a second notation first.",
       "contactHeading": "Telling us we got one wrong",
       "contactBody": "If a meaning or a pronunciation is wrong, tell us and we will fix the entry. A dictionary that cannot be corrected is just a confident one."
     },
@@ -581,6 +663,8 @@
       "s3Body": "Correct and incorrect attempts update a spaced-review schedule. Due words come before new material.",
       "s4Heading": "Finish a level honestly",
       "s4Body": "A level is collected when its required words are strong. Mastery remains a longer-term stretch goal.",
+      "s5Heading": "Hear the word, not just read it",
+      "s5Body": "Where a word has a recording, a speaker button plays it, and some session items give you nothing but the sound and ask what it means. Clips are generated ahead of time, so every learner is graded on exactly the same audio.",
       "cta": "Choose a level",
       "ladderHeading": "When words come back",
       "ladderCaption": "Each correct recall moves a word one rung up this schedule. The gaps widen because recall you have to work for is the recall that lasts.",
@@ -650,7 +734,8 @@
     "practice": "Practice {level}",
     "unit": "Unit {unit}",
     "errorTitle": "Unable to load the sitemap",
-    "retry": "Try again"
+    "retry": "Try again",
+    "levelTest": "Level test"
   },
   "Session": {
     "preparing": "Preparing your session…",
@@ -682,7 +767,10 @@
     "resultHeadline": "{correct} of {total} recalled",
     "resultBody": "Nice work — tomorrow's plan will pick up right where you left off.",
     "backToToday": "Back to Today",
-    "dueNote": "Includes {count} words due for review"
+    "dueNote": "Includes {count} words due for review",
+    "listenQuestion": "What does it mean?",
+    "listenPromptLabel": "the word you are hearing",
+    "clozeQuestion": "Which word fills the gap?"
   },
   "Today": {
     "greeting": "Today",
@@ -702,7 +790,9 @@
     "startingPointTitle": "Where should we start?",
     "startFromBeginning": "Start from the beginning",
     "quickLevelCheck": "Quick level check",
-    "chooseLevel": "Choose a level"
+    "chooseLevel": "Choose a level",
+    "streakWeeks": "{weeks, plural, one {# week in a row} other {# weeks in a row}}",
+    "streakDays": "{days, plural, one {# day in a row} other {# days in a row}}"
   },
   "Checkpoint": {
     "metaTitle": "Unit checkpoint",

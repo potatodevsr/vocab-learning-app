@@ -86,14 +86,22 @@ test.describe("hover states — public pages", () => {
     { name: "magic-link-invalid-th", path: "/th/auth/verify" },
     { name: "register", path: "/en/auth/register" },
     { name: "english-hub", path: "/en/english" },
+    { name: "placement-test", path: "/en/english/test" },
     { name: "english-hub-th", path: "/th/english" },
     { name: "level-a1", path: "/en/english/a1" },
     { name: "level-a1-th", path: "/th/english/a1" },
     { name: "unit-1", path: "/en/english/a1/unit/1" },
     { name: "words-index", path: "/en/english/words" },
     { name: "words-index-th", path: "/th/english/words" },
-    { name: "words-letter-a", path: "/en/english/words/letter/a" },
-    { name: "words-letter-a-th", path: "/th/english/words/letter/a" },
+    /**
+     * `w`, not `a`. Every seeded word is `wordN`, so `/letter/a` renders the not-found
+     * page — these two entries had been photographing a 404 rather than the letter page
+     * they name. Pages 2+ (`/letter/w/2`) render the same component through the same
+     * props; the seed has one page of `w`, so the prev/next controls that only exist on a
+     * multi-page letter are out of reach of this fixture either way.
+     */
+    { name: "words-letter-w", path: "/en/english/words/letter/w" },
+    { name: "words-letter-w-th", path: "/th/english/words/letter/w" },
     { name: "about", path: "/en/about" },
     { name: "how-it-works", path: "/en/how-it-works" },
     { name: "privacy", path: "/en/privacy" },
@@ -151,6 +159,12 @@ test.describe("hover states — learner pages", () => {
     await context.addCookies(session);
   });
 
+  /**
+   * This is the hover pass for `app/[locale]/today/page.tsx` (AGENTS.md: every route needs
+   * an entry here). It is visited through `/en` rather than by its own path because that
+   * is the only way anyone reaches it — `middleware.ts` rewrites a signed-in request for
+   * `/[locale]` to it, and a direct request lands on login.
+   */
   test("the signed-in home page answers the pointer everywhere", async ({
     page,
   }) => {
@@ -258,6 +272,12 @@ test.describe("hover states — learner pages", () => {
     await checkPage(page, "quiz-not-ready");
   });
 
+  test("the progress page answers the pointer everywhere", async ({ page }) => {
+    await page.goto("/en/progress");
+    await expect(page.getByTestId("progress-page")).toBeVisible();
+    await checkPage(page, "progress");
+  });
+
   test("the profile answers the pointer everywhere", async ({ page }) => {
     await page.goto("/en/profile");
     await expect(page.getByTestId("profile-username")).toBeVisible();
@@ -357,6 +377,8 @@ test.describe("hover states — admin pages", () => {
     const ADMIN_PAGES = [
       { name: "admin-dashboard", path: "/admin/dashboard" },
       { name: "admin-vocabulary", path: "/admin/vocabulary" },
+      { name: "admin-review", path: "/admin/review" },
+      { name: "admin-lists", path: "/admin/lists" },
       { name: "admin-users", path: "/admin/users" },
     ];
 

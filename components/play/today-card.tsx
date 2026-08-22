@@ -117,6 +117,46 @@ export async function TodayCard({ summary }: { summary: TodaySummary }) {
           </div>
         </div>
 
+        {/*
+          The streak, and the reason it is phrased the way it is.
+
+          Loss aversion is what makes a streak work (SPEC §5.4.1 principle 2), but the
+          product promise is that a streak is a memory aid and not a threat
+          (LEARNER-LIFECYCLE.md §1.2). So it states what the learner *has*, never what they
+          are about to lose, and there is no countdown anywhere near it. The weekly number
+          leads because a daily one punishes a single bad Tuesday and this audience is
+          working adults.
+
+          Nothing is rendered until there is something real to show: a zero streak on a
+          card is a scolding, and a learner on day one has done nothing wrong.
+        */}
+        {summary.streak.weeks > 0 || summary.streak.days > 0 ? (
+          <div className="play-card mt-4 flex items-center gap-3 p-5" data-testid="today-streak">
+            <span className="flex size-11 items-center justify-center rounded-2xl border-3 border-ink bg-accent-sun text-ink">
+              <Flame className="size-5" />
+            </span>
+            <div>
+              {summary.streak.weeks > 0 ? (
+                <p className="font-semibold" data-testid="today-streak-weeks">
+                  {t("streakWeeks", { weeks: summary.streak.weeks })}
+                </p>
+              ) : null}
+              {summary.streak.days > 0 ? (
+                <p
+                  className={
+                    summary.streak.weeks > 0
+                      ? "text-sm text-muted-foreground"
+                      : "font-semibold"
+                  }
+                  data-testid="today-streak-days"
+                >
+                  {t("streakDays", { days: summary.streak.days })}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {!summary.weeklyGoal.goalDays && summary.weeklyGoal.eligibleToSetGoal && (
           <WeeklyGoalPrompt />
         )}

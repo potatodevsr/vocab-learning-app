@@ -43,9 +43,14 @@ const request = async <T>(
         body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
     });
 
-    const json = await res.json().catch(() => ({ message: "Unexpected response" }));
+    // `Response.json()` is `unknown` under the Workers types; state the shape rather than
+    // letting the DOM lib's `any` hide it.
+    const json = (await res
+        .json()
+        .catch(() => ({ message: "Unexpected response" }))) as T & { message?: string };
+
     if (!res.ok) throw new SessionApiError(res.status, json?.message ?? "Request failed");
-    return json as T;
+    return json;
 };
 
 export const startSession = (scope: { level: CefrLevel; unit?: number; mode?: "normal" | "comeback" | "review" }) =>

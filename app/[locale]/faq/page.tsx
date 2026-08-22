@@ -27,7 +27,7 @@ type FaqPageProps = { params: Promise<{ locale: string }> };
  * Every answer here is true of the product as built. Padding this page with invented
  * questions would be the thin-content trap §9.7 rules out.
  */
-const FAQ = ["1", "2", "3", "4", "5", "6"] as const;
+const FAQ = ["1", "2", "3", "4", "5", "6", "7", "8"] as const;
 
 export async function generateMetadata({
   params,

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LineChart, LogOut, User as UserIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { userLogout, type User } from "@/lib/user-api";
@@ -111,6 +111,17 @@ export function UserNavbar({
           </DropdownMenuLabel>
 
           <DropdownMenuSeparator />
+
+          <DropdownMenuItem asChild>
+            <Link
+              href={`/${locale}/progress`}
+              prefetch={false}
+              className="cursor-pointer"
+            >
+              <LineChart className="mr-2 size-4" />
+              {t("progress")}
+            </Link>
+          </DropdownMenuItem>
 
           <DropdownMenuItem asChild>
             <Link

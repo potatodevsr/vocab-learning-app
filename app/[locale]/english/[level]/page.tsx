@@ -22,6 +22,7 @@ import {
   ORGANISATION_ID,
 } from "@/lib/seo";
 import { TrackPageView } from "@/components/track-page-view";
+import { UnitProgressBadges } from "@/components/play/unit-progress-badges";
 
 /**
  * Public content: cacheable, re-rendered hourly.
@@ -468,6 +469,15 @@ export default async function LevelPage({ params }: LevelPageProps) {
             );
           })}
         </div>
+
+        {/*
+          Per-learner state — crowns, and which unit to continue at — fetched after render
+          so this page stays one cached document for everyone (see the component). It sits
+          under the unit list rather than inside the overflow index, which only exists on
+          levels with more than eight units: a learner's own progress must not be a feature
+          of how long the level happens to be.
+        */}
+        <UnitProgressBadges level={level} />
 
         {/*
           Every unit is linked, not just the first eight. A page that only the sitemap

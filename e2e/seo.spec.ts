@@ -93,6 +93,23 @@ test.describe("public pages are indexable", () => {
 
     expect((await head(page).robots()) ?? "").toContain("noindex");
   });
+
+  /**
+   * The two halves of `reviewState` (`lib/review.ts`), which only mean something together:
+   * a row a quality heuristic doubted still serves the learner who asked for it, and still
+   * leaves the index until a human clears it in `/admin/review`. Asserting only the
+   * `noindex` half would pass just as well if the page 404'd.
+   */
+  test("a flagged word still renders but is kept out of the index", async ({
+    page,
+  }) => {
+    await page.goto(`/en/english/words/${SEED.flagged.readOnly.word}`);
+
+    // The h1 carries the headword and its meaning together, so this is a containment
+    // check rather than an exact name match.
+    await expect(page.locator("h1")).toContainText(SEED.flagged.readOnly.word);
+    expect((await head(page).robots()) ?? "").toContain("noindex");
+  });
 });
 
 test.describe("structured data", () => {
@@ -253,6 +270,8 @@ test.describe("robots.txt", () => {
       "/th/profile",
       "/en/auth",
       "/th/auth",
+      "/en/today",
+      "/th/today",
     ]) {
       expect(body, `${path} is not disallowed`).toContain(`Disallow: ${path}`);
     }
@@ -260,11 +279,39 @@ test.describe("robots.txt", () => {
 });
 
 test.describe("sitemap.xml", () => {
+  test("omits a flagged word", async ({ request }) => {
+    const body = await (await request.get("/sitemap.xml")).text();
+
+    // Its clean unit-mate is there, so this is the review floor filtering rather than the
+    // whole unit being absent.
+    expect(body).toContain(`/english/words/${SEED.unit1.firstWord}`);
+    expect(body).not.toContain(`/english/words/${SEED.flagged.readOnly.word}`);
+  });
+
   test("is served as XML", async ({ request }) => {
     const res = await request.get("/sitemap.xml");
 
     expect(res.status()).toBe(200);
     expect(res.headers()["content-type"]).toContain("xml");
+  });
+
+  /**
+   * `app/sitemap.ts` was `force-dynamic`, so every crawler hit replayed ~30 sequential
+   * reads of `/vocabword` — the guard caps a single read at 100 rows — and assembled a
+   * multi-megabyte body inside the Worker isolate — the largest payload any route here
+   * builds, and one of the loads behind the `1102 Worker exceeded resource limits` errors
+   * production was serving. Publishing a word purges it
+   * (`app/admin/revalidate/route.ts`), so hourly revalidation costs nothing that matters.
+   */
+  test("is cached rather than rebuilt for every crawler", async ({ request }) => {
+    const res = await request.get("/sitemap.xml");
+
+    // `sitemap.js` is a Route Handler, so the tell is `x-nextjs-cache`, not the
+    // `Cache-Control` header — a cached handler still answers
+    // `public, max-age=0, must-revalidate`. A `force-dynamic` route emits no
+    // `x-nextjs-cache` header at all and `private, no-cache, no-store` instead.
+    expect(res.headers()["x-nextjs-cache"]).toBeDefined();
+    expect(res.headers()["cache-control"]).not.toContain("no-store");
   });
 
   test("lists both locales for the landing page", async ({ request }) => {
@@ -287,10 +334,24 @@ test.describe("sitemap.xml", () => {
     expect(body).not.toContain(`/english/words/${SEED.draftWord}`);
   });
 
+  /**
+   * Published, readable, and deliberately absent: a row a quality heuristic doubted keeps
+   * working for the learner already using the app and leaves the search index
+   * (`lib/review.ts`). Its page answers `noindex`, so submitting the URL would be the
+   * contradiction `SEO-CONTENT.md` §6 exists to prevent.
+   */
+  test("never lists a word a review flagged", async ({ request }) => {
+    const body = await (await request.get("/sitemap.xml")).text();
+
+    expect(body).not.toContain(
+      `/english/words/${SEED.flagged.readOnly.word}`,
+    );
+  });
+
   test("never lists a private route", async ({ request }) => {
     const body = await (await request.get("/sitemap.xml")).text();
 
-    for (const path of ["/learn", "/quiz", "/review", "/profile", "/auth", "/admin"]) {
+    for (const path of ["/learn", "/quiz", "/review", "/profile", "/auth", "/admin", "/today"]) {
       expect(body, `${path} is in the sitemap`).not.toContain(`<loc>http://localhost:3100/en${path}`);
     }
   });
@@ -357,13 +418,27 @@ test.describe("delivery", () => {
     }
   });
 
-  test("the home page stays per-visitor", async ({ request }) => {
-    // It branches on the session server-side to show the lifecycle CTA
-    // (docs/LEARNER-LIFECYCLE.md §8 L2), so it is the one public page that cannot be
-    // shared between visitors. Asserted so nobody "fixes" it into a cache.
+  test("the home page is cacheable, and its session branch is not in the page", async ({
+    request,
+  }) => {
+    /**
+     * This used to assert the opposite — `no-store`, "the one public page that cannot be
+     * shared between visitors" — because the page read `cookies()` to decide between the
+     * marketing copy and the learner's lifecycle CTA (docs/LEARNER-LIFECYCLE.md §8 L2).
+     * That made the site's most-requested URL a full per-visitor render for every
+     * anonymous visitor and every crawler, which is one of the loads that had the Worker
+     * answering `1102 Worker exceeded resource limits`.
+     *
+     * The branch moved into `middleware.ts`, which rewrites a signed-in request for
+     * `/{locale}` to `/{locale}/today`. The gate itself — a logged-in `/` resolving to the
+     * lifecycle CTA — is asserted in `e2e/proxy.spec.ts`; what is asserted here is that the
+     * anonymous render is shared. A return of `no-store` means the branch has crept back
+     * into the page.
+     */
     const cacheControl = (await request.get("/th")).headers()["cache-control"] ?? "";
 
-    expect(cacheControl).toContain("no-store");
+    expect(cacheControl).toContain("s-maxage");
+    expect(cacheControl).not.toContain("no-store");
   });
 
   test("security headers are set", async ({ request }) => {
@@ -399,13 +474,29 @@ test.describe("delivery", () => {
   });
 
   test("no font is preloaded that nothing renders", async ({ page }) => {
-    await page.goto("/th");
+    /**
+     * The budget is 7 files: five families declared in `app/[locale]/layout.tsx`, two of
+     * which (Chonburi, Anuphan) ship both a latin and a thai subset. Adding a family
+     * pushes it to 8 and fails here, which is the point — Sarabun was 8 weights × 2 styles
+     * × 2 subsets = 32 files, ~400 KB, preloaded at highest priority on every page, for 16
+     * `.sarabun-*` classes no component used.
+     *
+     * The ceiling read 4 and passed only because it was measured on `/th` alone, back when
+     * `/th` was the site's one dynamically rendered public page. Every statically rendered
+     * page — `/th/about`, `/th/faq`, `/th/english` — was shipping 7 the whole time and no
+     * test looked. More than one page is checked now so a page-specific miscount cannot
+     * hide behind a single sample.
+     */
+    for (const path of ["/th", "/th/about", "/th/english/a1"]) {
+      await page.goto(path);
 
-    const preloaded = await page.locator('link[rel="preload"][as="font"]').count();
+      const preloaded = await page.locator('link[rel="preload"][as="font"]').count();
 
-    // Sarabun was 8 weights x 2 styles x 2 subsets = 32 files, ~400 KB, preloaded at
-    // highest priority on every page, for 16 `.sarabun-*` classes no component used.
-    expect(preloaded, "unused fonts are being preloaded again").toBeLessThanOrEqual(4);
+      expect(
+        preloaded,
+        `${path}: unused fonts are being preloaded again`,
+      ).toBeLessThanOrEqual(7);
+    }
   });
 
   test("hreflang is declared once, in the head", async ({ request }) => {

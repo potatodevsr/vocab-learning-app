@@ -29,6 +29,7 @@ const LEVELS = ["a1", "a2", "b1", "b2"] as const;
  */
 const EXPLORE = [
   { href: "/english", key: "englishHub" },
+  { href: "/english/test", key: "levelTest" },
   { href: "/english/words", key: "allWords" },
   { href: "/thai-alphabet", key: "thaiAlphabet" },
 ] as const;

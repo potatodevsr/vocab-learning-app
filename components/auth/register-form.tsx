@@ -110,7 +110,15 @@ export function RegisterForm() {
     setLoading(true);
     setError("");
     try {
-      await userRegister({ ...form, timezone: resolveBrowserTimezone() });
+      // Timezone and locale are both captured here, silently: the learner is registering in
+      // a language and a place, and neither is worth a form field (LEARNER-LIFECYCLE.md
+      // §3.4). They are read back only by the cron-sent reminder and the push text, which
+      // have no request to infer either from.
+      await userRegister({
+        ...form,
+        timezone: resolveBrowserTimezone(),
+        locale,
+      });
       await userLogin({ email: form.email, password: form.password });
       track("signup_completed", { locale: locale === "th" ? "th" : "en" });
 

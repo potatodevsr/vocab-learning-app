@@ -39,6 +39,22 @@ const EXEMPT = new Map([
         "asserted behaviourally in e2e/api/gamification.api.spec.ts; importing it into the web tsconfig would pull the backend's generated tree into typechecking",
     ],
     [
+        "backend/src/reminders.ts:runReminderPass",
+        "driven end-to-end through POST /api/reminders/run in e2e/reminders.spec.ts; importing the module pulls the backend's generated tree into web typechecking",
+    ],
+    [
+        "backend/src/reminders.ts:DEFAULT_REMINDER_HOUR",
+        "asserted as its value in e2e/reminders.spec.ts — the hour a fresh opt-in selects is reminder-hour-19; the module cannot be imported into a web-repo test",
+    ],
+    [
+        "backend/src/push.ts:sendPush",
+        "delivers to a real push service, so no local fixture can exercise it: a run has no subscription endpoint to deliver to. The reminder pass that calls it is covered; this is the leg that leaves the machine",
+    ],
+    [
+        "backend/src/wordlists.ts:DEFAULT_WORDLIST",
+        "asserted as its value in e2e/wordlists.spec.ts — a new learner's current list is 'oxford-3000'; the module builds a Hono app at import time and `hono` is not a dependency of this repo, so it cannot be imported into a web-repo test",
+    ],
+    [
         "backend/src/practice.ts:TRIAL_CLAIM_COOKIE",
         "asserted through httpOnly cookie issuance and invalid/valid/replayed claims in e2e/api/practice.api.spec.ts; importing the route pulls generated backend code into web tsc",
     ],

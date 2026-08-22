@@ -42,6 +42,9 @@ const word = (overrides: Partial<OxfordWord> = {}): OxfordWord => ({
   posUsages: "[]",
   letterBreakdown: "",
   status: "published",
+  audioKeyEn: "",
+  audioKeyExample: "",
+  reviewState: "unreviewed",
   ...overrides,
 });
 

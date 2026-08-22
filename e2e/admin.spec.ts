@@ -568,3 +568,80 @@ test.describe("admin", () => {
     ).toHaveCount(0);
   });
 });
+
+test.describe("admin review queue", () => {
+  /**
+   * The queue's whole reason to exist, end to end: a row a heuristic doubted is served to
+   * a human with the doubt named, the human fixes and approves it, and the learner-facing
+   * page — which was `noindex` while the doubt stood — becomes indexable with the
+   * corrected Thai on it.
+   *
+   * Uses SEED.flagged.mutable, never SEED.flagged.readOnly: approving is a write, and the
+   * `noindex` assertion in seo.spec.ts reads the other one.
+   */
+  test("approving a flagged word fixes its Thai and returns it to the index", async ({
+    page,
+  }) => {
+    const { word } = SEED.flagged.mutable;
+
+    await loginAsAdmin(page, SEED.admin);
+    await page.goto("/admin/review");
+
+    // The queue opens on a real flagged row and says why it is there.
+    await expect(page.getByTestId("review-card")).toBeVisible();
+    await expect(page.getByTestId("review-remaining")).not.toHaveText("0");
+
+    // Walk to the word this test owns — the queue's order is the API's, not ours.
+    for (let step = 0; step < 5; step += 1) {
+      if ((await page.getByTestId("review-word").textContent()) === word) break;
+      await page.getByRole("button", { name: /ข้ามไปก่อน/ }).click();
+    }
+    await expect(page.getByTestId("review-word")).toHaveText(word);
+
+    const corrected = `ตรวจแล้ว-${Date.now()}`;
+    await page.getByLabel("ความหมายไทย").fill(corrected);
+    await page.getByTestId("review-approve").click();
+
+    // The row leaves the queue rather than sitting there approved.
+    await expect(page.getByTestId("review-word")).not.toHaveText(word);
+
+    // And the public page now carries the corrected meaning and may be indexed. The
+    // revalidate call the queue fires is what makes this visible before the ISR window.
+    await page.goto(`/en/english/words/${word}`);
+    await expect(page.getByText(corrected, { exact: true })).toBeVisible();
+
+    const robots = await page
+      .locator('meta[name="robots"]')
+      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("content") ?? "").join(","));
+    expect(robots).not.toContain("noindex");
+  });
+});
+
+test.describe("admin overview", () => {
+  /**
+   * The overview was a placeholder that said statistics were coming (SPEC §7, P6). What
+   * matters now is that the numbers are *derived*, not invented: the content figures have
+   * to agree with the fixture corpus, and the learner figures with what the suite has
+   * actually done.
+   */
+  test("shows real content and learner numbers", async ({ page }) => {
+    await loginAsAdmin(page, SEED.admin);
+    await page.goto("/admin/dashboard");
+
+    const content = page.getByTestId("admin-content-stats");
+    await expect(content).toBeVisible();
+
+    // The seed is 45 words, 40 of them published — the coverage line must say so rather
+    // than round it away.
+    await expect(content).toContainText("45");
+    await expect(content).toContainText("40");
+
+    await expect(page.getByTestId("admin-learner-stats")).toBeVisible();
+  });
+
+  test("the stats route refuses a caller who is not an admin", async ({ page }) => {
+    const res = await page.request.get("/api/admin/stats", { failOnStatusCode: false });
+
+    expect(res.status()).toBe(401);
+  });
+});

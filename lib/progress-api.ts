@@ -1,4 +1,5 @@
 import { API_URL } from "@/constants/config";
+import type { components } from "@/lib/api-types";
 
 /**
  * The client reports *what happened*; the server decides what it is worth. No userId, no
@@ -117,6 +118,30 @@ export const getProgressSummaryWithToken = async (
     if (!res.ok) return null;
 
     return res.json();
+};
+
+export type ProgressHistory = components["schemas"]["ProgressHistory"];
+
+/**
+ * Day-by-day activity for the progress calendar. Server-rendered like the summary, so the
+ * page arrives complete rather than filling in after a client fetch.
+ */
+export const getProgressHistoryWithToken = async (
+    token: string,
+    days = 84,
+): Promise<ProgressHistory | null> => {
+    try {
+        const res = await fetch(`${API_URL}/progress/history?days=${days}`, {
+            headers: { Cookie: `user_token=${token}` },
+            cache: "no-store",
+        });
+
+        if (!res.ok) return null;
+        return (await res.json()) as ProgressHistory;
+    } catch {
+        // The calendar is one panel of the page; losing it must not lose the stats above it.
+        return null;
+    }
 };
 
 /** Per-word mastery for the words in front of the learner right now. */

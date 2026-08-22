@@ -520,6 +520,22 @@ Ask in context (“Want a reminder on the days you chose?”), not at first laun
 - Every notification deep-links to the exact useful action.
 - Quiet hours, pause and unsubscribe are one tap away.
 
+**Built (2026-08-22), as email rather than push** — `backend/src/reminders.ts`, opted into
+from `/profile`, sent by an hourly cron:
+
+| Spec above | What shipped |
+| --- | --- |
+| Explicit opt-in, in context | Off until the learner turns it on in their profile. Never asked at signup. |
+| Learner chooses local time | An hour in *their* timezone (captured at registration). The cron runs hourly and works out whose hour it is. |
+| One reminder, no nag sequence | One a day at most, and none at all on a day they already practised — the send checks today's completed sessions first. |
+| Manageable due batch | The mail names the due count and nothing else; it never lists the backlog. |
+| Unsubscribe one tap away | A signed link, no login, valid for 180 days — the person who wants out is in the worst mood to be asked for a password. |
+| Weekly recap | Monday morning, local: active days and words added last week. |
+
+Push notifications remain unbuilt. Email reaches an installed PWA and a desktop inbox
+alike, needs no permission prompt at the moment of least trust, and is the channel this
+audience actually reads.
+
 ---
 
 ## 5. SEO pages that earn their place
@@ -556,11 +572,11 @@ counts, sitemap placement and content floors.
 
 | Family | Pattern | Indexing | Decision |
 | --- | --- | --- | --- |
-| Placement | `/english/test`, `/english/test/[level]` | index test entry; result `noindex` | Highest-priority new acquisition family after public practice. Must be playable logged out and remain a recommendation, not a certification. |
+| Placement | `/english/test`, `/english/test/[level]` | index test entry; result `noindex` | **`/english/test` built (2026-08-22)**: twelve questions, three per level, playable logged out, graded server-side through a signed token so the browser never holds the answer key. The result renders in place (no separate URL, nothing to index or leak) and ends on the recommended level's *public* page, with signup offered beside it rather than in front of it. `/english/test/[level]` is not built. |
 | Exam vocabulary | `/english/exams`, `/english/exams/[exam]` | index only above editorial floor | Valid distinct intent for TOEIC/IELTS and Thai exams, but membership and claims need evidence. Never imply an official exam list. |
 | Thai school grade | `/english/grades`, `/english/grades/[grade]` | index only above editorial floor | Valid parent/student intent if curriculum mapping is human-reviewed and labelled guidance, not official equivalence. |
 | Word of the day | `/english/word-of-the-day` | one indexable current page; no archive clones | Retention/editorial surface, lower SEO priority than placement, topics and guides. |
-| Share result | `/share/[token]` | `noindex`; absent from sitemap | Distribution surface with privacy-safe OG image. It is not an SEO family and links to a relevant public trial or placement page. |
+| Share result | `/share/[token]` | `noindex`; absent from sitemap | Distribution surface with privacy-safe OG image. It is not an SEO family and links to a relevant public trial or placement page. **Shipped differently (2026-08-22): no URL at all.** `components/play/share-result.tsx` hands the platform share sheet a sentence built from numbers already on screen ("I can recall 250 of the 3,000 Oxford 3000 words"), falling back to the clipboard. A tokenised URL would mean a page carrying someone's progress for anyone who finds the link, and a generated OG image to keep in step with it; the share sheet reaches LINE and Messenger with neither. |
 
 Public practice has an unresolved rendering constraint: answers must not be present in initial
 HTML, while an indexable practice page must still contain enough crawlable explanation and
@@ -692,6 +708,15 @@ content-free question types — match-pairs and speed round (§4.1).
 session and return next day directly to the right review, built from the previous day's
 mistakes; a logged-in request to `/` resolves to the lifecycle state's CTA rather than the
 marketing page.
+
+That last clause is satisfied by a **rewrite in `middleware.ts`**, not a branch inside the
+page. `middleware.ts` sends a request for `/{locale}` carrying a valid `user_token` to
+`app/[locale]/today/page.tsx`; everyone else gets the cached marketing render from
+`app/[locale]/page.tsx`. The URL stays `/` either way. The branch used to live in the page
+as a `cookies()` read, which made the site's most-requested URL dynamic for every anonymous
+visitor and every crawler — around 140 KB of identical HTML re-rendered per request, and one
+of the loads that pushed the web Worker into `1102 Worker exceeded resource limits`.
+`/{locale}/today` is otherwise a protected path: typing it directly lands on login.
 
 ### L3 — Recovery and progression
 

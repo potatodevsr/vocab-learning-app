@@ -18,6 +18,17 @@ import {
   claimPractice,
   startPractice,
 } from "../../lib/practice-api";
+import { scorePlacement, startPlacement } from "../../lib/placement-api";
+import { disablePush, enablePush, pushEnabled } from "../../lib/push-api";
+import {
+  getReminderSettingsWithToken,
+  saveReminderSettings,
+} from "../../lib/reminders-api";
+import {
+  getCurrentWordlistWithToken,
+  getWordlists,
+  setCurrentWordlist,
+} from "../../lib/wordlists-api";
 import {
   SessionApiError,
   answerSessionItem,
@@ -27,6 +38,7 @@ import {
 } from "../../lib/session-api";
 import {
   getMistakesWithToken,
+  getProgressHistoryWithToken,
   getProgressSummaryWithToken,
   getWordProgress,
   newSessionId,
@@ -155,6 +167,12 @@ test.describe("progress-api", () => {
 
   test("getMistakesWithToken returns null for a garbage token", async () => {
     expect(await getMistakesWithToken("not-a-jwt")).toBeNull();
+  });
+
+  test("getProgressHistoryWithToken returns null for a garbage token", async () => {
+    // The activity calendar is one panel of `/progress`. Losing it must not take the
+    // stats above it down with the page.
+    expect(await getProgressHistoryWithToken("not-a-jwt")).toBeNull();
   });
 
   test("getWordProgress short-circuits on an empty id list", async () => {
@@ -336,5 +354,76 @@ test.describe("oxford-words reads", () => {
 
   test("getWordsBySlug returns nothing for an unknown slug", async () => {
     expect(await getWordsBySlug("no-such-slug")).toEqual([]);
+  });
+});
+
+/**
+ * The clients for the surfaces added after the first release — placement, reminders and
+ * word lists. Same split as everything above: a read that a page renders around degrades
+ * to null, a write that a learner initiated throws so the UI can say so.
+ */
+test.describe("placement-api", () => {
+  test("startPlacement returns a sitting with items and no answer key", async () => {
+    const started = await startPlacement();
+
+    expect(started.items.length).toBeGreaterThan(0);
+    expect(started.token).toBeTruthy();
+    // The key is signed into the token, never shipped alongside the questions.
+    expect(JSON.stringify(started.items)).not.toContain("correct");
+  });
+
+  test("scorePlacement throws on a token the server did not sign", async () => {
+    await expect(scorePlacement("forged", [0])).rejects.toThrow();
+  });
+});
+
+test.describe("push-api", () => {
+  test("pushEnabled reports false where the platform cannot do push", async () => {
+    // The unit runner is Node: `pushSupported()` short-circuits on `typeof window`, so
+    // this never reaches a service worker. That is the branch the reminder card's effect
+    // depends on — a throw here would be a blank profile rather than an unavailable
+    // switch, and "your browser cannot do this" is not an error worth showing.
+    expect(await pushEnabled()).toBe(false);
+  });
+
+  test("enablePush declines rather than prompting where push is unavailable", async () => {
+    // It must not reach `Notification.requestPermission()` — an unprompted prompt is the
+    // fastest way to be blocked for good, and a blocked browser cannot be asked again.
+    expect(await enablePush()).toBe(false);
+  });
+
+  test("disablePush is a no-op where there is nothing subscribed", async () => {
+    // Turning off something that was never on resolves quietly. The learner pressed a
+    // switch; an error about a subscription they never had explains nothing.
+    await expect(disablePush()).resolves.toBeUndefined();
+  });
+});
+
+test.describe("reminders-api", () => {
+  test("getReminderSettingsWithToken returns null for a garbage token", async () => {
+    // A preference is not worth throwing the profile page away for.
+    expect(await getReminderSettingsWithToken("not-a-jwt")).toBeNull();
+  });
+
+  test("saveReminderSettings rejects when unauthenticated", async () => {
+    // The opposite branch on purpose: the learner pressed something, so silence would be
+    // a setting that looks saved and is not.
+    await expect(saveReminderSettings({ optIn: true, hour: 19 })).rejects.toThrow();
+  });
+});
+
+test.describe("wordlists-api", () => {
+  test("getWordlists is public and always has the course", async () => {
+    const lists = await getWordlists();
+
+    expect(lists.map((list) => list.id)).toContain("oxford-3000");
+  });
+
+  test("getCurrentWordlistWithToken returns null for a garbage token", async () => {
+    expect(await getCurrentWordlistWithToken("not-a-jwt")).toBeNull();
+  });
+
+  test("setCurrentWordlist rejects when unauthenticated", async () => {
+    await expect(setCurrentWordlist("oxford-3000")).rejects.toThrow();
   });
 });

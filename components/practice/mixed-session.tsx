@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { WordAudio } from "@/components/play/word-audio";
 import {
   answerSessionItem,
   startSession,
@@ -328,6 +329,17 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
   const isSpelling = currentItem.type === "spelling";
   const isMatchPairs = currentItem.type === "match-pairs";
   const isSpeedRound = currentItem.type === "speed-round";
+  /**
+   * A listening item carries no written prompt at all — the server sends the clip and the
+   * meanings, and withholds the word. Hearing it *is* the question, so the card shows a
+   * large player where every other item type shows the word.
+   */
+  const isListening = currentItem.type === "listen-choose";
+  /**
+   * Cloze: the sentence is the prompt and the word is missing from it. The blank is styled
+   * rather than left as bare underscores so it reads as a gap to fill, not as damage.
+   */
+  const isCloze = currentItem.type === "cloze";
   const promptText = currentItem.prompt.displayWord ?? currentItem.prompt.meaningTh ?? "";
 
   return (
@@ -377,9 +389,45 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
           </p>
 
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h2 className="play-word" data-testid="session-prompt">
-              {promptText}
-            </h2>
+            {isCloze ? (
+              <p
+                className="text-2xl font-bold leading-relaxed"
+                lang="en"
+                data-testid="session-prompt"
+              >
+                {currentItem.prompt.clozeEn?.split("____").map((part, index, parts) => (
+                  <span key={index}>
+                    {part}
+                    {index < parts.length - 1 && (
+                      <span className="mx-1 inline-block min-w-24 border-b-4 border-ink align-baseline" />
+                    )}
+                  </span>
+                ))}
+              </p>
+            ) : isListening ? (
+              <div className="flex items-center gap-3" data-testid="session-prompt">
+                <WordAudio
+                  audioKey={currentItem.prompt.audioKeyEn}
+                  word={t("listenPromptLabel")}
+                  size="large"
+                />
+                <span className="text-base font-semibold text-muted-foreground">
+                  {t("listenQuestion")}
+                </span>
+              </div>
+            ) : (
+              <>
+                <h2 className="play-word" data-testid="session-prompt">
+                  {promptText}
+                </h2>
+                {/* Optional on a written prompt: the word is on the card either way, so the
+                    clip is reinforcement rather than the question. */}
+                <WordAudio
+                  audioKey={currentItem.prompt.audioKeyEn}
+                  word={promptText}
+                />
+              </>
+            )}
             {currentItem.prompt.partOfSpeech && (
               <Badge variant="outline" className="rounded-full bg-white">
                 {currentItem.prompt.partOfSpeech}
@@ -415,7 +463,13 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
           ) : (
             <>
               <p className="mt-4 text-sm font-semibold text-foreground">
-                {isMatchPairs ? t("matchQuestion") : t("question")}
+                {isMatchPairs
+                  ? t("matchQuestion")
+                  : isListening
+                    ? t("listenQuestion")
+                    : isCloze
+                      ? t("clozeQuestion")
+                      : t("question")}
               </p>
               {isMatchPairs && (
                 <p className="mt-1 text-xs text-muted-foreground">{t("matchHint")}</p>
@@ -426,6 +480,13 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
                   const isCorrectOption = !!showingFeedback && lastResult.selectedOptionIndex !== undefined && lastResult.correct && isSelected;
                   const isWrongSelected = !!showingFeedback && isSelected && !lastResult.correct;
                   const label = option.meaningTh ?? option.displayWord ?? "";
+                  /**
+                   * Which language the option is actually in. `choose-word` and `cloze`
+                   * offer English words; everything else offers Thai meanings. Labelling
+                   * an English option `lang="th"` makes a Thai screen reader attempt Thai
+                   * phonology on it — the same defect the word page's h1 had.
+                   */
+                  const optionLang = option.meaningTh ? "th" : "en";
 
                   return (
                     <button
@@ -461,7 +522,7 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
                       >
                         {index + 1}
                       </span>
-                      <span lang="th">{label}</span>
+                      <span lang={optionLang}>{label}</span>
                       {isCorrectOption && <Check className="ml-auto size-5 shrink-0" />}
                       {isWrongSelected && <X className="ml-auto size-5 shrink-0" />}
                     </button>

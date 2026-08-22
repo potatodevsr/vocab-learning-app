@@ -121,7 +121,11 @@ test.describe("authentication", () => {
     await page.getByTestId("dev-magic-link").click();
 
     await expect(page).toHaveURL(/\/en\/profile$/, { timeout: 20_000 });
-    await expect(page.getByText(user.username)).toBeVisible();
+
+    // Not `getByText(username)`: the app bar prints the same string once the client's
+    // `/user/me` resolves, so that locator resolves to two elements — a strict-mode
+    // violation — depending on which side of the race the assertion lands.
+    await expect(page.getByTestId("profile-username")).toHaveText(user.username);
   });
 
   test("invalid verification links explain recovery in both locales", async ({
@@ -155,12 +159,24 @@ test.describe("authentication", () => {
   });
 
   test("logging out clears the session", async ({ page }) => {
-    const user = await registerThroughUi(page);
+    await registerThroughUi(page);
 
-    await page.getByText(user.username).click();
+    // By role, not by username text: the account menu and the profile page print the same
+    // string, and the bar is the control being clicked.
+    await page.getByRole("button", { name: "Account menu" }).click();
     await page.getByRole("menuitem", { name: "Log out" }).click();
 
     await expect(page.getByRole("link", { name: "Log in" })).toBeVisible();
+
+    /**
+     * The marketing hero coming back is the §8 L2 branch flipping the other way: signed
+     * in, `middleware.ts` rewrites `/en` to the Today card; signed out, it serves the
+     * cached marketing page. It is also what makes the navigation below deterministic —
+     * `handleLogout` ends with `router.push()` + `router.refresh()`
+     * (`components/user-navbar.tsx`), and a `goto` issued on top of that in-flight refresh
+     * aborts with `net::ERR_ABORTED`.
+     */
+    await expect(page.getByTestId("home-practice-cta")).toBeVisible();
 
     // And the protected route is protected again.
     await page.goto("/en/learn?level=A1&unit=1");

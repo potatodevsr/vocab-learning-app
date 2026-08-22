@@ -8,6 +8,7 @@ import { AppBar } from "@/components/app-bar";
 import { SiteFooter } from "@/components/site-footer";
 import { SkipToContent } from "@/components/skip-to-content";
 import { GoogleAnalytics } from "@/components/google-analytics";
+import { ServiceWorkerRegistration } from "@/components/service-worker";
 import { SITE_URL, absoluteUrl } from "@/lib/seo";
 import "../globals.css";
 
@@ -140,6 +141,9 @@ export default async function LocaleLayout({
           <SiteFooter />
         </NextIntlClientProvider>
         <GoogleAnalytics />
+        {/* Caches immutable assets and word audio so a repeat visit costs almost nothing
+            on a metered connection. Never the learner's own data — see public/sw.js. */}
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

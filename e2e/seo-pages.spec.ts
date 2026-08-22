@@ -504,3 +504,70 @@ test.describe("word page structure", () => {
     }
   });
 });
+
+/**
+ * A–Z letter pages (SEO-CONTENT §E), and the caching the URL shape exists to allow.
+ *
+ * Pagination is a path segment — `/english/words/letter/w/2` — not `?page=2`. Reading
+ * `searchParams` is a request-time API, which forced a dynamic render on all 52 of these
+ * URLs: `Cache-Control: private, no-cache, no-store`, ~30 sequential `/vocabword` reads
+ * and ~180 KB of render per crawler hit. That was the last uncached caller of
+ * `getAllPublishedWords` and the same class of load behind the `1102 Worker exceeded
+ * resource limits` errors production was serving.
+ */
+test.describe("A–Z letter pages", () => {
+  // Every seeded word is `wordN`, so `w` is the only letter with content.
+  const LETTER = "w";
+
+  test("page 1 is served as cacheable content, not a per-visitor render", async ({
+    page,
+  }) => {
+    const response = await page.goto(`/en/english/words/letter/${LETTER}`);
+
+    expect(response?.status()).toBe(200);
+    // `no-store` coming back would mean the route reads a request-time API again.
+    expect(response?.headers()["cache-control"]).not.toContain("no-store");
+    expect(response?.headers()["cache-control"]).toContain("s-maxage");
+  });
+
+  test("page 1 canonicalises to the bare URL, with no page segment", async ({
+    page,
+  }) => {
+    await page.goto(`/en/english/words/letter/${LETTER}`);
+
+    const canonical = await page
+      .locator('link[rel="canonical"]')
+      .getAttribute("href");
+
+    expect(canonical).toContain(`/en/english/words/letter/${LETTER}`);
+    expect(canonical).not.toContain(`/letter/${LETTER}/`);
+  });
+
+  test("/1 is a 404, not a second address for page 1", async ({ page }) => {
+    await page.goto(`/en/english/words/letter/${LETTER}/1`);
+
+    await expectStreamedNotFound(page);
+  });
+
+  test("a page number past the end is a 404, not an empty page", async ({
+    page,
+  }) => {
+    await page.goto(`/en/english/words/letter/${LETTER}/999`);
+
+    await expectStreamedNotFound(page);
+  });
+
+  test("a non-numeric page segment is a 404", async ({ page }) => {
+    await page.goto(`/en/english/words/letter/${LETTER}/abc`);
+
+    await expectStreamedNotFound(page);
+  });
+
+  test("a letter with no published words is a 404, not an empty page", async ({
+    page,
+  }) => {
+    await page.goto("/en/english/words/letter/x");
+
+    await expectStreamedNotFound(page);
+  });
+});

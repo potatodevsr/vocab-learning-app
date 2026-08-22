@@ -199,6 +199,40 @@ test.describe("production deployment contract", () => {
    * A static read of the constants is therefore the only defence available. All three
    * files must agree: two of them mint hashes the third has to verify.
    */
+  /**
+   * The migration gate must reject a data rewrite and accept a foreign key.
+   *
+   * `scripts/validate-production-migrations.mjs` matched `UPDATE` followed by a word
+   * character, which is what `ON UPDATE CASCADE` looks like — so every `CREATE TABLE`
+   * carrying a foreign key was rejected as "contains UPDATE statement". The rule right
+   * above it dodges the same trap for `ON DELETE CASCADE` by requiring `DELETE FROM`; an
+   * UPDATE statement has no equivalent keyword, so the exclusion is explicit and worth
+   * pinning from both sides.
+   */
+  test("the migration gate tells a foreign key apart from a data rewrite", () => {
+    const source = readFileSync(
+      resolve(root, "scripts/validate-production-migrations.mjs"),
+      "utf8",
+    );
+
+    const declared = source.match(/\["UPDATE statement", (\/.+\/i)\]/);
+    expect(declared, "the UPDATE rule is no longer declared as a literal").not.toBeNull();
+
+    const body = declared![1].slice(1, -2);
+    const rule = new RegExp(body, "i");
+
+    const referentialAction =
+      'CONSTRAINT "PushSubscription_userId_fkey" FOREIGN KEY ("userId") ' +
+      'REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE';
+
+    expect(rule.test(referentialAction), "an FK action is not a data rewrite").toBe(false);
+    expect(rule.test('... ON UPDATE NO ACTION')).toBe(false);
+
+    // And the thing the gate exists for still trips it, in either case.
+    expect(rule.test('UPDATE "VocabWord" SET status = 1;')).toBe(true);
+    expect(rule.test("update VocabWord set status = 1;")).toBe(true);
+  });
+
   test("password hashing stays under the Workers PBKDF2 iteration cap", () => {
     const sources = [
       "backend/src/password.ts",
