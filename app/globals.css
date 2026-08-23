@@ -305,6 +305,48 @@
   letter-spacing: normal;
 }
 
+/* The marketing headline is intentionally calmer than in-session celebrations. */
+.home-hero-title {
+  font-size: clamp(2.35rem, 5.4vw, 4.4rem);
+  line-height: 1.02;
+}
+
+.home-hero-title:lang(th) {
+  line-height: 1.22;
+}
+
+.home-feature-card {
+  box-shadow: 5px 5px 0 0 var(--tile-block, var(--accent-sun));
+}
+
+.home-feature-card:hover,
+.home-feature-card:focus-within {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 0 var(--tile-block, var(--accent-sun));
+}
+
+.hero-illustration-shell {
+  height: 520px;
+  max-width: 420px;
+}
+
+.hero-orbit {
+  width: 340px;
+  height: 340px;
+}
+
+.hero-orbit-core {
+  width: 260px;
+  height: 260px;
+}
+
+@media (min-width: 640px) {
+  .hero-orbit {
+    width: 390px;
+    height: 390px;
+  }
+}
+
 /* An outlined word, for the one accent in a headline. Flat by definition — it
    is a stroke, not a fill, so it adds emphasis without adding a colour. */
 /* The stroke colour must be stated, never inherited. `currentColor` cannot work here:

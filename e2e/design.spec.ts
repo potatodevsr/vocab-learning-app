@@ -351,6 +351,17 @@ test.describe("the play palette", () => {
 });
 
 test.describe("the landing page is cheerful too", () => {
+  test("the vocabulary divider is a static, non-repeating trail", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/th");
+
+    const trail = page.getByTestId("word-trail");
+    await expect(trail).toBeVisible();
+    await expect(trail.locator("li")).toHaveCount(5);
+    await expect(trail.locator(".play-marquee-track")).toHaveCount(0);
+    await expect(trail.locator("li").first()).toContainText("improve");
+  });
+
   test("the logged-out home page is not dark", async ({ page }) => {
     // The first screen anyone sees. It stayed on the old near-black palette after the
     // rest of the app was re-themed, and the body-only check did not notice.
@@ -381,6 +392,33 @@ test.describe("the landing page is cheerful too", () => {
     );
 
     expect(darkArea).toBeLessThan(0.5);
+  });
+
+  test("the English hub uses editorial rules instead of stacked sticker cards", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/th/english");
+
+    const hero = page.getByTestId("english-hub-hero");
+    const levels = page.getByTestId("english-level-list");
+    const [heroBackground, pageBackground] = await Promise.all([
+      hero.evaluate((element) => getComputedStyle(element).backgroundColor),
+      page.locator("main").evaluate((element) => getComputedStyle(element).backgroundColor),
+    ]);
+    expect(heroBackground).toBe(pageBackground);
+    await expect(levels.locator("article")).toHaveCount(4);
+    await expect(levels.locator(".play-tile")).toHaveCount(0);
+  });
+
+  test("the locale switcher does not ask Next to prefetch a locale navigation", async ({ page }) => {
+    const warnings: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error" || message.type() === "warning") warnings.push(message.text());
+    });
+
+    await page.goto("/th");
+    await expect(page.getByRole("banner")).toBeVisible();
+
+    expect(warnings.filter((message) => message.includes("prefetch"))).toEqual([]);
   });
 
   test("the 404 page is on-palette", async ({ page }) => {

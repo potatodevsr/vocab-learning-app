@@ -4,7 +4,6 @@ import { ArrowRight, BookOpen, LibraryBig, Play, Type } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import type { CefrLevel } from "@/lib/types";
 import { getLevelWordCount, UNIT_SIZE } from "@/lib/oxford-words";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
@@ -35,18 +34,6 @@ export const revalidate = 3600;
 type LocalePageProps = { params: Promise<{ locale: string }> };
 
 const LEVELS: CefrLevel[] = ["A1", "A2", "B1", "B2"];
-
-/**
- * Rotates the card accent so the four levels read as a set, not a wall of one colour.
- * Full class strings (not an interpolated `--tile-block` value) so Tailwind sees each one
- * and the tier stays legible — the accent is the tile's block shadow, text stays on white.
- */
-const LEVEL_TILE: Record<CefrLevel, string> = {
-  A1: "[--tile-block:var(--accent-sun)]",
-  A2: "[--tile-block:var(--accent-mint)]",
-  B1: "[--tile-block:var(--accent-sky)]",
-  B2: "[--tile-block:var(--accent-grape)]",
-};
 
 export async function generateMetadata({
   params,
@@ -81,7 +68,6 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
       slug: level.toLowerCase(),
       total,
       units: Math.max(Math.ceil(total / UNIT_SIZE), 1),
-      tile: LEVEL_TILE[level],
     };
   });
 
@@ -121,19 +107,19 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
       />
 
       <main className="min-h-screen bg-background text-foreground">
-        <section className="border-b-3 border-ink bg-brand text-white">
-          <div className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-8">
-            <div className="space-y-6">
+        <section data-testid="english-hub-hero" className="border-b-2 border-ink bg-background text-foreground">
+          <div className="mx-auto w-full max-w-6xl px-6 py-12 lg:px-8 lg:py-16">
+            <div className="max-w-4xl border-l-[8px] border-brand pl-5 sm:pl-8">
               <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
                 {t("badge")}
               </span>
 
-              <div className="space-y-4">
+              <div className="mt-6 space-y-4">
                 <h1 className="play-display max-w-3xl text-[clamp(2.25rem,6vw,3.75rem)]">
                   {t("title")}
                 </h1>
 
-                <p className="max-w-2xl text-base leading-7 text-white">
+                <p className="max-w-2xl text-base leading-7 text-muted-foreground">
                   {t("intro")}
                 </p>
               </div>
@@ -151,15 +137,14 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
             </p>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div data-testid="english-level-list" className="mt-8 grid gap-x-10 sm:grid-cols-2">
             {levels.map((entry) => (
-              <Card
+              <article
                 key={entry.level}
-                className={`play-tile rounded-[28px] border-0 ${entry.tile}`}
+                className="border-t-2 border-ink py-6"
               >
-                <CardContent className="p-6">
                   <div className="flex items-center gap-3">
-                    <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl border-3 border-ink bg-white text-lg font-extrabold text-brand">
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand text-base font-extrabold text-white">
                       {entry.level}
                     </span>
 
@@ -201,8 +186,7 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
                       </Link>
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+              </article>
             ))}
           </div>
         </section>
@@ -212,10 +196,9 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
             {t("exploreTitle")}
           </h2>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <Card className="play-tile rounded-[28px] border-0 [--tile-block:var(--accent-mint)]">
-              <CardContent className="p-6">
-                <div className="flex size-11 items-center justify-center rounded-2xl border-3 border-ink bg-brand text-white">
+          <div className="mt-8 grid gap-x-10 sm:grid-cols-2">
+            <article className="border-t-2 border-ink py-6">
+                <div className="flex size-11 items-center justify-center rounded-full bg-accent-mint text-ink">
                   <LibraryBig className="size-5" />
                 </div>
                 <h3 className="mt-4 text-xl font-semibold">
@@ -234,12 +217,10 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
                     <ArrowRight className="size-4" />
                   </Link>
                 </Button>
-              </CardContent>
-            </Card>
+            </article>
 
-            <Card className="play-tile rounded-[28px] border-0 [--tile-block:var(--accent-sky)]">
-              <CardContent className="p-6">
-                <div className="flex size-11 items-center justify-center rounded-2xl border-3 border-ink bg-brand text-white">
+            <article className="border-t-2 border-ink py-6">
+                <div className="flex size-11 items-center justify-center rounded-full bg-accent-sky text-ink">
                   <Type className="size-5" />
                 </div>
                 <h3 className="mt-4 text-xl font-semibold">
@@ -258,8 +239,7 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
                     <ArrowRight className="size-4" />
                   </Link>
                 </Button>
-              </CardContent>
-            </Card>
+            </article>
           </div>
         </section>
       </main>

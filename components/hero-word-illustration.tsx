@@ -45,20 +45,23 @@ export function HeroWordIllustration({ mode }: { mode: LearnerMode }) {
     <div
       aria-hidden
       data-testid="hero-word-illustration"
-      className="relative isolate mx-auto h-[520px] w-full max-w-[460px]"
+      className="hero-illustration-shell relative isolate mx-auto w-full"
     >
       {/*
         A solid sun panel, not a 30% wash of it over the blue hero: the wash read as
         muddy grey-blue and gave the white cards nothing to sit against. The panel is a
         sticker like everything else — ink rule, hard shadow.
       */}
-      <div className="absolute inset-0 z-0 rounded-[32px] border-3 border-ink bg-accent-sun shadow-[10px_10px_0_0_var(--ink)]" />
+      <div className="absolute inset-x-5 top-1/2 h-px -rotate-12 bg-white/60" />
+      <div className="absolute inset-x-2 top-1/2 h-px rotate-12 bg-white/35" />
+      <div className="hero-orbit absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/35" />
+      <div className="hero-orbit-core absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-sun" />
 
-      <div className="play-stamp absolute left-5 top-5 z-30 bg-white px-3 py-1 text-xs font-extrabold text-ink [--tilt:-3deg]">
+      <div className="play-stamp absolute left-1 top-8 z-30 bg-white px-3 py-1 text-xs font-extrabold text-ink [--tilt:-3deg] sm:left-0">
         {t("illustrationPreview")}
       </div>
 
-      <div className="play-stamp absolute right-5 top-5 z-30 bg-white px-3 py-1 text-xs font-extrabold text-ink [--tilt:3deg]">
+      <div className="play-stamp absolute bottom-8 right-0 z-30 bg-white px-3 py-1 text-xs font-extrabold text-ink [--tilt:3deg]">
         {t("illustrationCards")}
       </div>
 

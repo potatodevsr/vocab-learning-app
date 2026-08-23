@@ -47,7 +47,7 @@ export default async function LoginPage({ params }: LoginPageProps) {
             {t("backHome")}
           </Link>
 
-          <LanguageSwitcher tone="onColor" prefetch={false} />
+          <LanguageSwitcher tone="onColor" />
         </div>
 
         <div className="mb-8 text-center">

@@ -77,7 +77,7 @@ export function AppBar({ locale }: { locale: string }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b-3 border-ink bg-card">
+    <header className="sticky top-0 z-50 border-b-2 border-ink bg-card">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
         {/*
           The wordmark is hidden below `sm`, and the mark itself is `aria-hidden`, so on a
@@ -92,7 +92,7 @@ export function AppBar({ locale }: { locale: string }) {
         >
           <span
             aria-hidden
-            className="flex size-10 items-center justify-center rounded-2xl border-3 border-ink bg-brand text-white"
+            className="flex size-10 items-center justify-center rounded-xl border-2 border-ink bg-brand text-white"
           >
             <Sparkles className="size-5" />
           </span>

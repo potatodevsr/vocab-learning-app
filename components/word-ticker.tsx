@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
 /**
- * A band of real vocabulary moving past — English word, Thai meaning, repeat.
+ * A compact trail of real vocabulary — English word, Thai meaning.
  *
  * Decoration made of the product itself: a visitor learns what the app contains
  * before reading a single line of marketing copy. It is also the cheapest possible
@@ -29,41 +29,28 @@ const SAMPLE = [
 export async function WordTicker() {
   const t = await getTranslations("Home");
 
-  // Two identical runs: the track translates by exactly half its width, so the
-  // second run is under the pointer at the moment the first one leaves.
-  const runs = [SAMPLE, SAMPLE];
-
   return (
     <section
       aria-label={t("tickerLabel")}
-      className="play-marquee border-y-3 border-ink bg-accent-sun py-4"
+      data-testid="word-trail"
+      className="border-b-2 border-ink bg-accent-sun text-ink"
     >
-      <div className="play-marquee-track">
-        {runs.map((run, runIndex) => (
-          <ul
-            key={runIndex}
-            aria-hidden={runIndex === 1}
-            className="flex shrink-0 items-center"
+      <ul className="mx-auto grid w-full max-w-6xl grid-cols-2 px-6 sm:grid-cols-5 lg:px-8">
+        {SAMPLE.slice(0, 5).map((word, index) => (
+          <li
+            key={word.en}
+            className="flex min-h-20 items-center justify-between gap-3 border-ink py-3 odd:border-r-2 odd:pr-4 even:pl-4 sm:border-r-2 sm:px-4 sm:odd:border-r-2 sm:last:border-r-0"
           >
-            {run.map((word) => (
-              <li
-                key={`${runIndex}-${word.en}`}
-                className="flex items-center gap-3 whitespace-nowrap px-6 text-ink"
-              >
-                <span className="text-xl font-extrabold tracking-tight sm:text-2xl">
-                  {word.en}
-                </span>
-                <span className="font-thai text-lg font-semibold" lang="th">
-                  {word.th}
-                </span>
-                <span aria-hidden className="text-xl font-black opacity-40">
-                  ✦
-                </span>
-              </li>
-            ))}
-          </ul>
+            <span>
+              <span className="block text-base font-extrabold tracking-tight sm:text-lg">{word.en}</span>
+              <span className="font-thai block text-sm font-semibold text-ink/70" lang="th">{word.th}</span>
+            </span>
+            <span aria-hidden className="font-mono text-[10px] font-bold tabular-nums text-ink/45">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

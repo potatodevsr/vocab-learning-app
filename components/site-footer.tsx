@@ -55,7 +55,7 @@ export function SiteFooter() {
   if (HIDDEN_ON.some((pattern) => pattern.test(pathname))) return null;
 
   return (
-    <footer className="border-t-3 border-ink bg-ink text-white">
+    <footer className="border-t-2 border-ink bg-ink text-white">
       {/*
         Two columns on a phone, not one. Stacked, the four link lists ran 946px on their
         own and the footer alone was 1,709px — 29% of the landing page's scroll height,
@@ -70,7 +70,7 @@ export function SiteFooter() {
           >
             <span
               aria-hidden
-              className="flex size-10 items-center justify-center rounded-2xl border-3 border-white bg-accent-sun text-ink"
+              className="flex size-10 items-center justify-center rounded-xl border-2 border-white bg-accent-sun text-ink"
             >
               <Sparkles className="size-5" />
             </span>

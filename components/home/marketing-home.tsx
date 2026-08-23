@@ -154,13 +154,13 @@ export async function MarketingHome({ locale }: { locale: string }) {
           padding above the kicker and a 48px grid gap; a 390×844 phone cannot — that
           alone was 128px of the space the primary CTA needed to clear the fold.
         */}
-        <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-10 sm:gap-12 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:py-24">
+        <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-10 sm:gap-12 sm:py-16 lg:grid-cols-[1.18fr_0.82fr] lg:items-center lg:px-8 lg:py-20">
           <div>
             <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
               {t("heroKicker")}
             </span>
 
-            <h1 className="play-display mt-4 sm:mt-6">
+            <h1 className="play-display home-hero-title mt-4 max-w-[13ch] sm:mt-6">
               {t("heroLead")}{" "}
               <span className="play-highlight">{t("heroHighlight")}</span>{" "}
               {t("heroTrail")}
@@ -272,17 +272,17 @@ export async function MarketingHome({ locale }: { locale: string }) {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature, index) => {
+            {features.map((feature) => {
               const Icon = feature.icon;
 
               return (
                 <Card
                   key={feature.key}
-                  className="play-tile gap-0 rounded-[28px] border-0 p-6"
+                  className="home-feature-card play-tile gap-0 rounded-[20px] border-0 p-6"
                   style={
                     {
                       "--tile-block": feature.block,
-                      "--tile-tilt": `${index % 2 === 0 ? "-0.8deg" : "0.8deg"}`,
+                      "--tile-tilt": "0deg",
                     } as React.CSSProperties
                   }
                 >
