@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vocab-learning-app",
-  "account_id": "b7e9643a4798eb8d75ab6a5a6f73f783",
+  "account_id": "57703efb2da262dd0fa5c94b01b41ae6",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-07-27",
   "compatibility_flags": [
@@ -28,7 +28,7 @@
     // uses (`constants/config.ts`), which has no page origin to be relative to, and it is
     // what a build resolves `getAllPublishedWords` against. Overridable per-deploy without
     // a rebuild.
-    "API_ORIGIN": "https://vocab-api.hoshiku1997.workers.dev"
+    "API_ORIGIN": "https://vocab-api.thousandsofraccoons.workers.dev"
   },
   // The OpenNext incremental cache and its tag cache (see `open-next.config.ts`). Both
   // bindings point at the one `vocab-learning-app-cache` namespace on purpose: their keys
@@ -42,11 +42,11 @@
   "kv_namespaces": [
     {
       "binding": "NEXT_INC_CACHE_KV",
-      "id": "be6ed27a135f404ba26f9a425bca238c"
+      "id": "8bba754db0654a908ac88486d2998739"
     },
     {
       "binding": "NEXT_TAG_CACHE_KV",
-      "id": "be6ed27a135f404ba26f9a425bca238c"
+      "id": "8bba754db0654a908ac88486d2998739"
     }
   ],
 

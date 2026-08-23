@@ -180,11 +180,11 @@ test.describe("production deployment contract", () => {
     expect(config).toMatch(/"binding"\s*:\s*"API"/);
     expect(config).toMatch(/"service"\s*:\s*"vocab-api"/);
     expect(config).toContain(
-      '"account_id": "b7e9643a4798eb8d75ab6a5a6f73f783"',
+      '"account_id": "57703efb2da262dd0fa5c94b01b41ae6"',
     );
     expect(workflow).not.toContain("secrets.CLOUDFLARE_ACCOUNT_ID");
     expect(workflow).toContain(
-      "CLOUDFLARE_ACCOUNT_ID: b7e9643a4798eb8d75ab6a5a6f73f783",
+      "CLOUDFLARE_ACCOUNT_ID: 57703efb2da262dd0fa5c94b01b41ae6",
     );
   });
 

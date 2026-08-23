@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://vocab-learning-app.hoshiku1997.workers.dev"><strong>Try the live app →</strong></a>
+  <a href="https://vocab-learning-app.thousandsofraccoons.workers.dev"><strong>Try the live app →</strong></a>
   · <a href="#run-it-locally">Run locally</a>
   · <a href="#contributing">Contribute</a>
 </p>

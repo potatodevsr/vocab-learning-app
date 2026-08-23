@@ -1,6 +1,6 @@
 # Production QA — 2026-08-18
 
-Target: `https://vocab-learning-app.hoshiku1997.workers.dev`
+Target: `https://vocab-learning-app.thousandsofraccoons.workers.dev`
 
 This log records three browser-led production QA passes. Each pass covers a different
 surface; post-deploy smoke checks confirm changed behavior but are not counted as new QA.
@@ -9,7 +9,7 @@ surface; post-deploy smoke checks confirm changed behavior but are not counted a
 
 | Finding | Evidence | Resolution |
 | --- | --- | --- |
-| Google sign-in is blocked by `redirect_uri_mismatch`. | Google rejected the exact callback `https://vocab-learning-app.hoshiku1997.workers.dev/api/user/google/callback`. | Code uses the correct production callback. Registration in Google Cloud is pending because the account is stopped at Google's mandatory MFA setup screen. |
+| Google sign-in is blocked by `redirect_uri_mismatch`. | Google rejected the exact callback `https://vocab-learning-app.thousandsofraccoons.workers.dev/api/user/google/callback`. | Code uses the correct production callback. Registration in Google Cloud is pending because the account is stopped at Google's mandatory MFA setup screen. |
 | Magic-link delivery fails with a generic error. | Production API has no configured mail-provider secret/from address. | The login UI now explains that email delivery is unavailable and keeps Google/password alternatives usable. Provider configuration remains an operational prerequisite. |
 | Registered users had no visible password sign-in path. | Registration requested a password, while login offered only Google and magic link. | Added password sign-in through the existing API endpoint, safe return-path handling, and E2E coverage. |
 | Login and registration were dynamically rendered and returned `private, no-store`. | Production response headers and the pre-fix Next build classified both routes as dynamic. | Moved query handling into client islands. Login, registration, and verification shells now build as static pages and are eligible for Cloudflare's regular asset/cache path; no R2 ISR is used. |
