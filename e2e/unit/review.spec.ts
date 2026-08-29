@@ -6,6 +6,11 @@ import {
   parseReviewFlags,
   REVIEW_FLAGS,
 } from "../../lib/review";
+import {
+  isTrustworthyPronunciation,
+  isTrustworthyThai,
+  trustedPronunciation,
+} from "../../lib/thai-text";
 import type { OxfordWord, ReviewState } from "../../lib/types";
 
 const entry = (reviewState: ReviewState) =>
@@ -49,5 +54,50 @@ test.describe("review state", () => {
     // accepted here would be dropped on the way to `/admin/review` — silently, because
     // `parseReviewFlags` treats an unknown code as "no detail" rather than an error.
     expect(parseReviewFlags(JSON.stringify(REVIEW_FLAGS))).toEqual([...REVIEW_FLAGS]);
+  });
+});
+
+
+/**
+ * The pronunciation field is held to a stricter rule than a meaning.
+ *
+ * `LATIN` only rejects `[A-Za-z]`, so 26 published rows shipped a "pronunciation" that was
+ * digit and bracket debris with a Thai character beside it — `age` as `"เอ๊ 9"`, `woman` as
+ * `"7 เหมอะน"`, `marry` as `"แม้ (ร ) 4"`, three of them A1. A Thai-script respelling of an
+ * English word has no reason to contain either; a Thai *meaning* can (`"3 มิติ"`), which is
+ * why this is a second predicate rather than a change to the first.
+ */
+test.describe("isTrustworthyPronunciation", () => {
+  test("accepts a clean Thai respelling", () => {
+    expect(isTrustworthyPronunciation("เออะ บ๊าว ถึ")).toBe(true);
+    expect(trustedPronunciation("เออะ บ๊าว ถึ")).toBe("เออะ บ๊าว ถึ");
+  });
+
+  test("rejects OCR digits, Arabic or Thai", () => {
+    expect(isTrustworthyPronunciation("เอ๊ 9")).toBe(false);
+    expect(isTrustworthyPronunciation("7 เหมอะน")).toBe(false);
+    expect(isTrustworthyPronunciation("แบ้ตรูม๒")).toBe(false);
+  });
+
+  test("rejects bracket debris", () => {
+    expect(isTrustworthyPronunciation("บา (3)")).toBe(false);
+    expect(isTrustworthyPronunciation("แม้ (ร ) 4")).toBe(false);
+  });
+
+  test("still rejects everything the Latin rule rejected", () => {
+    expect(isTrustworthyPronunciation("aay az a a")).toBe(false);
+    expect(isTrustworthyPronunciation("แอ้เดระ a")).toBe(false);
+    expect(isTrustworthyPronunciation("")).toBe(false);
+    expect(isTrustworthyPronunciation(null)).toBe(false);
+  });
+
+  test("withholds rather than guesses", () => {
+    expect(trustedPronunciation("เอ๊ 9")).toBeNull();
+  });
+
+  test("a meaning is not held to the digit rule", () => {
+    // A gloss may legitimately contain a numeral; a respelling may not.
+    expect(isTrustworthyThai("3 มิติ")).toBe(true);
+    expect(isTrustworthyPronunciation("3 มิติ")).toBe(false);
   });
 });

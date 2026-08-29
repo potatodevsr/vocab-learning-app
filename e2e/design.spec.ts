@@ -511,18 +511,56 @@ test.describe("flat style", () => {
     expect(sizes.heading).toBeGreaterThanOrEqual(36);
   });
 
-  test("hover changes transform, not a shadow", async ({ page }) => {
+  test("a tile is raised on an ink block, and moves when hovered and pressed", async ({
+    page,
+  }) => {
     await page.emulateMedia({ reducedMotion: "no-preference" });
-    await page.goto("/en");
+
+    // Not `/en`: the homepage's only tiles were its four feature cards, which had no
+    // link or handler inside them. A card that is not a target does not wear the
+    // primitive for one, so they are `play-sticker` now and the homepage has no tile.
+    await page.goto("/en/english/a1");
 
     const tile = page.locator(".play-tile").first();
     await expect(tile).toBeVisible();
 
-    const before = await tile.evaluate((el) => getComputedStyle(el).transform);
+    // `--ink` as the browser serialises it: the authored token never string-matches the
+    // computed colour of a shadow.
+    const ink = await page.evaluate(() => {
+      const probe = document.createElement("span");
+      probe.style.cssText = "color: var(--ink); position: fixed; opacity: 0";
+      document.body.appendChild(probe);
+      const value = getComputedStyle(probe).color;
+      probe.remove();
+
+      return value;
+    });
+
+    // The rest state is the whole point: an ink block means "you can press this", and it
+    // is the only cue a phone ever gets, because a phone has no hover.
+    expect(
+      await tile.evaluate((el) => getComputedStyle(el).boxShadow),
+      "a tile carries the ink block that marks it pressable",
+    ).toContain(ink);
+
+    const rest = await tile.evaluate((el) => getComputedStyle(el).transform);
+
     await tile.hover();
     await expect
       .poll(() => tile.evaluate((el) => getComputedStyle(el).transform))
-      .not.toBe(before);
+      .not.toBe(rest);
+
+    // Pressed, it is pushed flat onto the page: the block collapses as the card travels
+    // the same distance.
+    const box = (await tile.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+
+    await expect
+      .poll(() => tile.evaluate((el) => getComputedStyle(el).boxShadow))
+      .not.toContain("6px");
+
+    await page.mouse.up();
   });
 
   test("the hero word deck cycles three opaque, contained fronts", async ({ page }) => {

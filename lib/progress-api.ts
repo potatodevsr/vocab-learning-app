@@ -32,22 +32,13 @@ export type WordProgress = {
     nextReviewAt: string | null;
 };
 
-export type MistakeWord = {
-    wordId: string;
-    level: string;
-    unit: number | null;
-    status: string;
-    mastery: number;
-    incorrectCount: number;
-    /** Joined server-side so the list can never disagree with the count. */
-    word: {
-        displayWord: string;
-        partOfSpeech: string;
-        meaningTh: string;
-        pronunciationTh: string;
-        slug: string;
-    };
-};
+/**
+ * Generated, not hand-written (AGENTS.md rule 2). It used to be a hand-typed mirror of the
+ * response, which is how it came to omit the server's `strong` verdict entirely and leave
+ * the pips deriving their own from `mastery`.
+ */
+export type MistakeWord = components["schemas"]["MistakeWord"];
+export type MistakeBank = components["schemas"]["MistakeBank"];
 
 export type ProgressSummary = {
     lessons: number;
@@ -170,7 +161,7 @@ export const getWordProgress = async (
 /** Server-side read of the mistakes bank, forwarding the caller's cookie. */
 export const getMistakesWithToken = async (
     token: string,
-): Promise<{ words: MistakeWord[]; total: number } | null> => {
+): Promise<MistakeBank | null> => {
     const res = await fetch(`${API_URL}/progress/mistakes`, {
         headers: { Cookie: `user_token=${token}` },
         cache: "no-store",

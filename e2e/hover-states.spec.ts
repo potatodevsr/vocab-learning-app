@@ -3,6 +3,7 @@ import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { loginAsAdmin, registerThroughUi } from "./support/actions";
 import { SEED } from "./support/fixtures";
 import {
+  findAffordanceMismatches,
   findUnreadableControls,
   recordFindings,
   sweepHoverStates,
@@ -47,7 +48,7 @@ const freezeHeroAt = async (page: Page, time = 1000) => {
   );
 };
 
-/** One sweep + its two assertions, so every page test reads the same way. */
+/** One sweep + its three assertions, so every page test reads the same way. */
 const checkPage = async (page: Page, name: string, root?: string) => {
   if (["home-en", "home-th", "home-signed-in", "phone-home"].includes(name)) {
     await freezeHeroAt(page);
@@ -62,8 +63,10 @@ const checkPage = async (page: Page, name: string, root?: string) => {
   await page.waitForTimeout(450);
 
   const unreadable = await findUnreadableControls(page, root);
+  const affordance = await findAffordanceMismatches(page, root);
 
   recordFindings(name, "contrast", unreadable);
+  recordFindings(name, "affordance", affordance);
 
   expect(
     hover,
@@ -73,6 +76,14 @@ const checkPage = async (page: Page, name: string, root?: string) => {
   expect(
     unreadable,
     `${name}: controls that fail WCAG AA against what is painted behind them\n${report(unreadable)}`,
+  ).toEqual([]);
+
+  // The hover sweep above cannot see this one: a control whose only affordance is a
+  // hover state passes it, and then reads as flat text on the phone this app is built
+  // for. This is the rest state — ink block means pressable, colour block means read.
+  expect(
+    affordance,
+    `${name}: elements whose depth does not match whether they can be pressed\n${report(affordance)}`,
   ).toEqual([]);
 };
 
@@ -109,6 +120,24 @@ test.describe("hover states — public pages", () => {
     { name: "contact", path: "/en/contact" },
     { name: "thai-alphabet", path: "/en/thai-alphabet" },
     { name: "thai-alphabet-th", path: "/th/thai-alphabet" },
+    // `ko-kai` is the first consonant in the seeded alphabet, so it exists in the fixture.
+    { name: "thai-letter", path: "/th/thai-alphabet/ko-kai" },
+    /**
+     * The editorial families (SEO-CONTENT §U–§AB). They shipped without an entry here,
+     * which is how four page families reached production rendering `Pronunciation.title`
+     * and friends as visible text with nobody looking at a screenshot of them.
+     */
+    { name: "pronunciation", path: "/en/english/pronunciation" },
+    { name: "pronunciation-th", path: "/th/english/pronunciation" },
+    { name: "pronunciation-sound", path: "/th/english/pronunciation/th-voiceless" },
+    { name: "minimal-pairs", path: "/en/english/minimal-pairs" },
+    { name: "minimal-pairs-th", path: "/th/english/minimal-pairs" },
+    { name: "minimal-pair", path: "/th/english/minimal-pairs/advice-vs-advise" },
+    { name: "phrasal-verbs", path: "/en/english/phrasal-verbs" },
+    { name: "phrasal-verbs-th", path: "/th/english/phrasal-verbs" },
+    { name: "phrasal-verb", path: "/th/english/phrasal-verbs/break-down" },
+    { name: "word-search", path: "/en/english/search" },
+    { name: "word-search-th", path: "/th/english/search" },
     { name: "html-sitemap", path: "/en/sitemap" },
     { name: "html-sitemap-th", path: "/th/sitemap" },
     { name: "word", path: `/en/english/words/${SEED.unit1.firstWord}` },

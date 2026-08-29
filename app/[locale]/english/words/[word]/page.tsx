@@ -6,7 +6,12 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { getWordsBySlug, getWordsByUnit } from "@/lib/oxford-words";
-import { distinctMeanings, isTrustworthyThai, trustedThai } from "@/lib/thai-text";
+import {
+    distinctMeanings,
+    isTrustworthyThai,
+    trustedPronunciation,
+    trustedThai,
+} from "@/lib/thai-text";
 import { isIndexableEntries } from "@/lib/review";
 import { WordAudio } from "@/components/play/word-audio";
 import type { OxfordWord } from "@/lib/types";
@@ -379,7 +384,7 @@ export default async function WordPage({ params }: WordPageProps) {
           // is still a useful entry — 884 rows are in exactly that state — so the
           // respelling is withheld and the meaning is kept, rather than losing both.
           const meaning = trustedThai(entry.meaningTh);
-          const pronunciation = trustedThai(entry.pronunciationTh);
+          const pronunciation = trustedPronunciation(entry.pronunciationTh);
 
           return (
           <Card key={entry.id} className="play-card">
@@ -642,7 +647,7 @@ export default async function WordPage({ params }: WordPageProps) {
                 <li key={word.id}>
                   <Link
                     href={`/english/words/${word.slug}`}
-                    className="play-focus inline-flex min-h-11 items-center gap-2 rounded-full border-3 border-ink bg-white px-4 font-semibold hover:bg-brand-soft"
+                    className="play-press play-focus inline-flex min-h-11 items-center gap-2 rounded-full border-3 border-ink bg-white px-4 font-semibold hover:bg-brand-soft [--lift:3px]"
                   >
                     <span lang="en">{word.displayWord}</span>
                     <span className="font-thai text-sm text-muted-foreground" lang="th">
@@ -656,7 +661,7 @@ export default async function WordPage({ params }: WordPageProps) {
         )}
 
         {head.unit ? (
-          <div className="play-tile flex flex-wrap items-center justify-between gap-4 p-6 [--tile-block:var(--accent-sun)]">
+          <div className="play-tile flex flex-wrap items-center justify-between gap-4 p-6">
             <div>
               <p className="text-lg font-bold">{t("practiseTitle")}</p>
               <p className="mt-1 text-sm text-muted-foreground">

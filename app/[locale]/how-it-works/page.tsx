@@ -99,7 +99,7 @@ export default async function HowItWorksPage({ params }: LocalePageProps) {
             <li key={step.heading} className="relative flex gap-5">
               <span
                 aria-hidden
-                className="play-key z-10 flex size-11 shrink-0 items-center justify-center rounded-full border-3 border-ink bg-accent-sun text-lg font-extrabold text-ink"
+                className="z-10 flex size-11 shrink-0 items-center justify-center rounded-full border-3 border-ink bg-accent-sun text-lg font-extrabold text-ink"
               >
                 {index + 1}
               </span>

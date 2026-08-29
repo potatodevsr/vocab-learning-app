@@ -17,6 +17,41 @@ async function expectStreamedNotFound(page: import("@playwright/test").Page) {
  * shape: a level hub ("คำศัพท์ภาษาอังกฤษ A1"), a unit page (long-tail lists), a word page
  * (highest volume), and the FAQ (question searches).
  */
+/**
+ * The 404 for a URL that matches no route.
+ *
+ * `app/[locale]/not-found.tsx` cannot serve these: `not-found.tsx` renders when
+ * `notFound()` is thrown inside a segment that *matched*, and this app's root layout is a
+ * top-level dynamic segment. Next's own docs name that as the case for
+ * `global-not-found.tsx`, which is what now answers. Before it existed, every URL
+ * `middleware.ts` rejects got Next's built-in page: unstyled, untranslated, English, to an
+ * audience the product exists to serve in Thai.
+ */
+test.describe("the global not-found page", () => {
+  test("a rejected URL renders the app's own 404 in the requested locale", async ({
+    page,
+  }) => {
+    await page.goto("/th/english/c3");
+
+    await expect(page.getByTestId("not-found")).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("lang", "th");
+  });
+
+  test("and in English when the English course rejected it", async ({ page }) => {
+    await page.goto("/en/english/c3");
+
+    await expect(page.getByTestId("not-found")).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  });
+
+  test("a URL outside the locale tree still gets the app's 404", async ({ page }) => {
+    const response = await page.goto("/no-such-page");
+
+    expect(response?.status()).toBe(404);
+    await expect(page.getByTestId("not-found")).toBeVisible();
+  });
+});
+
 test.describe("level hubs", () => {
   test("every CEFR level has its own page", async ({ page }) => {
     for (const level of ["a1", "a2", "b1", "b2"]) {

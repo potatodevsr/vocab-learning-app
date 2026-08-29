@@ -8,6 +8,7 @@ import { TrackPageView } from "@/components/track-page-view";
 import { WordChips } from "@/components/word-chips";
 import { MINIMAL_PAIRS, pairBySlug, type MinimalPair } from "@/content/minimal-pairs";
 import { soundBySlug } from "@/content/pronunciation";
+import { MIN_PAIR_LINKED_WORDS, PAIR_WORDS_PER_SOUND } from "@/lib/content-index";
 import { pickWords, publishedBySlug } from "@/lib/word-lookup";
 import { normaliseThai } from "@/lib/thai-text";
 import type { OxfordWord } from "@/lib/types";
@@ -28,10 +29,10 @@ export const revalidate = 3600;
 
 type Props = { params: Promise<{ locale: string; pair: string }> };
 
-const MIN_LINKED_WORDS = 12;
+const MIN_LINKED_WORDS = MIN_PAIR_LINKED_WORDS;
 
 /** How many words to show per sound. Two lists, so the page stays scannable on a phone. */
-const PER_SOUND = 8;
+const PER_SOUND = PAIR_WORDS_PER_SOUND;
 
 export function generateStaticParams() {
     // On demand, then cached. `middleware.ts` rejects any slug outside `MINIMAL_PAIR_SLUGS`.

@@ -42,7 +42,7 @@ export function LanguageSwitcher({
     <div
       aria-label={t("language")}
       className={cn(
-        "flex items-center gap-1 rounded-full p-1",
+        "flex items-center gap-1 rounded-full p-0.5 sm:p-1",
         onColor ? "bg-[color-mix(in_oklab,var(--ink)_30%,var(--brand))]" : "bg-brand-soft",
       )}
     >
@@ -69,7 +69,7 @@ export function LanguageSwitcher({
             prefetch={false}
             aria-current={isActive ? "true" : undefined}
             className={cn(
-              "play-lift play-focus flex min-h-11 items-center rounded-full px-2.5 text-sm font-bold transition-colors sm:px-3",
+              "play-lift play-focus flex min-h-11 items-center rounded-full px-2 text-sm font-bold transition-colors sm:px-3",
               isActive && onColor && "bg-white text-brand",
               isActive && !onColor && "bg-brand text-white",
               // The inactive chip stays readable in its own right — it is a link, not a

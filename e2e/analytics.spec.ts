@@ -53,15 +53,41 @@ test.describe("manual page_view tracker", () => {
   }) => {
     await stubGa(page);
 
-    await page.goto("/en/english/A1");
+    await page.goto("/en/english/a1");
 
     await expect
       .poll(async () => (await eventsNamed(page, "page_view")).length)
       .toBeGreaterThan(0);
 
     const [params] = await eventsNamed(page, "page_view");
-    expect(params.page_path).toBe("/en/english/A1");
+    expect(params.page_path).toBe("/en/english/a1");
     expect(params.page_location).not.toContain("?");
+  });
+
+  /**
+   * The level slug is canonicalised before anything renders.
+   *
+   * This test used to navigate to `/en/english/A1` and assert that page_path came back
+   * uppercase. `middleware.ts` has since made that a `308` to the lowercase address — one
+   * page, one URL, rather than a second address carrying a canonical tag — so the
+   * assertion was describing behaviour the app had deliberately stopped having, and it was
+   * red before the P0 work went anywhere near it.
+   */
+  test("an uppercase level is canonicalised before the tracker sees it", async ({
+    page,
+  }) => {
+    await stubGa(page);
+
+    await page.goto("/en/english/A1");
+
+    await expect(page).toHaveURL(/\/en\/english\/a1$/);
+
+    await expect
+      .poll(async () => (await eventsNamed(page, "page_view")).length)
+      .toBeGreaterThan(0);
+
+    const [params] = await eventsNamed(page, "page_view");
+    expect(params.page_path).toBe("/en/english/a1");
   });
 
   test("never forwards the magic-link token or return path on /auth/verify", async ({

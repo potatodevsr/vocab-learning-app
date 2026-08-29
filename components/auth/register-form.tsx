@@ -161,7 +161,7 @@ export function RegisterForm() {
   }
 
   return (
-    <Card className="play-sticker gap-0 [--tile-block:var(--ink)]">
+    <Card className="play-sticker gap-0 [--tile-block:var(--accent-sky)]">
       <CardContent className="space-y-4 pt-6">
         {/* One tap, and it fills in the name and email this form would otherwise ask for. */}
         <GoogleButton from={from ?? undefined} />

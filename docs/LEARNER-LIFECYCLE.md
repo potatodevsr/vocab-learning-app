@@ -106,7 +106,17 @@ the due review first. A returning learner does not land on a generic marketing p
 
 - **Seen:** appeared in a learning interaction. Never shown as learned.
 - **Learning:** at least one graded attempt, but recall is not stable.
-- **Strong:** two successful recalls on different days.
+- **Strong:** two successful recalls on different days. A *recall* means producing the word
+  or the meaning — `choose-word`, `spelling`, `cloze`, `listen-choose`. Choosing a gloss
+  from four (`choose-meaning`) is recognition and does not count as one of the two, though
+  it is recorded. **Enforced as written since 2026-08-29** — `backend/src/mastery.ts`
+  stores the evidence and owns the single predicate every surface reads; `docs/SPEC.md`
+  §5.5 has the detail.
+
+  This definition was briefly amended to require only *one* of the two days to be a recall,
+  to match an implementation that did that. That was the wrong way round: the sentence
+  above is the promise, and the code now meets it. The day boundary is Bangkok's, not the
+  learner's own — see §5.5 for why, and for what that costs a learner outside UTC+7.
 - **Mastered:** the SRS definition in `SPEC.md` §5.5.
 - **Unit complete:** every required word is at least strong and the unit checkpoint is passed.
 - **Level complete:** all required units are complete. Optional challenge content does not block it.

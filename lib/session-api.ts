@@ -53,7 +53,11 @@ const request = async <T>(
     return json;
 };
 
-export const startSession = (scope: { level: CefrLevel; unit?: number; mode?: "normal" | "comeback" | "review" }) =>
+export const startSession = (scope: {
+    level: CefrLevel;
+    unit?: number;
+    mode?: "normal" | "comeback" | "review" | "mistakes";
+}) =>
     request<SessionStartResult>("/progress/session/start", {
         method: "POST",
         body: scope satisfies SessionStartBody,

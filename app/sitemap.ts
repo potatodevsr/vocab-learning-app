@@ -5,6 +5,7 @@ import { absoluteUrl, localePath } from "@/lib/seo";
 import { getAllPublishedWords, UNIT_SIZE } from "@/lib/oxford-words";
 import { isTrustworthyThai } from "@/lib/thai-text";
 import { isIndexableReview } from "@/lib/review";
+import { indexableFamilyPaths, publishedSlugSet } from "@/lib/content-index";
 import type { CefrLevel } from "@/lib/types";
 
 /**
@@ -102,6 +103,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const path of STATIC_PATHS) {
     push(path, path === "" ? 1 : 0.8);
+  }
+
+  /**
+   * The editorial families (SEO-CONTENT §U–§AB).
+   *
+   * `indexableFamilyPaths` applies the same floors the pages apply to their own `robots`,
+   * from the same module, so a sound guide the corpus can no longer illustrate drops out
+   * of the sitemap on the same read that makes its page `noindex`. Hubs are always in;
+   * only the two families built out of corpus words can fall below a floor.
+   *
+   * `/english/search` is deliberately absent: it is a control, not a document. Its useful
+   * content is the A–Z index it links to, which is already submitted as `english/words`.
+   */
+  for (const path of indexableFamilyPaths(publishedSlugSet(words))) {
+    push(path, 0.7);
   }
 
   /**

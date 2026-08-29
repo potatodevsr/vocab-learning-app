@@ -592,11 +592,81 @@ The item schedule is now: `choose-meaning`, `choose-meaning`, `choose-word`, `sp
 5. **Unit crowns + unlock gating**, then achievements.
 6. Hearts only if measurement says so.
 
-### 5.5 SRS
+### 5.5 SRS and the mastery policy — **built (2026-08-29)**
 
-SM-2 lite on `UserWordProgress` (add `easeFactor`, `intervalDays`, `repetitions`;
-`nextReviewAt` and `mastery` already exist). Due words are injected into practice lessons
-before new words. A word is "mastered" at repetitions ≥ 5 and no lapse in 21 days.
+One module owns both halves: `backend/src/mastery.ts`.
+
+**Scheduling.** `UserWordProgress.mastery` is a rung on a fixed ladder, not a claim about
+knowledge. A correct graded answer moves it up one, a lapse moves it down one, and the rung
+picks the interval:
+
+| rung | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| days | 1 | 1 | 3 | 7 | 14 | 30 | 60 | 120 | 240 |
+
+Rung 5 is "mastered" — the claim shown to a learner. Rung 8 is the scheduling ceiling and
+the maintenance state: a word proven repeatedly returns about twice a year.
+
+The ladder used to stop at rung 5 / 30 days, and that was a course-scale bug rather than a
+per-word one. At a 30-day ceiling the steady review load of N mature words is N/30 per day
+forever, and selection took due words first with no floor for new ones — so a learner with
+a few hundred strong words in a level silently stopped being taught anything new. Three
+rungs past mastered, plus the reserved slots below, is the fix.
+
+**Selection** (`pickSessionWords`). Reviews still come first; they no longer take every
+seat.
+
+- `RESERVED_NEW_SLOTS` (3) of the eight are held for words the learner has never seen, for
+  as long as any remain in scope.
+- Due selection follows the session's scope: a unit session draws its due words from that
+  unit, and the level-wide backlog stays reachable through the explicit `mode=review`
+  action. A short unit session is topped up from the wider queue rather than left short.
+- Due words are placed on graded slots, and **every selector caps its due set at the
+  number of graded slots** (six of the eight). `match-pairs` and `speed-round` never move
+  `mastery` or `nextReviewAt`, so a due word landing on one is *spent* — answered, and
+  still due tomorrow. A review session used to take eight due words and burn two of them
+  that way, every single time; it now takes six and clears all of them. A shorter session
+  that clears what it shows beats a full one that cannot.
+
+**"Strong" is evidence, not a rung.** `docs/LEARNER-LIFECYCLE.md` §2.1 defines it as two
+successful recalls on different days. That was never enforced: the API counted the
+collection at `mastery >= 2` and the pips drew their band at `mastery >= 3`, so the product
+had two numbers and neither was the promise. `UserWordProgress` now stores the evidence —
+`strongDays`, `recallDays`, `lastStrongDay`, `lastRecallDay`, `strongAt` — and one
+predicate reads it:
+
+> **strong** = recalled correctly on **2 distinct Bangkok days**.
+
+Recognition (`choose-meaning`) is graded and credits a `strongDays`, which is recorded as
+exposure and is *not* the bar; recall (`choose-word`, `spelling`, `cloze`, `listen-choose`)
+credits a `recallDays`, and two of those on different days is what makes a word strong.
+Warm-ups credit nothing. A second correct answer on the same day credits nothing — that is
+the whole point, and the day arithmetic happens inside the UPSERT because D1 has no
+transaction to hold a read-then-write together.
+
+**The type that counts is the *effective* one.** `listen-choose` without a clip and `cloze`
+without a usable sentence both degrade to `choose-meaning` (§13 of `AGENTS.md`), and the
+effective type is resolved once at session creation and stored — so a degraded listening
+slot credits recognition, which is what the learner actually did. The legacy `/progress/quiz`
+verb maps its three question types onto the same categories rather than assuming.
+
+**The day boundary is Bangkok's, not the learner's.** Same fixed UTC+7 offset the weekly
+goal already uses, for the same two reasons: `Intl.DateTimeFormat` with a named timezone is
+not guaranteed on Workers, and a per-learner boundary makes cross-learner reporting
+impossible. The cost is real — for a learner far from UTC+7, two answers hours apart can
+land on different days, or an overnight gap on one — and `User.timezone` is not consulted.
+Making it follow the learner is a defensible future change; the name says Bangkok until it
+does.
+
+Every consumer shares the predicate: the collection meter, the unit checkpoint gate, the
+comeback selection, the mistake bank, the export and the mastery pips, which now render the
+server's verdict instead of deriving their own.
+
+**Migration.** `0022_mastery_evidence.sql` is additive and does not backfill. The old
+`mastery >= 2` number is not evidence of two days — no day was ever recorded — so
+reinterpreting it would be a guess. Existing learners keep their rung, schedule, streaks and
+history; what resets is the claim. Rollback is a code revert: the columns are inert to
+anything that does not read them.
 
 ### 5.6 Audio — **built**
 
@@ -808,9 +878,19 @@ locale middleware — without that, `POST /api/user/register` was answered with
 `307 → /en/api/user/register`, which is why sign-up 404'd in the first deploy.
 Both Workers are now deployed and the `API` binding in `wrangler.jsonc` is live — the
 chicken-and-egg it describes (`wrangler deploy` refuses a binding to a service that does
-not exist) was resolved by deploying `vocab-api` first. Still open: CI for either Worker,
-retiring the API's dev-only CORS middleware once nothing but the forwarder calls it, and a
-staging deploy.
+not exist) was resolved by deploying `vocab-api` first.
+
+**CI now exists for both Workers** — `.github/workflows/ci.yml` here (coverage audit,
+migration validation, lint, typecheck, and the full e2e gate split across two jobs) and
+`backend/.github/workflows/ci.yml` for the API. As of 2026-08-29 the deploy workflow is
+downstream of it: `deploy-cloudflare.yml` triggers on `workflow_run` and refuses to start
+unless CI finished green, checking out the tested commit rather than the branch head. The
+two used to trigger on the same push and race, which is how four page families reached
+production rendering raw translation keys while `pnpm test:coverage-audit` was reporting
+sixteen unvisited routes.
+
+Still open: retiring the API's dev-only CORS middleware once nothing but the forwarder
+calls it, and a staging deploy.
 
 **P2 — Security + content.** Guard shapes on every operation (§5.2), each with a
 `resolveVariant` that never returns `undefined`; `@scope-root` on `User` *plus* an explicit

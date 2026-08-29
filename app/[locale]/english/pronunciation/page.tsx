@@ -118,9 +118,22 @@ export default async function PronunciationHubPage({ params }: Props) {
                     <ul className="mt-8 grid gap-4 sm:grid-cols-2">
                         {SOUND_GUIDES.map((guide) => (
                             <li key={guide.slug}>
+                                {/*
+                                  `play-tile`, not `play-sticker`.
+
+                                  `globals.css` draws the two identically at rest and
+                                  separates them on interaction: a sticker is a card you
+                                  read, a tile is a card you tap. These are links, and they
+                                  wore the sticker — so `e2e/hover-states.spec.ts` found
+                                  eighteen controls on this page that answered the pointer
+                                  with nothing. The `hover:bg-*` utility that was here
+                                  could not help: `.play-sticker` sets `background` in the
+                                  component layer, at equal specificity and later in source
+                                  order, so it won.
+                                */}
                                 <Link
                                     href={`/english/pronunciation/${guide.slug}`}
-                                    className="play-sticker block h-full p-5 hover:bg-accent-mint/30"
+                                    className="play-tile play-focus block h-full p-5 hover:bg-accent-mint/30"
                                     style={{ ["--tile-block" as string]: "var(--accent-sun)" }}
                                 >
                                     <span className="play-stamp bg-white px-2 py-0.5 text-sm font-extrabold text-ink">

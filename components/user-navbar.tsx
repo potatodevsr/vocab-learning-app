@@ -63,18 +63,31 @@ export function UserNavbar({
 
   if (!user) {
     return (
-      <div className="flex items-center gap-2">
+      /*
+        Both wear `play-key` — the app's one depth model: an ink rule sitting on a hard
+        offset block that grows under the pointer and is pushed flat on press. Sign up
+        used to be `play-press`, the only surface-level control in the app with neither
+        rule nor block, so the bar's corner went from flat pill to `border-3 border-ink`
+        the moment you signed in and the account button below took the same slot.
+
+        `--lift` is 3px rather than the global 6px: a 44px button in a 64px bar has 10px
+        of slack, and the hover state grows the block by another pixel.
+
+        Focus needs nothing extra: `.play-key:focus-visible` already draws the house ink
+        outline in `globals.css`.
+      */
+      <div className="flex items-center gap-2 sm:gap-3">
         <Button
           asChild
           variant="ghost"
-          className="play-underline play-focus h-11 rounded-full px-2 text-sm font-semibold text-ink hover:bg-brand-soft sm:px-3"
+          className="play-key h-11 rounded-full bg-card px-2.5 text-sm font-bold text-ink hover:bg-brand-soft sm:px-4 [--lift:3px]"
         >
           <Link href={`/${locale}/auth/login`}>{t("signIn")}</Link>
         </Button>
 
         <Button
           asChild
-          className="play-press h-11 rounded-full bg-brand px-3 text-sm font-bold text-white hover:bg-brand sm:px-4"
+          className="play-key h-11 rounded-full bg-brand px-2.5 text-sm font-extrabold text-white hover:bg-brand sm:px-4 [--lift:3px]"
         >
           <Link href={`/${locale}/auth/register`}>{t("signUp")}</Link>
         </Button>
@@ -90,7 +103,7 @@ export function UserNavbar({
         <DropdownMenuTrigger asChild>
           <button
             aria-label={t("account")}
-            className="play-lift play-focus flex items-center gap-2 rounded-full border-3 border-ink bg-card p-1 font-semibold hover:bg-brand-soft sm:pr-3"
+            className="play-key flex items-center gap-2 rounded-full bg-card p-1 font-semibold hover:bg-brand-soft sm:pr-3 [--lift:3px]"
           >
             <Avatar className="size-8">
               <AvatarFallback className="bg-brand text-sm font-bold text-white">

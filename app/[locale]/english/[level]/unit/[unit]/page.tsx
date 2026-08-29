@@ -18,7 +18,7 @@ import {
   publicMetadata,
   OXFORD_3000_TERMSET_ID,
 } from "@/lib/seo";
-import { trustedThai } from "@/lib/thai-text";
+import { trustedPronunciation, trustedThai } from "@/lib/thai-text";
 import type { CefrLevel } from "@/lib/types";
 import { TrackPageView } from "@/components/track-page-view";
 import { UnitCheckpointEntry } from "@/components/practice/unit-checkpoint-entry";
@@ -245,7 +245,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
             <li key={word.id}>
               <Link
                 href={`/english/words/${word.slug}`}
-                className="play-tile flex flex-wrap items-center justify-between gap-4 p-5 [--tile-block:var(--accent-sky)]"
+                className="play-tile flex flex-wrap items-center justify-between gap-4 p-5"
               >
                 <div className="min-w-0">
                   <p className="text-2xl font-extrabold tracking-tight">
@@ -253,8 +253,8 @@ export default async function UnitPage({ params }: UnitPageProps) {
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {word.partOfSpeech}
-                    {trustedThai(word.pronunciationTh)
-                      ? ` · ${trustedThai(word.pronunciationTh)}`
+                    {trustedPronunciation(word.pronunciationTh)
+                      ? ` · ${trustedPronunciation(word.pronunciationTh)}`
                       : ""}
                   </p>
                 </div>

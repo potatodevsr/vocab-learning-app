@@ -40,6 +40,18 @@ const nextConfig: NextConfig = {
     root: path.resolve(__dirname),
   },
 
+  experimental: {
+    /**
+     * `app/global-not-found.tsx` — the 404 for a URL that matches no route.
+     *
+     * Required because this app's root layout is a top-level dynamic segment
+     * (`app/[locale]/layout.tsx`), which Next's docs name as the case where `not-found.js`
+     * cannot compose a 404. Without it, every URL `middleware.ts` rejects was answered by
+     * Next's built-in English page — to a Thai audience.
+     */
+    globalNotFound: true,
+  },
+
   // Free advertising of the stack, on every response, for no benefit.
   poweredByHeader: false,
 

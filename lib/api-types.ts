@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/progress/mistakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getMistakes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/progress/export": {
         parameters: {
             query?: never;
@@ -508,7 +524,6 @@ export interface components {
             sessionId: string | null;
             level: string;
             unit: number | null;
-            requestedUnit?: number | null;
             /** @enum {string} */
             mode: "normal" | "comeback" | "review";
             itemCount: number;
@@ -584,11 +599,37 @@ export interface components {
             ok: true;
             goalDays: number;
         };
+        MistakeWord: {
+            wordId: string;
+            level: string;
+            unit: number | null;
+            status: string;
+            mastery: number;
+            strongDays: number;
+            recallDays: number;
+            strong: boolean;
+            incorrectCount: number;
+            word: {
+                displayWord: string;
+                partOfSpeech: string;
+                meaningTh: string;
+                pronunciationTh: string;
+                slug: string;
+            };
+        };
+        MistakeBank: {
+            words: components["schemas"]["MistakeWord"][];
+            total: number;
+        };
         ProgressExportWord: {
             displayWord: string;
             level: string;
             unit: number | null;
             mastery: number;
+            strong: boolean;
+            strongDays: number;
+            recallDays: number;
+            strongAt: string | null;
             lastSeenAt: string | null;
             nextReviewAt: string | null;
             correctCount: number;
@@ -1204,6 +1245,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiMessage"];
                 };
+            };
+        };
+    };
+    getMistakes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's own mistake bank: words they have got wrong, worst first, joined to the word so the list and the count can never disagree */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MistakeBank"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -323,15 +323,9 @@
   line-height: 1.22;
 }
 
-.home-feature-card {
-  box-shadow: 5px 5px 0 0 var(--tile-block, var(--accent-sun));
-}
-
-.home-feature-card:hover,
-.home-feature-card:focus-within {
-  transform: translate(-2px, -2px);
-  box-shadow: 7px 7px 0 0 var(--tile-block, var(--accent-sun));
-}
+/* No hover lift: these four cards are read, not pressed. They kept a `play-tile`'s
+   lift long after the link inside them was gone, which is the whole failure this
+   file's affordance rule exists to stop. */
 
 .hero-illustration-shell {
   height: 520px;
@@ -523,22 +517,42 @@
    context it landed in (a tile inside a positioned parent lost its block
    entirely). A hard box-shadow cannot be clipped, cannot restack, and costs one
    paint instead of an extra element. */
+/* ── The affordance rule ─────────────────────────────────────────────────────
+   Two kinds of object cast a hard block, and the *colour* of the block says
+   which is which:
+
+     INK block     you can press it. It grows a pixel under a pointer and is
+                   pushed flat when pressed — the object travels the full
+                   `--lift` and its block collapses to nothing.
+     COLOUR block  it is there to be read. It never moves.
+
+   The distinction has to survive a phone, which never delivers a hover, so it
+   cannot live in a hover state. Before this, `.play-tile` (a card you tap) and
+   `.play-sticker` (a card you read) were drawn identically at rest — same rule,
+   same 6px block, same radius — and diverged only once a pointer arrived. On
+   `/english/a1` that put three static stat chips next to tappable unit tiles
+   wearing the same chrome.
+
+   Inline text links are the documented exception: they have no box to raise, and
+   `.play-underline` is their affordance. */
 .play-tile {
   position: relative;
   transform: rotate(var(--tile-tilt, 0deg));
   background: var(--card);
   border: var(--rule) solid var(--ink);
   border-radius: 1.5rem;
-  box-shadow: var(--lift) var(--lift) 0 0 var(--tile-block, var(--accent-sun));
-  transition: transform var(--dur-fast) var(--ease-play),
-    box-shadow var(--dur-fast) var(--ease-play);
 }
 
+/* The tilt has to be re-stated in every transform a tilted tile can reach:
+   `transform` is one property, so a hover that sets only `translate()` silently
+   un-rotates the card it is lifting. */
 .play-tile:hover,
 .play-tile:focus-within {
-  transform: translate(calc(var(--lift) * -0.5), calc(var(--lift) * -0.5));
-  box-shadow: calc(var(--lift) * 1.6) calc(var(--lift) * 1.6) 0 0
-    var(--tile-block, var(--accent-sun));
+  transform: translate(-1px, -1px) rotate(var(--tile-tilt, 0deg));
+}
+
+.play-tile:active {
+  transform: translate(var(--lift), var(--lift)) rotate(var(--tile-tilt, 0deg));
 }
 
 /* The same sticker, without the interaction — for cards that are read, not clicked. */
@@ -594,7 +608,6 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  transition: transform var(--dur-fast) var(--ease-play);
 }
 
 .play-press::after {
@@ -613,30 +626,55 @@
   transform: scaleX(1);
 }
 
-.play-press:active:not(:disabled) {
-  transform: translateY(2px);
-}
 
-/* A button built as a sticker: it sits on a hard shadow, lifts under the
-   pointer, and is pushed flat onto the page when pressed — the shadow shrinks
-   to nothing as the button travels the same distance. Physics people already
-   understand, in two transitions. */
-.play-key {
-  border: var(--rule) solid var(--ink);
+
+/* Every pressable object, built as a sticker: it sits on a hard ink block,
+   lifts a pixel under the pointer, and is pushed flat onto the page when
+   pressed — the block shrinks to nothing as the object travels the same
+   distance. Physics people already understand, in two transitions.
+
+   All three pressable primitives share it, so "ink block" and "travels when
+   pressed" are the same statement everywhere:
+
+     .play-key    a button drawn as an object (its own ink rule)
+     .play-press  a button that also wipes a colour across itself
+     .play-tile   a whole card that is one target
+
+   `.play-tile` restates its own `transform` above to keep its tilt. */
+.play-key,
+.play-press,
+.play-tile {
   box-shadow: var(--lift) var(--lift) 0 0 var(--ink);
   transition: transform var(--dur-fast) var(--ease-play),
     box-shadow var(--dur-fast) var(--ease-play),
     background-color var(--dur-fast) var(--ease-play);
 }
 
-.play-key:hover:not(:disabled) {
-  transform: translate(-1px, -1px);
+.play-key {
+  border: var(--rule) solid var(--ink);
+}
+
+.play-key:hover:not(:disabled),
+.play-press:hover:not(:disabled),
+.play-tile:hover,
+.play-tile:focus-within {
   box-shadow: calc(var(--lift) + 1px) calc(var(--lift) + 1px) 0 0 var(--ink);
 }
 
-.play-key:active:not(:disabled) {
-  transform: translate(var(--lift), var(--lift));
+.play-key:hover:not(:disabled),
+.play-press:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+}
+
+.play-key:active:not(:disabled),
+.play-press:active:not(:disabled),
+.play-tile:active {
   box-shadow: 0 0 0 0 var(--ink);
+}
+
+.play-key:active:not(:disabled),
+.play-press:active:not(:disabled) {
+  transform: translate(var(--lift), var(--lift));
 }
 
 /* ── Fields answer the pointer too ───────────────────────────────────────────
@@ -714,6 +752,13 @@ select:not(:disabled):hover,
   transform: translateY(-2px);
 }
 
+/* A lockup has no box of its own to flatten, so its press is the travel alone —
+   but it still travels, because "nothing happens when I press it" is the one
+   answer no control in the app is allowed to give. */
+.play-lift:active {
+  transform: translateY(2px);
+}
+
 /* Playful tilt for icons and badges. */
 .play-wiggle {
   transition: transform var(--dur-fast) var(--ease-play);
@@ -745,6 +790,13 @@ select:not(:disabled):hover,
 .play-underline:hover::after,
 .play-underline:focus-visible::after {
   transform: scaleX(1);
+}
+
+/* A text link has no box to flatten, so its press is the travel alone — the same
+   1px the sticker primitives move, so a nav link and a button feel like parts of
+   one machine rather than two. */
+.play-underline:active {
+  transform: translateY(1px);
 }
 
 /* Focus is designed, never the browser default. */
@@ -817,14 +869,23 @@ select:not(:disabled):hover,
     transition: none !important;
   }
 
-  .play-tile:hover,
-  .play-tile:focus-within,
+  .play-press:hover:not(:disabled),
   .play-press:active:not(:disabled),
+  .play-underline:active,
   .play-wiggle:hover,
   .play-key:hover:not(:disabled),
   .play-key:active:not(:disabled),
+  .play-lift:active,
   .play-stamp:hover {
     transform: none;
+  }
+
+  /* `none` would drop the tilt a tilted tile is drawn with, so these cancel the
+     travel by restating the rest transform rather than clearing it. */
+  .play-tile:hover,
+  .play-tile:focus-within,
+  .play-tile:active {
+    transform: rotate(var(--tile-tilt, 0deg));
   }
 
   .play-pop,
@@ -970,6 +1031,84 @@ select:not(:disabled):hover,
   box-shadow: none;
 }
 
+/* The floor, and only the floor: nothing in the app answers a press with nothing.
+
+   A control that is not drawn as an object — an admin list row, a picker item, a bare
+   icon button — has no block to flatten, but it still has to acknowledge the press.
+   Everything with a real press response is more specific than this and overrides it:
+   every `play-*` primitive, and the `[data-slot="button"]` rules below.
+
+   Not extended to `a[href]`: a link inside a pressable card would then travel a pixel
+   while the card travels six, which reads as the label sliding around inside it. Links
+   that are drawn as controls carry a primitive instead. */
+button:not([class*="play-"]):not(:disabled):active,
+[role="button"]:not([class*="play-"]):not([aria-disabled="true"]):active,
+summary:not([class*="play-"]):active {
+  transform: translateY(1px);
+}
+
+/* Same reason, from the other side: a button nested inside a pressable card travels
+   with the card, not against it. Matched at equal specificity and written later so it
+   wins. */
+:is(.play-tile, .play-key, .play-press) button:not([class*="play-"]):active {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not([class*="play-"]):not(:disabled):active,
+  [role="button"]:not([class*="play-"]):not([aria-disabled="true"]):active,
+  summary:not([class*="play-"]):active {
+    transform: none;
+  }
+}
+
+/* The affordance rule reaches `/admin` too.
+
+   Admin is the documented exception for *language* — it is Thai-only and not
+   localised — but not for depth. It is drawn from shadcn's generated chrome, where a
+   button is a flat tinted rectangle, so every control in it read as unpressable next
+   to an app whose every button sits on a block. Applied here rather than at ~200 admin
+   call sites, and scoped away from anything already carrying a `play-*` class so it
+   cannot fight the primitives.
+
+   `link` is exempt on purpose: that variant *is* a text link, and a text link's
+   affordance is its underline — the same exception `findAffordanceMismatches` makes.
+
+   3px rather than the global 6px: admin is a dense desktop tool, not a phone. */
+[data-slot="button"]:not([class*="play-"]):not([data-variant="link"]) {
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 0 var(--ink);
+  transition: transform var(--dur-fast) var(--ease-play),
+    box-shadow var(--dur-fast) var(--ease-play),
+    background-color var(--dur-fast) var(--ease-play);
+}
+
+[data-slot="button"]:not([class*="play-"]):not([data-variant="link"]):not(:disabled):hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 0 var(--ink);
+}
+
+[data-slot="button"]:not([class*="play-"]):not([data-variant="link"]):not(:disabled):active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 0 var(--ink);
+}
+
+/* A control nobody can press is not raised and ready. */
+[data-slot="button"]:not([class*="play-"]):not([data-variant="link"]):disabled {
+  box-shadow: 3px 3px 0 0 color-mix(in oklab, var(--ink) 22%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="button"]:not([class*="play-"]):not([data-variant="link"]) {
+    transition: none !important;
+  }
+
+  [data-slot="button"]:not([class*="play-"]):not([data-variant="link"]):not(:disabled):hover,
+  [data-slot="button"]:not([class*="play-"]):not([data-variant="link"]):not(:disabled):active {
+    transform: none;
+  }
+}
+
 /* One focus language. shadcn ships a 3px translucent brand ring; the app draws
    a solid ink outline (SPEC §6.3 craft bar #2), and a control must not answer a
    keyboard with both. Elements already carrying a `play-*` class are excluded —
@@ -995,7 +1134,9 @@ a[data-slot="badge"][data-variant="default"]:hover {
    but the block goes quiet rather than staying full ink, which read as "raised
    and ready" on a control nobody can press. */
 .play-key:disabled,
-.play-key[aria-disabled="true"] {
+.play-key[aria-disabled="true"],
+.play-press:disabled,
+.play-press[aria-disabled="true"] {
   box-shadow: var(--lift) var(--lift) 0 0
     color-mix(in oklab, var(--ink) 22%, transparent);
 }

@@ -11,20 +11,25 @@ import { SEED } from "./support/fixtures";
  * item type that depends on `exampleEn`, so it also proves the column is reaching the
  * session rather than sitting unread in the database.
  *
- * It occupies the last slot of the schedule (`ITEM_TYPE_SCHEDULE` in
- * `backend/src/session.ts`), and falls back to a meaning question for any word whose
- * example is missing or does not contain the headword as its own word.
+ * It is the **last graded slot** of the schedule (`ITEM_TYPE_SCHEDULE` in
+ * `backend/src/mastery.ts`) and falls back to a meaning question for any word whose example
+ * is missing or does not contain the headword as its own word.
+ *
+ * It used to be the last slot of all, after the two warm-ups. The warm-ups moved to the end
+ * so that every graded slot comes first: a session shorter than eight items is
+ * `slice(0, n)`, and with warm-ups in the middle a six-item review had only five slots that
+ * could clear a due word. Cloze is now item six of eight.
  */
 
-test("the last item of a session is the word missing from its own sentence", async ({
+test("the last graded item of a session is the word missing from its own sentence", async ({
   page,
 }) => {
   await registerThroughUi(page);
   await page.goto("/en/learn?level=A1&unit=1");
   await expect(page.getByTestId("session-card")).toBeVisible();
 
-  // Answer the first seven items to reach the cloze slot.
-  for (let index = 0; index < 7; index += 1) {
+  // Answer the first five items to reach the cloze slot, which is now item six.
+  for (let index = 0; index < 5; index += 1) {
     const spelling = page.getByTestId("session-spelling-input");
     if (await spelling.isVisible().catch(() => false)) {
       await spelling.fill("placeholder");
@@ -56,6 +61,15 @@ test("the last item of a session is the word missing from its own sentence", asy
   await page.getByTestId("session-option").first().click();
   await expect(page.getByTestId("session-feedback")).toBeVisible();
   await page.getByTestId("session-continue").click();
+
+  // The two warm-ups now come after it rather than before, so there are two items left.
+  for (let index = 0; index < 2; index += 1) {
+    const type = await page.getByTestId("session-card").getAttribute("data-item-type");
+    await page.getByTestId("session-option").first().click();
+    if (type === "match-pairs") await page.getByTestId("session-option").first().click();
+    await expect(page.getByTestId("session-feedback")).toBeVisible();
+    await page.getByTestId("session-continue").click();
+  }
 
   // And it counts: eight items answered ends the session like any other run.
   await expect(page.getByTestId("session-result")).toBeVisible();

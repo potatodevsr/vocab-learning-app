@@ -123,7 +123,7 @@ export default async function PlacementTestPage({ params }: TestPageProps) {
               <li key={level}>
                 <Link
                   href={`/english/${level.toLowerCase()}`}
-                  className="play-card flex items-center justify-between gap-4 p-5 transition-transform hover:-translate-y-0.5"
+                  className="play-tile flex items-center justify-between gap-4 p-5"
                 >
                   <span>
                     <span className="block text-lg font-bold">{level}</span>

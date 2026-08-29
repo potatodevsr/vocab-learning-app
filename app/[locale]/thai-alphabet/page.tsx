@@ -266,19 +266,19 @@ export default async function ThaiAlphabetPage({ params }: LocalePageProps) {
         <nav className="mt-12 flex flex-wrap gap-3" aria-label={t("nextTitle")}>
           <Link
             href="/english"
-            className="rounded-2xl border-2 border-ink bg-white px-5 py-3 text-sm font-bold text-ink transition-colors hover:bg-accent-sun"
+            className="play-press rounded-2xl border-2 border-ink bg-white px-5 py-3 text-sm font-bold text-ink hover:bg-accent-sun [--lift:3px]"
           >
             {t("nextEnglish")}
           </Link>
           <Link
             href="/english/a1"
-            className="rounded-2xl border-2 border-ink bg-white px-5 py-3 text-sm font-bold text-ink transition-colors hover:bg-accent-sun"
+            className="play-press rounded-2xl border-2 border-ink bg-white px-5 py-3 text-sm font-bold text-ink hover:bg-accent-sun [--lift:3px]"
           >
             {t("nextLevel")}
           </Link>
           <Link
             href="/faq"
-            className="rounded-2xl border-2 border-ink bg-white px-5 py-3 text-sm font-bold text-ink transition-colors hover:bg-accent-sun"
+            className="play-press rounded-2xl border-2 border-ink bg-white px-5 py-3 text-sm font-bold text-ink hover:bg-accent-sun [--lift:3px]"
           >
             {t("nextFaq")}
           </Link>

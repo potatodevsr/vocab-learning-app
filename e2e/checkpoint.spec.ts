@@ -10,7 +10,7 @@ import { registerThroughUi } from "./support/actions";
  * L3's gate names four recovery paths; this file covers the three that are reachable with
  * the committed e2e seed: the not-ready gate, refresh/resume, and failure→recovery. A
  * *passing* checkpoint additionally requires every published word in the unit to already
- * sit at mastery ≥ 3 (`backend/src/checkpoint.ts` `computeGate`), which for the 20-word
+ * be **strong** (`backend/src/checkpoint.ts` `computeGate`), which for the 20-word
  * seeded unit 1 means many graded sessions with server-chosen correct answers the client
  * is deliberately never told — so it is not deterministically reachable here without a
  * mastery-seeding fixture. See the note at the bottom of this file.
@@ -112,7 +112,7 @@ test.describe("unit checkpoint", () => {
       await answerCheckpointItem(page);
     }
 
-    // One session leaves the unit's words well below the mastery bar, so the gate fails
+    // One session leaves the unit's words well below the bar, so the gate fails
     // regardless of the score — and the result is a focused recovery round, not a wall.
     const result = page.getByTestId("checkpoint-result");
     await expect(result).toBeVisible();
@@ -204,7 +204,8 @@ test.describe("unit checkpoint", () => {
     await registerThroughUi(page);
     await completeOneSession(page);
 
-    // A genuine pass needs every published unit word at mastery >= 3, which one session
+    // A genuine pass needs every published unit word to be strong — recalled on two
+    // different days (`backend/src/mastery.ts`) — which no number of sessions on one day
     // cannot reach (see the note at the bottom of this file). Flip only the gate outcome on
     // the settling answer — every per-item verdict is still the real server's — so the
     // celebratory result branch and its "back to unit" continue can be exercised.

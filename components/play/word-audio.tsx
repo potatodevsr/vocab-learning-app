@@ -90,9 +90,11 @@ export function WordAudio({
       data-testid="word-audio"
       aria-label={t("play", { word })}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full border-3 border-ink bg-accent-sun text-ink transition-transform duration-150",
-        "hover:-translate-y-0.5 hover:bg-accent-sun/90 active:translate-y-0",
-        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/40",
+        // `play-key` rather than a hand-rolled lift: this was the app's one button that
+        // moved *up* on press and answered a keyboard with shadcn's translucent ring
+        // instead of the house ink outline.
+        "play-key inline-flex shrink-0 items-center justify-center rounded-full bg-accent-sun text-ink [--lift:3px]",
+        "hover:bg-accent-sun",
         // The reward for pressing it is the sound; the pulse is only there so a learner
         // with the volume down still sees that something happened.
         state === "playing" && "motion-safe:animate-pulse",

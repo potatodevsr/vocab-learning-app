@@ -411,3 +411,287 @@ export const findUnreadableControls = async (
 
     return out;
   }, [INTERACTIVE_SELECTOR, root] as const);
+
+/**
+ * The affordance rule, measured rather than reviewed.
+ *
+ * The app draws depth with one device: a hard offset block with zero blur. What the
+ * block *means* is carried by its colour — ink means "you can press this", an accent
+ * colour means "this is here to be read". That distinction has to survive a phone,
+ * which never delivers a hover, so it cannot live in a hover state, and it cannot be
+ * checked by looking at a design at rest on a laptop with a mouse.
+ *
+ * Two ways to break it, and this reports both:
+ *
+ * - a control that casts no block, or casts a colour one, so nothing says it can be
+ *   pressed until a pointer happens to land on it;
+ * - a static element wearing a control's chrome — an ink block or a pointer cursor —
+ *   so a learner taps something that was never going to answer.
+ *
+ * Four things are exempt, and each for a reason rather than for convenience:
+ * fields (a field is a hole, not an object, and the rest of `globals.css` draws it that
+ * way), inline text links (no box to raise; the underline is the affordance), rows
+ * inside a floating panel (the panel carries the block for all of them), and disabled
+ * controls (already drawn as unpressable).
+ */
+export const findAffordanceMismatches = async (
+  page: Page,
+  root = ":root",
+): Promise<Finding[]> =>
+  page.evaluate(([selector, rootSelector]) => {
+    // `--ink` as the browser serialises it, so it can be compared against a computed
+    // shadow colour directly. Reading the custom property gives the authored token
+    // (`oklch(...)`), which never string-matches the computed `lab(...)` of a shadow.
+    const probe = document.createElement("span");
+    probe.style.cssText = "color: var(--ink); position: fixed; opacity: 0";
+    document.body.appendChild(probe);
+    const INK = getComputedStyle(probe).color;
+    probe.remove();
+
+    /** Split a computed `box-shadow` on the commas *between* shadows, not inside `rgb(…)`. */
+    const shadows = (value: string) => {
+      if (!value || value === "none") return [];
+
+      const parts: string[] = [];
+      let depth = 0;
+      let current = "";
+
+      for (const ch of value) {
+        if (ch === "(") depth += 1;
+        if (ch === ")") depth -= 1;
+
+        if (ch === "," && depth === 0) {
+          parts.push(current);
+          current = "";
+          continue;
+        }
+
+        current += ch;
+      }
+
+      parts.push(current);
+
+      return parts.map((part) => part.trim()).filter(Boolean);
+    };
+
+    /** The house block: an offset with no blur. Returns its colour, or null. */
+    const blockOf = (el: Element) => {
+      for (const shadow of shadows(getComputedStyle(el).boxShadow)) {
+        if (shadow.includes("inset")) continue;
+
+        const offsets = shadow.match(
+          /(-?[\d.]+)px\s+(-?[\d.]+)px\s+(-?[\d.]+)px(?:\s+(-?[\d.]+)px)?/,
+        );
+
+        if (!offsets) continue;
+
+        const [x, y] = [Number(offsets[1]), Number(offsets[2])];
+
+        if (x === 0 && y === 0) continue;
+
+        const colour = shadow.replace(offsets[0], "").trim();
+
+        return { colour, ink: colour === INK };
+      }
+
+      return null;
+    };
+
+    const visible = (el: Element) => {
+      const rect = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+
+      return (
+        rect.width >= 6 &&
+        rect.height >= 6 &&
+        style.visibility !== "hidden" &&
+        style.opacity !== "0"
+      );
+    };
+
+    const describe = (el: Element) => {
+      const label = (el.getAttribute("aria-label") ?? el.textContent ?? "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .slice(0, 44);
+      const testId = el.getAttribute("data-testid");
+      const classes =
+        typeof el.className === "string"
+          ? el.className
+              .split(/\s+/)
+              .filter((name) => name.startsWith("play-") || name.startsWith("home-"))
+              .join(".")
+          : "";
+
+      return [
+        el.tagName.toLowerCase(),
+        testId ? `#${testId}` : "",
+        label ? `"${label}"` : "",
+        classes ? `.${classes}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+    };
+
+    const OVERLAY = '[data-slot$="-content"], [role="dialog"], [role="menu"], [role="listbox"]';
+
+    const disabled = (el: Element) =>
+      el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true";
+
+    /** A field is a hole, not an object. `globals.css` draws it with a 2px hairline. */
+    const isField = (el: Element) =>
+      ["input", "textarea", "select"].includes(el.tagName.toLowerCase()) ||
+      el.getAttribute("data-slot") === "select-trigger";
+
+    /** Text inside a sentence: no box to raise, so the underline is the affordance. */
+    const isInlineLink = (el: Element) => {
+      // shadcn's `link` variant *is* a text link, whether it renders as `a` or `button`.
+      if (el.getAttribute("data-variant") === "link") return true;
+      if (el.tagName.toLowerCase() !== "a") return false;
+
+      const style = getComputedStyle(el);
+
+      return (
+        style.display.startsWith("inline") &&
+        parseFloat(style.borderTopWidth || "0") === 0
+      );
+    };
+
+    // Selectors that answer a press, gathered once from the CSSOM. Measuring `:active`
+    // for real would mean a mouse-down on every control on every route; the rules that
+    // implement it can be read straight out of the stylesheet instead.
+    const pressSelectors: string[] = [];
+
+    const collect = (rules: CSSRuleList) => {
+      for (const rule of Array.from(rules)) {
+        if (rule instanceof CSSMediaRule) {
+          // A press response that only exists under `prefers-reduced-motion` is not one.
+          if (!window.matchMedia(rule.conditionText).matches) continue;
+          collect(rule.cssRules);
+          continue;
+        }
+
+        if (rule instanceof CSSGroupingRule) {
+          collect(rule.cssRules);
+          continue;
+        }
+
+        if (!(rule instanceof CSSStyleRule)) continue;
+        if (!rule.selectorText.includes(":active")) continue;
+
+        const moves = ["transform", "translate", "scale", "box-shadow"].some(
+          (prop) => rule.style.getPropertyValue(prop) !== "",
+        );
+
+        if (!moves) continue;
+
+        for (const part of rule.selectorText.split(",")) {
+          if (!part.includes(":active")) continue;
+
+          pressSelectors.push(
+            part.replace(/:active|:hover|:focus-visible|:focus-within/g, "").trim(),
+          );
+        }
+      }
+    };
+
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        collect(sheet.cssRules);
+      } catch {
+        // A cross-origin sheet cannot be read, and none of ours are.
+      }
+    }
+
+    const answersPress = (el: Element) =>
+      pressSelectors.some((sel) => {
+        try {
+          return sel !== "" && el.matches(sel);
+        } catch {
+          return false;
+        }
+      });
+
+    /**
+     * Drawn as an object: it is cut out of the page with an ink rule. That, not a fill,
+     * is what makes something an object in this design — a segmented-control chip takes
+     * a solid fill to show it is selected and is still a state, not a raised button.
+     */
+    const boxLike = (el: Element) =>
+      parseFloat(getComputedStyle(el).borderTopWidth || "0") >= 2;
+
+    const out: { element: string; reason: string }[] = [];
+    const scope = document.querySelector(rootSelector) ?? document;
+
+    // 1. Every control answers a press, and every control drawn as an object is raised
+    //    on an ink block — its own, or the one belonging to the card it is the single
+    //    target of.
+    for (const el of Array.from(scope.querySelectorAll(selector))) {
+      if (!visible(el)) continue;
+      if (el.getAttribute("role") === "region") continue;
+      if (disabled(el) || isField(el) || isInlineLink(el)) continue;
+      if (el.closest(OVERLAY)) continue;
+
+      if (!answersPress(el)) {
+        out.push({
+          element: describe(el),
+          reason: "pressable, but nothing moves when it is pressed",
+        });
+
+        continue;
+      }
+
+      let found: { colour: string; ink: boolean } | null = null;
+
+      for (
+        let node: Element | null = el, depth = 0;
+        node && depth < 4;
+        node = node.parentElement, depth += 1
+      ) {
+        found = blockOf(node);
+        if (found) break;
+      }
+
+      if (found && !found.ink) {
+        out.push({
+          element: describe(el),
+          reason: `pressable, but its block is ${found.colour} rather than ink — a colour block reads as "read only"`,
+        });
+      } else if (!found && boxLike(el)) {
+        out.push({
+          element: describe(el),
+          reason: "cut out of the page with an ink rule, but casts no block",
+        });
+      }
+    }
+
+    // 2. Nothing static wears a control's chrome. Deliberately conservative: an element
+    //    holding any control at all is skipped, because a card that *is* one target
+    //    legitimately carries the block on behalf of the link inside it.
+    for (const el of Array.from(scope.querySelectorAll("*"))) {
+      if (!visible(el)) continue;
+      if (el.matches(selector) || el.closest(selector)) continue;
+      if (el.querySelector(selector)) continue;
+      if (el.closest(OVERLAY)) continue;
+
+      if (getComputedStyle(el).cursor === "pointer") {
+        out.push({
+          element: describe(el),
+          reason: "not clickable, but the cursor says it is",
+        });
+
+        continue;
+      }
+
+      const found = blockOf(el);
+
+      if (found?.ink) {
+        out.push({
+          element: describe(el),
+          reason: "not clickable, but wears the ink block that means pressable",
+        });
+      }
+    }
+
+    return out;
+  }, [INTERACTIVE_SELECTOR, root] as const);

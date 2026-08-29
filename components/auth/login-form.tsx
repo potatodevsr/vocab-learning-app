@@ -78,7 +78,7 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="play-sticker gap-0 [--tile-block:var(--ink)]">
+    <Card className="play-sticker gap-0 [--tile-block:var(--accent-sky)]">
       <CardContent className="pt-6">
         {sent ? (
           <div className="space-y-5 text-center" data-testid="magic-link-sent">

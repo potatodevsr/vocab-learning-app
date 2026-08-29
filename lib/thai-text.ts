@@ -75,6 +75,31 @@ export const trustedThai = (value: string | null | undefined): string | null =>
     isTrustworthyThai(value) ? normaliseThai(value) : null;
 
 /**
+ * Digits and bracket debris left by the OCR, which the Latin test cannot see.
+ *
+ * `LATIN` rejects `[A-Za-z]`, so `"เอ๊ 9"`, `"7 เหมอะน"`, `"แม้ (ร ) 4"` and `"บา (3)"` all
+ * passed it and were shown to learners as pronunciations — 26 of them, `age`, `woman` and
+ * `marry` among them, all A1. They are not partial values to be trusted with a caveat;
+ * they are wreckage with a Thai character next to it.
+ */
+const DIGITS_OR_BRACKETS = /[0-9๐-๙()\[\]]/;
+
+/**
+ * A *pronunciation* we are willing to publish.
+ *
+ * Stricter than {@link isTrustworthyThai} and deliberately field-specific: a Thai-script
+ * respelling of an English word has no reason to contain a digit or a bracket, while a
+ * Thai *meaning* legitimately can — `"3 มิติ"` is a real gloss. Applying the digit rule to
+ * every field would quarantine correct meanings to catch broken pronunciations.
+ */
+export const isTrustworthyPronunciation = (value: string | null | undefined): boolean =>
+    isTrustworthyThai(value) && !DIGITS_OR_BRACKETS.test(normaliseThai(value));
+
+/** The pronunciation if we trust it, otherwise nothing. */
+export const trustedPronunciation = (value: string | null | undefined): string | null =>
+    isTrustworthyPronunciation(value) ? normaliseThai(value) : null;
+
+/**
  * Distinct meanings, in order.
  *
  * Every one of the 287 words that carry more than one part of speech repeats the same

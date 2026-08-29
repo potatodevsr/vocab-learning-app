@@ -254,7 +254,7 @@ export default function AdminOverviewPage() {
             <Link
               key={shortcut.href}
               href={shortcut.href}
-              className="play-focus group flex items-start gap-3 rounded-2xl border border-border bg-card p-5 transition-colors hover:border-brand hover:bg-brand-soft"
+              className="play-tile play-focus group flex items-start gap-3 p-5 hover:bg-brand-soft [--lift:3px]"
             >
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white">
                 <shortcut.icon className="size-5" />

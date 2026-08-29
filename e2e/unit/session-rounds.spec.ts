@@ -69,21 +69,37 @@ test.describe("sliceRound", () => {
   });
 });
 
+/**
+ * `strong` is the server's verdict now, not a rung.
+ *
+ * The band used to be `mastery >= 3` here while `progress.ts` counted the collection at
+ * `mastery >= 2` — two numbers for one promise, and neither of them the promise, which is
+ * a recall on two different days (`backend/src/mastery.ts`). The component takes the flag
+ * and renders it; the only thing it still derives is "mastered", which really is the top
+ * rung of the ladder.
+ */
 test.describe("masteryLevel", () => {
-  const bands: [number, string][] = [
-    [-2, "new"],
-    [0, "new"],
-    [1, "learning"],
-    [2, "learning"],
-    [3, "strong"],
-    [4, "strong"],
-    [5, "mastered"],
-    [9, "mastered"],
+  const bands: [number, boolean, string][] = [
+    [-2, false, "new"],
+    [0, false, "new"],
+    [1, false, "learning"],
+    [2, false, "learning"],
+    // A rung high enough to look strong is still not strong without the evidence.
+    [3, false, "learning"],
+    [4, false, "learning"],
+    // …and a low rung is strong the moment the server says so.
+    [2, true, "strong"],
+    [3, true, "strong"],
+    [4, true, "strong"],
+    // Mastered is the ladder's own ceiling and outranks both.
+    [5, false, "mastered"],
+    [5, true, "mastered"],
+    [9, true, "mastered"],
   ];
 
-  for (const [mastery, expected] of bands) {
-    test(`mastery ${mastery} is "${expected}"`, () => {
-      expect(masteryLevel(mastery)).toBe(expected);
+  for (const [mastery, strong, expected] of bands) {
+    test(`mastery ${mastery}${strong ? " (strong)" : ""} is "${expected}"`, () => {
+      expect(masteryLevel(mastery, strong)).toBe(expected);
     });
   }
 
@@ -98,15 +114,15 @@ test.describe("masteryLevel", () => {
 
 test.describe("MasteryPips rendering", () => {
   test("clamps a negative mastery to empty", () => {
-    expect(masteryLevel(-5)).toBe("new");
+    expect(masteryLevel(-5, false)).toBe("new");
   });
 
   test("clamps an over-max mastery to mastered", () => {
-    expect(masteryLevel(99)).toBe("mastered");
+    expect(masteryLevel(99, false)).toBe("mastered");
   });
 
   test("a non-integer mastery still lands in a band", () => {
-    expect(masteryLevel(2.7)).toBe("learning");
-    expect(masteryLevel(4.2)).toBe("strong");
+    expect(masteryLevel(2.7, false)).toBe("learning");
+    expect(masteryLevel(4.2, true)).toBe("strong");
   });
 });

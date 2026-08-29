@@ -192,7 +192,7 @@ export default async function LevelPracticePage({ params }: LevelPracticePagePro
 
           <ul className="mt-4 grid gap-2 sm:grid-cols-2" data-testid="practice-sample-words">
             {previewWords.slice(0, 10).map((word) => (
-              <li key={word.id} className="play-tile flex items-center justify-between gap-3 p-4 [--tile-block:var(--accent-mint)]">
+              <li key={word.id} className="play-sticker flex items-center justify-between gap-3 p-4">
                 <span className="font-extrabold">{word.displayWord}</span>
                 <span className="font-thai text-sm text-muted-foreground" lang="th">
                   {trustedThai(word.meaningTh)}
@@ -220,7 +220,7 @@ export default async function LevelPracticePage({ params }: LevelPracticePagePro
           </div>
 
           <div className="mt-10 grid gap-3 sm:grid-cols-3">
-            <Link href={levelHref} className="play-tile p-5 [--tile-block:var(--accent-sky)]" data-testid="explore-level-link">
+            <Link href={levelHref} className="play-tile p-5" data-testid="explore-level-link">
               <p className="font-bold">{t("exploreLevelTitle", { level })}</p>
               <p className="mt-1 text-sm text-muted-foreground">{t("exploreLevelBody")}</p>
             </Link>

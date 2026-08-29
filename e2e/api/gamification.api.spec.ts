@@ -76,10 +76,19 @@ test.describe("GET /progress/words", () => {
     });
   });
 
-  test("mastery climbs with each correct answer and stops at five", async () => {
+  /**
+   * The ladder now runs past "mastered" (`backend/src/mastery.ts`).
+   *
+   * It used to stop at five, which is also the rung the product calls mastered — so a word
+   * the learner kept getting right could never have its interval stretched past 30 days,
+   * and the steady review load of a mature level never fell. Five is still the *claim*;
+   * eight is the scheduling ceiling, and the three rungs between them are 60, 120 and 240
+   * days.
+   */
+  test("mastery climbs with each correct answer and stops at the scheduling ceiling", async () => {
     const { ctx } = await asNewUser();
 
-    for (let round = 0; round < 7; round += 1) {
+    for (let round = 0; round < 12; round += 1) {
       await ctx.post(`${API}/progress/quiz`, {
         data: quiz([qa(WORD_A, true)]),
       });
@@ -89,7 +98,7 @@ test.describe("GET /progress/words", () => {
       await ctx.get(`${API}/progress/words?ids=${WORD_A}`)
     ).json();
 
-    expect(words[0].mastery).toBe(5);
+    expect(words[0].mastery).toBe(8);
   });
 
   test("a lapse lowers mastery by one, never below zero", async () => {
@@ -339,7 +348,9 @@ test.describe("summary gamification counters", () => {
   test("wordsMastered only counts words at the ceiling", async () => {
     const { ctx } = await asNewUser();
 
-    // Four correct answers is mastery 4 — strong, but not yet mastered.
+    // Four correct answers is rung 4 — climbing, but not yet the mastered rung. (Whether
+    // the word is *strong* is a different question with a different answer: that needs a
+    // second day, and every one of these answers lands on the same one.)
     for (let round = 0; round < 4; round += 1) {
       await ctx.post(`${API}/progress/quiz`, {
         data: quiz([qa(WORD_A, true)]),

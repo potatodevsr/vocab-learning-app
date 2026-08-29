@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { setRequestLocale } from "next-intl/server";
 
 import { MarketingHome, homeMetadata } from "@/components/home/marketing-home";
 import { TrackPageView } from "@/components/track-page-view";
@@ -32,6 +33,10 @@ export async function generateMetadata({
 
 export default async function TodayPage({ params }: TodayProps) {
   const { locale } = await params;
+
+  // The signed-in home rewrite returns before next-intl middleware can attach its locale
+  // header. Set it from the route so server-rendered children do not fall back to Thai.
+  setRequestLocale(locale);
 
   const token = (await cookies()).get("user_token")?.value;
   const summary = token ? await getTodaySummaryWithToken(token) : null;

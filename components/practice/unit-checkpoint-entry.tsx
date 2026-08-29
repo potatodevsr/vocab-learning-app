@@ -47,7 +47,7 @@ export function UnitCheckpointEntry({
 
   return (
     <div
-      className="play-tile mt-8 flex flex-col gap-4 p-5 [--tile-block:var(--accent-grape)] sm:flex-row sm:items-center sm:justify-between"
+      className="play-tile mt-8 flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
       data-testid="unit-checkpoint-entry"
     >
       <div className="flex items-center gap-3">

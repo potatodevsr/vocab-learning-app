@@ -1,8 +1,20 @@
 name: Deploy web to Cloudflare
 
+# The deploy is downstream of the gate, not alongside it.
+#
+# Both workflows used to trigger on the same push, so they raced: a commit that turned the
+# coverage audit or the e2e gate red still deployed, because this workflow only ever knew
+# about its own steps. That is how four page families reached production rendering raw
+# translation keys while `pnpm test:coverage-audit` was reporting sixteen unvisited routes.
+#
+# `workflow_run` fires only after "CI" finishes, and the job below refuses to start unless
+# it finished green. `workflow_dispatch` stays for a deliberate manual redeploy.
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
     branches:
       - main
 
@@ -18,11 +30,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    # A red gate stops the deploy. `workflow_dispatch` has no upstream run, so it is
+    # allowed through on its own — that path is a human deliberately redeploying.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
     steps:
       - name: Check out repository and backend submodule
         uses: actions/checkout@v6
         with:
           submodules: recursive
+          # `workflow_run` checks out the default branch unless told otherwise, which
+          # would deploy something other than the commit that was tested.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Enable pnpm
         uses: pnpm/action-setup@v4
@@ -57,6 +78,11 @@ jobs:
 
       - name: Type-check
         run: pnpm exec tsc --noEmit
+
+      # Cheap, and the two checks that most directly describe "this build is publishable".
+      # They also run in CI; repeating them here is what makes `workflow_dispatch` safe.
+      - name: Audit test coverage contract
+        run: pnpm test:coverage-audit
 
       # Applied migration files are immutable, and automatic production migrations may
       # only add schema/data. Anything destructive needs an explicit recovery plan rather

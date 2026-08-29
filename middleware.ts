@@ -32,6 +32,46 @@ const PROTECTED_USER_PATHS = ["/learn", "/quiz", "/profile", "/progress", "/toda
 const HOME_PATH = /^\/(en|th)$/;
 
 /**
+ * The readable companion to the `httpOnly` session token.
+ *
+ * `lib/use-session.ts` reads it to answer "is anyone signed in?" without a `GET
+ * /api/user/me` on every anonymous pageview. It carries no identity and authorises
+ * nothing — every protected route still verifies `user_token` on the server.
+ */
+const USER_SESSION_HINT = "signed_in";
+
+/** 30 days, the same life the API gives `user_token`. */
+const USER_SESSION_HINT_TTL = 30 * 24 * 60 * 60;
+
+/**
+ * Re-issues the hint for a request that carries a valid token without one.
+ *
+ * The two cookies are set together at sign-in, and then drift apart: a session opened
+ * before the hint existed has only `user_token`, and clearing site data selectively or an
+ * extension pruning non-`httpOnly` cookies produces the same state. The result was a
+ * signed-in learner reading their own Today card — private content, rendered because
+ * middleware verified the token — under an app bar offering Login and Signup, because the
+ * client hook found no hint and concluded nobody was there.
+ *
+ * Healing it here rather than in the hook keeps the anonymous fast path intact: a visitor
+ * with no token still never triggers a session fetch. This only ever runs on a request
+ * whose token has already been verified in this function.
+ */
+const healSessionHint = (request: NextRequest, response: NextResponse) => {
+    if (request.cookies.has(USER_SESSION_HINT)) return response;
+
+    response.cookies.set(USER_SESSION_HINT, "1", {
+        httpOnly: false,
+        secure: request.nextUrl.protocol === "https:",
+        sameSite: "lax",
+        path: "/",
+        maxAge: USER_SESSION_HINT_TTL,
+    });
+
+    return response;
+};
+
+/**
  * The unit checkpoint is a private graded gate (`docs/LEARNER-LIFECYCLE.md` §3.8) nested
  * under the public unit page, so a flat prefix cannot express it. Its entry point is only
  * shown to signed-in learners, but a directly-typed URL must land on login, not on an
@@ -97,6 +137,24 @@ const isUnroutableEnglishPath = (segments: string[]): boolean => {
     }
 
     return true;
+};
+
+/**
+ * The answer for a URL this app has decided cannot exist.
+ *
+ * The rewrite target matches no route on purpose: that is what makes Next render
+ * `app/global-not-found.tsx` — the only 404 that can carry this app's own copy, because
+ * its root layout is a top-level dynamic segment and `not-found.tsx` cannot compose one
+ * there (see that file). The locale rides along in a header, since a global 404 has no
+ * `[locale]` segment to read it from.
+ */
+const notFoundIn = (request: NextRequest, locale: string) => {
+    const headers = new Headers(request.headers);
+    headers.set("x-app-locale", locale);
+
+    return NextResponse.rewrite(new URL(`/${locale}/__not-found`, request.url), {
+        request: { headers },
+    });
 };
 
 /**
@@ -229,9 +287,7 @@ export default async function proxy(request: NextRequest) {
         }
 
         if (isUnroutableEnglishPath(segments)) {
-            return NextResponse.rewrite(
-                new URL(`/${segments[0]}/__not-found`, request.url),
-            );
+            return notFoundIn(request, segments[0]);
         }
     }
 
@@ -245,9 +301,7 @@ export default async function proxy(request: NextRequest) {
         segments.length > 2 &&
         (segments.length > 3 || !/^[a-z][a-z0-9-]*$/.test(segments[2]))
     ) {
-        return NextResponse.rewrite(
-            new URL(`/${segments[0]}/__not-found`, request.url),
-        );
+        return notFoundIn(request, segments[0]);
     }
 
     /**
@@ -273,7 +327,7 @@ export default async function proxy(request: NextRequest) {
             const url = request.nextUrl.clone();
             url.pathname = `/${home[1]}/today`;
 
-            return NextResponse.rewrite(url);
+            return healSessionHint(request, NextResponse.rewrite(url));
         }
     }
 
@@ -297,6 +351,10 @@ export default async function proxy(request: NextRequest) {
                 new URL(`/${locale}/auth/login?from=${from}`, request.url),
             );
         }
+
+        // A protected page is proof the token verified, so the same drift is repaired
+        // here — `/profile` and `/progress` showed the signed-out bar for the same reason.
+        return healSessionHint(request, intlMiddleware(request));
     }
 
     const response = intlMiddleware(request);

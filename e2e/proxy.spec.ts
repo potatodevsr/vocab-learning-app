@@ -180,3 +180,72 @@ test.describe("proxy: the home page session branch", () => {
     await expect(page.getByTestId("today-card")).toBeVisible();
   });
 });
+
+/**
+ * The signed-in shell.
+ *
+ * `user_token` is `httpOnly`; `signed_in` is the readable hint `lib/use-session.ts` uses to
+ * decide whether to ask the API who the visitor is. They are set together at sign-in and
+ * can come apart — a session opened before the hint existed carries only the token, and a
+ * browser or extension that prunes non-`httpOnly` cookies produces the same state.
+ *
+ * The visible failure was a learner reading their own Today card — private content, which
+ * only renders because middleware verified the token — under an app bar offering Login and
+ * Signup. Middleware re-issues the hint on any request whose token it has just verified.
+ */
+test.describe("proxy: session hint", () => {
+  const dropHint = async (context: import("@playwright/test").BrowserContext) => {
+    const cookies = await context.cookies();
+    await context.clearCookies();
+    await context.addCookies(cookies.filter((cookie) => cookie.name !== "signed_in"));
+  };
+
+  test("a token without the hint still renders the signed-in home", async ({
+    page,
+    context,
+  }) => {
+    await registerThroughUi(page);
+    await dropHint(context);
+
+    await page.goto("/en");
+
+    // The private half of `/` — proof the token was accepted.
+    await expect(page.getByTestId("today-card")).toBeVisible();
+
+    // And the bar agrees with it.
+    await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Log in" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Sign up" })).toHaveCount(0);
+  });
+
+  test("the hint is re-issued rather than left missing", async ({ page, context }) => {
+    await registerThroughUi(page);
+    await dropHint(context);
+
+    expect(
+      (await context.cookies()).some((cookie) => cookie.name === "signed_in"),
+    ).toBe(false);
+
+    await page.goto("/en/profile");
+
+    const healed = (await context.cookies()).find(
+      (cookie) => cookie.name === "signed_in",
+    );
+
+    expect(healed?.value).toBe("1");
+    // Readable on purpose: the hook is a client component.
+    expect(healed?.httpOnly).toBe(false);
+  });
+
+  test("an anonymous visitor is never given a session hint", async ({
+    page,
+    context,
+  }) => {
+    await context.clearCookies();
+    await page.goto("/en");
+
+    expect(
+      (await context.cookies()).some((cookie) => cookie.name === "signed_in"),
+    ).toBe(false);
+  });
+});

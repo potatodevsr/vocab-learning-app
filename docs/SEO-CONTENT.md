@@ -159,6 +159,26 @@ as two URLs but one page of work.
 
 ### 4.0 Summary
 
+> **Amendment, 2026-08-29.** The pronunciation (§U), minimal-pair, phrasal-verb, Thai-letter
+> and word-search families were built and deployed, and then found to be rendering raw
+> translation keys — `Pronunciation.metaTitle` was a live `<title>`, in both locales,
+> because their `messages` namespaces did not exist. They were also absent from both
+> sitemaps, from every navigation surface, and from the test suite; the coverage audit had
+> been reporting their sixteen routes as unvisited while the deploy ran anyway.
+>
+> All of that is repaired: both locales carry authored copy, the families are submitted in
+> `app/sitemap.ts` behind the same floors their pages apply to their own `robots` (one
+> module, `lib/content-index.ts`, so the two cannot disagree), they are linked from the
+> footer and the HTML sitemap, and `e2e/i18n-keys.spec.ts` fails if any rendered page or
+> `<head>` contains a key-shaped string.
+>
+> Three URLs this document lists as planned — `/english/word-of-the-day`,
+> `/english/printables`, `/english/flashcards` — were answering **200 with a "level not
+> found" body**, because `ENGLISH_STATIC_CHILDREN` told middleware a page existed there.
+> They now 404 until a route exists; `UNBUILT_ENGLISH_CHILDREN` in `lib/routes.ts` is the
+> list, and `e2e/unit/route-inventory.spec.ts` fails if it disagrees with the filesystem in
+> either direction.
+
 | # | Family | URL pattern | URLs | Status | Gate |
 | --- | --- | --- | ---: | --- | --- |
 | A | Word pages | `/english/words/[slug]` | 5,944 | exists, needs enrichment | D2 D3 D4 D5 |

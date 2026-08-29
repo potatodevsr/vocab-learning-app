@@ -412,7 +412,7 @@ export function PracticeSession({
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           {isAuthed || claimed ? (
             <div
-              className="play-tile flex items-center gap-3 p-4 text-sm font-semibold [--tile-block:var(--success)]"
+              className="play-tile flex items-center gap-3 p-4 text-sm font-semibold"
               data-testid="practice-saved"
             >
               <Check className="size-5 text-success" />

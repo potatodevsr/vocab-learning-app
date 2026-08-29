@@ -7,7 +7,7 @@ import { API, asAnonymous, asNewUser } from "../support/api";
  * schema.prisma `UnitCheckpoint`): a fixed five-item graded gate over words the learner has
  * *already met* in the unit, served with no answer key (no word ids, no slugs, no correct
  * option index, and for a spelling item not even the target word). The server is the only
- * thing that ever decides correctness, and the pass gate has a mastery half a lucky
+ * thing that ever decides correctness, and the pass gate has a strength half a lucky
  * five-in-a-row cannot shortcut.
  *
  * Word ids follow the e2e seed convention (backend/scripts/generate-e2e-seed.mjs): A1 unit 1
@@ -158,7 +158,7 @@ test.describe("POST /progress/checkpoint/answer", () => {
     }
 
     // Five items answered, but only five of the unit's twenty words are even studied and
-    // none is mastered — so the mastery half of the gate blocks the pass no matter the
+    // none is strong — so the strength half of the gate blocks the pass no matter the
     // score, and there is a real recovery remainder to work off.
     expect(final.done).toBe(true);
     expect(final.passed).toBe(false);

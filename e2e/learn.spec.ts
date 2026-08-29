@@ -148,3 +148,115 @@ test.describe("mixed session", () => {
     expect(box?.width).toBeLessThanOrEqual(390);
   });
 });
+
+/**
+ * The session mode has to reach the server.
+ *
+ * `mixed-session.tsx` was calling `startSession({ level, unit })` and dropping `mode`, so
+ * `/learn?mode=review` and `/learn?mode=comeback` both opened an ordinary session. Nothing
+ * broke visibly — the server ignores an unknown mode and every route still produced eight
+ * items — so the Today card's "you have N due" CTA and the returning-learner CTA spent
+ * their whole life pointing at behaviour that never ran.
+ */
+test.describe("session mode reaches the API", () => {
+  test("a review request asks for a review", async ({ page }) => {
+    await registerThroughUi(page);
+
+    const started = page.waitForRequest(
+      (request) =>
+        request.url().includes("/api/progress/session/start") &&
+        request.method() === "POST",
+    );
+
+    await page.goto("/en/learn?level=A1&mode=review");
+
+    expect((await started).postDataJSON()).toMatchObject({ mode: "review" });
+  });
+
+  test("a mistakes request asks for the mistake set", async ({ page }) => {
+    await registerThroughUi(page);
+
+    const started = page.waitForRequest(
+      (request) =>
+        request.url().includes("/api/progress/session/start") &&
+        request.method() === "POST",
+    );
+
+    await page.goto("/en/learn?mode=mistakes");
+
+    expect((await started).postDataJSON()).toMatchObject({ mode: "mistakes" });
+  });
+
+  test("an ordinary lesson sends no mode at all", async ({ page }) => {
+    await registerThroughUi(page);
+
+    const started = page.waitForRequest(
+      (request) =>
+        request.url().includes("/api/progress/session/start") &&
+        request.method() === "POST",
+    );
+
+    await page.goto("/en/learn?level=A1&unit=1");
+
+    // The server defaults an absent mode to `normal`, so an old client keeps working and
+    // the default path carries no redundant field.
+    const body = (await started).postDataJSON();
+    expect(body).not.toHaveProperty("mode");
+    expect(body).toMatchObject({ level: "A1", unit: 1 });
+  });
+});
+
+/**
+ * `scope.mode` is in `boot`'s dependency list.
+ *
+ * It was missing, so the callback closed over whichever mode it was first created with.
+ * **This is hygiene, not a live defect, and the test below says only what it proves:** the
+ * route renders `<MixedSession key={`${level}-${unit}-${mode}`} …>`, so a mode change
+ * remounts the component and a stale callback is discarded before it can be read. The
+ * dependency matters the day somebody removes that key — which is exactly when nobody will
+ * be looking for this.
+ *
+ * A test that genuinely exercised a prop change on a *mounted* component would need a
+ * component harness this suite does not have; `page.goto` remounts, so it cannot.
+ */
+test.describe("changing mode starts the session that was asked for", () => {
+  test("arriving at the mistake set requests the mistake set", async ({ page }) => {
+    await registerThroughUi(page);
+
+    await page.goto("/en/learn?level=A1&unit=1");
+    await expect(page.getByTestId("session-card")).toBeVisible();
+
+    const started = page.waitForRequest(
+      (request) =>
+        request.url().includes("/api/progress/session/start") &&
+        request.method() === "POST",
+    );
+
+    await page.goto("/en/learn?mode=mistakes");
+
+    expect((await started).postDataJSON()).toMatchObject({ mode: "mistakes" });
+  });
+
+  test("the route keys the session on its mode, which is what forces the remount", async ({
+    page,
+  }) => {
+    await registerThroughUi(page);
+
+    await page.goto("/en/learn?level=A1&unit=1");
+    await expect(page.getByTestId("session-card")).toBeVisible();
+
+    // A different mode is a different session, not the same one re-labelled: the previous
+    // session's items must not still be on screen.
+    const before = await page.getByTestId("session-counter").textContent();
+
+    await page.goto("/en/learn?level=A1&mode=review");
+
+    // Either a fresh session or the empty-review state — never the old session's progress.
+    const counter = page.getByTestId("session-counter");
+    if (await counter.count()) {
+      await expect(counter).toHaveText(/^1 of/);
+    }
+
+    expect(before).toMatch(/^1 of/);
+  });
+});

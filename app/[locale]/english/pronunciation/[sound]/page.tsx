@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { TrackPageView } from "@/components/track-page-view";
 import { WordChips } from "@/components/word-chips";
 import { SOUND_GUIDES, soundBySlug, type SoundGuide } from "@/content/pronunciation";
+import { MIN_SOUND_EXAMPLES } from "@/lib/content-index";
 import { pickWords } from "@/lib/word-lookup";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
 
@@ -26,7 +27,9 @@ export const revalidate = 3600;
 
 type Props = { params: Promise<{ locale: string; sound: string }> };
 
-const MIN_EXAMPLES = 8;
+// The floor lives in lib/content-index.ts because app/sitemap.ts applies the same one;
+// two copies of "eight examples" is how a sitemap starts advertising noindex URLs.
+const MIN_EXAMPLES = MIN_SOUND_EXAMPLES;
 
 export function generateStaticParams() {
     // On demand and then cached. `middleware.ts` already rejects a slug that is not in

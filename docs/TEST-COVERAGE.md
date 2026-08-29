@@ -445,3 +445,42 @@ Stated rather than hidden:
   own the whole indexability contract — canonicals, hreflang, JSON-LD, robots, the sitemap,
   the page inventory of `SEO-CONTENT.md` — and only the delivery rows above are listed. The
   tests exist and run; this ledger has never described them.
+
+## Localization integrity, editorial families, mastery policy (2026-08-29)
+
+Added with the P0/P1 work in `todo.md`. Every row here is a condition that had no test
+when the defect it describes reached production.
+
+| Area | Conditions | Test |
+| --- | --- | --- |
+| Translation keys resolve | every literal `t("key")` in `app/` and `components/` exists in **both** locales, resolved through the variable each namespace is bound to (a file may bind `t` twice); every value of an enumerable dynamic family (`AlphabetLetter.kind.*`, `AlphabetLetter.about.*`, `Level.blurb*`, `Level.track*`) exists in both | `unit/messages` |
+| No rendered key | for **26 public routes × 2 locales**: `<title>`, `meta[description]`, `og:title` and the visible DOM contain no `Namespace.someKey` string. Script tags are stripped first — the RSC flight payload carries the whole message bundle and is full of key-shaped text | `i18n-keys` |
+| Copy promises only what ships | no `Home`/`Level`/`EnglishHub`/`WordsIndex`/`WordsLetter`/`Unit`/`Word`/`Lesson`/`Session` string advertises example sentences while 29 of 3,082 rows have one; the four honest uses (a conditional badge, a section heading, the page that says there are none) are listed by name | `unit/messages` |
+| ICU placeholders | argument *names* match across locales, not literal `{token}` spellings — Thai has no plural inflection, so `{active}` legitimately faces `{active, plural, …}` | `unit/messages` |
+| Route inventory ↔ filesystem | every routable `ENGLISH_STATIC_CHILDREN` entry has a `page.tsx`; every `UNBUILT_ENGLISH_CHILDREN` entry has none and is unroutable at *every* depth (the index included — that is what made `/english/word-of-the-day` a 200 saying "level not found") | `unit/route-inventory` |
+| Family slug lists | non-empty, duplicate-free, URL-safe, and identical to the editorial content they route to in both directions | `unit/route-inventory` |
+| Indexing floors | hubs are always submitted; a sound guide below `MIN_SOUND_EXAMPLES` and a pair below `MIN_PAIR_LINKED_WORDS` are not; phrasal verbs carry their own examples so they have no corpus floor; `/english/search` is a control and is never submitted | `unit/content-index` |
+| Editorial families render | hub + member for pronunciation, minimal pairs and phrasal verbs, in both locales: authored `<title>`, description and `h1`; the documented empty-example branch; a real 404 for an unknown member | `content-families` |
+| Word search | the input is present after hydration; an English word returns results; a Thai meaning finds its word; a misspelling returns suggestions rather than an empty page | `content-families` |
+| Thai letter pages | letter page names the letter and its sounds; a letter used by a course meaning lists the words; an unknown letter is the *streamed* not-found (`noindex`, 200 — the id is data, not a string middleware can judge) | `content-families` |
+| Signed-in shell | a valid `user_token` with no `signed_in` hint still renders the Today card **and** the account menu, never Login/Signup; the hint is re-issued readable; an anonymous visitor is never given one | `proxy` |
+| Strong predicate | two days required, one of them a recall; warm-ups credit nothing; recognition credits a day but not a recall; a second answer on the same local day credits nothing; the Bangkok boundary (18:00 UTC is already tomorrow) | `unit/mastery` |
+| Interval ladder | monotonic, past the old 30-day ceiling, one interval per rung, clamped at both ends; the retired rung is a maintenance interval; mastered is a claim *below* the scheduling ceiling | `unit/mastery` |
+| Mastery pips | `strong` is the server's verdict — a high rung without evidence is "learning", a low rung with evidence is "strong", and "mastered" outranks both | `unit/session-rounds` |
+| Strong, end to end | two sessions on one day leave every level's `strong` count at 0; the export carries `strong`, `strongDays`, `recallDays`; at least two words per session hold no evidence at all (the two warm-up slots) | `api/session.api` |
+| Mistake sessions | no mistakes → an empty result, not a session; `mode=mistakes` practises words the learner actually missed; the set is never scoped to a unit | `api/session.api` |
+| Mistake CTA | `/review`'s practise button links to `/learn?mode=mistakes` and really opens a session — it used to link to the legacy quiz for the unit the *first* listed mistake belonged to | `profile` |
+| Pronunciation trust | digits (Arabic and Thai) and bracket debris are quarantined in a *pronunciation* but not in a *meaning* — `"3 มิติ"` is a real gloss, `"เอ๊ 9"` is wreckage | `unit/review` |
+| Data export | both formats are linked from the profile; JSON carries learner/summary/words and no password; CSV is a `text/csv` attachment; an anonymous request is 401 | `profile` |
+
+### Still not covered
+
+- **In-session recovery of a missed word.** Not implemented: the session's `wordIds` and
+  `itemTypes` are fixed at creation, which is what makes resume deterministic, so requeuing
+  needs pre-allocated recovery slots and a column to bind them. See `todo.md`.
+- **A full A1 progression simulation.** The reserved-slot policy is asserted as a constant
+  and the selection query is exercised by the session suite, but no test plays a level to
+  exhaustion across simulated days. The fixture has 45 words and no way to advance time.
+- **`word-chips` populated.** The editorial families cite real slugs (`think`, `advice`);
+  the fixture corpus is `word1`…`word20`, so only the empty branch is reachable. Asserted
+  as empty, with the reason, until the seed carries real words.

@@ -48,7 +48,7 @@ type Phase = "loading" | "in-progress" | "checking" | "feedback" | "result" | "b
 export type MixedSessionScope = {
   level: CefrLevel;
   unit?: number;
-  mode?: "normal" | "comeback" | "review";
+  mode?: "normal" | "comeback" | "review" | "mistakes";
 };
 
 type MixedSessionProps = {
@@ -82,9 +82,21 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
   const boot = useCallback(async () => {
     setPhase("loading");
     try {
-      const result = await startSession(
-        scope.unit === undefined ? { level: scope.level } : { level: scope.level, unit: scope.unit },
-      );
+      /**
+       * `mode` has to travel with the request.
+       *
+       * It was being dropped here, so `/learn?mode=review` and `/learn?mode=comeback`
+       * opened an ordinary session: the Today card's "you have N due" CTA and the
+       * returning-learner CTA both pointed at a mode the server never heard about. The
+       * server ignores an unknown value and the client showed no error, which is why it
+       * went unnoticed — every route still produced a working session, just not the one it
+       * said it would.
+       */
+      const result = await startSession({
+        level: scope.level,
+        ...(scope.unit === undefined ? {} : { unit: scope.unit }),
+        ...(scope.mode === undefined || scope.mode === "normal" ? {} : { mode: scope.mode }),
+      });
       setSessionId(result.sessionId);
       setItems(result.items);
       setDueCount(result.dueCount);
@@ -108,7 +120,11 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
       }
       setPhase("error");
     }
-  }, [scope.level, scope.unit]);
+    // `scope.mode` belongs here: `boot` reads it, and without it a mode change on an
+    // already-mounted component would start a session in the previous mode. The route
+    // remounts on mode today (`key` on the element), so the stale read is latent rather
+    // than visible — which is exactly the kind of thing that stops being latent later.
+  }, [scope.level, scope.unit, scope.mode]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void boot(), 0);

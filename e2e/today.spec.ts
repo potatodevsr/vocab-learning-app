@@ -46,7 +46,14 @@ test.describe("Today card", () => {
   test("a fresh learner's primary CTA starts today's session", async ({ page }) => {
     await registerThroughUi(page);
     await page.goto("/en");
-    await expect(page.getByTestId("today-new-lesson")).toBeVisible();
+    await expect(page.getByTestId("today-new-lesson")).toHaveText(
+      "Start today's session",
+    );
+
+    await page.goto("/th");
+    await expect(page.getByTestId("today-new-lesson")).toHaveText(
+      "เริ่มบทเรียนวันนี้",
+    );
   });
 
   test("finishing a session, then returning home, offers the next one — not a resume of the finished one", async ({

@@ -12,9 +12,12 @@ import { API, asAnonymous, asNewUser } from "../support/api";
 const WORD_A = "e2e-a1-0001";
 const WORD_B = "e2e-a1-0002";
 
-// The exact, portable CSV header — EXPORT_WORD_COLUMNS in backend/src/progress.ts, in order.
+// The exact, portable CSV header — EXPORT_WORD_COLUMNS in backend/src/progress.ts, in
+// order. `strong` and the two counters behind it are exported alongside the rung so a
+// learner's own copy of their data says *why* a word is called strong, not only that it
+// is (backend/src/mastery.ts).
 const CSV_HEADER =
-  "displayWord,level,unit,mastery,lastSeenAt,nextReviewAt,correctCount,incorrectCount";
+  "displayWord,level,unit,mastery,strong,strongDays,recallDays,strongAt,lastSeenAt,nextReviewAt,correctCount,incorrectCount";
 
 const TOP_KEYS = ["exportedAt", "learner", "summary", "words"] as const;
 

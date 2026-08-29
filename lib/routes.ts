@@ -48,6 +48,29 @@ export const ENGLISH_STATIC_CHILDREN = [
 ] as const;
 
 /**
+ * The families this list names that no route answers yet.
+ *
+ * Being in `ENGLISH_STATIC_CHILDREN` told middleware "a page exists here, let it
+ * through", and for these four nothing did: `/english/word-of-the-day`,
+ * `/english/printables` and `/english/flashcards` all fell past their missing segment to
+ * `[level]`, which rendered "level not found" under a **200**. A soft 404 is the one
+ * answer worse than a 404 — Google keeps crawling it and a person cannot tell the page is
+ * absent from the page saying so.
+ *
+ * They stay listed above because the inventory in `docs/SEO-CONTENT.md` still plans them
+ * and their slug lists below are still the shape they will take. Deleting a name from
+ * this set is what publishes the family, and `e2e/unit/route-inventory.spec.ts` fails if
+ * that happens without the matching `page.tsx` — or if a route lands while its name is
+ * still here.
+ */
+export const UNBUILT_ENGLISH_CHILDREN = new Set([
+    "printables",
+    "flashcards",
+    "plan",
+    "word-of-the-day",
+]);
+
+/**
  * The largest unit number any level could plausibly reach.
  *
  * `UNIT_SIZE` is 20 and the biggest CEFR level holds ~830 published words, so a level runs
@@ -202,6 +225,9 @@ const includes = (list: readonly string[], value: string) => list.includes(value
 export const isUnroutableFamilyPath = (segments: string[]): boolean => {
     // ["th", "english", family, member, …]
     const [, , family, member] = segments;
+
+    // A planned family with no route is unroutable at every depth, index included.
+    if (family !== undefined && UNBUILT_ENGLISH_CHILDREN.has(family)) return true;
 
     const flat = (slugs: readonly string[]) => {
         if (segments.length === 3) return false;

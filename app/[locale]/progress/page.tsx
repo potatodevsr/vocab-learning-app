@@ -150,7 +150,7 @@ export default async function ProgressPage({ params }: ProgressPageProps) {
         {summary.mistakes > 0 ? (
           <Link
             href="/review"
-            className="play-tile play-focus flex items-center justify-between gap-4 p-6 [--tile-block:var(--warn)]"
+            className="play-tile play-focus flex items-center justify-between gap-4 p-6"
             data-testid="progress-mistakes-link"
           >
             <span>

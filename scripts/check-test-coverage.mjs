@@ -35,10 +35,6 @@ const EXEMPT = new Map([
     ],
     ["backend/src/seed-vocab.ts:default", "legacy one-off seed script, superseded by scripts/generate-*-seed.mjs"],
     [
-        "backend/src/progress.ts:MASTERY_MASTERED",
-        "asserted behaviourally in e2e/api/gamification.api.spec.ts; importing it into the web tsconfig would pull the backend's generated tree into typechecking",
-    ],
-    [
         "backend/src/reminders.ts:runReminderPass",
         "driven end-to-end through POST /api/reminders/run in e2e/reminders.spec.ts; importing the module pulls the backend's generated tree into web typechecking",
     ],
@@ -62,6 +58,10 @@ const EXEMPT = new Map([
         "backend/src/practice.ts:verifyTrialClaim",
         "asserted through forged, valid and replayed claim-cookie requests in e2e/api/practice.api.spec.ts; importing the route pulls generated backend code into web tsc",
     ],
+    ...["publishedBySlug", "pickWords"].map((name) => [
+        `lib/word-lookup.ts:${name}`,
+        "exercised through the rendered pronunciation, minimal-pair and phrasal-verb pages in e2e/content-families.spec.ts — including the empty-corpus branch. Both are wrapped in React's `cache()`, which needs a request scope a unit spec has no way to open",
+    ]),
     ...[
         "redirectUriFor",
         "startGoogleAuth",

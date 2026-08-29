@@ -234,7 +234,7 @@ export async function MarketingHome({ locale }: { locale: string }) {
               ].map((proof) => (
                 <div
                   key={proof.label}
-                  className="play-sticker flex items-baseline gap-3 p-4 text-ink [--tile-block:var(--ink)] sm:block"
+                  className="play-sticker flex items-baseline gap-3 p-4 text-ink [--tile-block:var(--accent-sun)] sm:block"
                   style={{ transform: `rotate(${proof.tilt})` }}
                 >
                   <dt className="text-2xl font-extrabold">{proof.value}</dt>
@@ -279,7 +279,7 @@ export async function MarketingHome({ locale }: { locale: string }) {
               return (
                 <Card
                   key={feature.key}
-                  className="home-feature-card play-tile gap-0 rounded-[20px] border-0 p-6"
+                  className="home-feature-card play-sticker gap-0 p-6"
                   style={
                     {
                       "--tile-block": feature.block,

@@ -142,6 +142,44 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       </section>
 
       <section className="mx-auto grid w-full max-w-column gap-6 px-4 sm:px-6 py-10 lg:px-8">
+        {/*
+          The takeout, which the API has always been able to produce and the profile has
+          never offered. The privacy policy promises a learner can get their data out;
+          until this existed that promise needed a support request nobody could make.
+
+          Plain links to the forwarder, not a fetch: the response is an attachment, and a
+          navigation is what makes a browser save it. `download` is a hint — the API sets
+          `Content-Disposition` either way.
+        */}
+        <Card className="play-card" data-testid="profile-data">
+          <CardContent className="p-6 sm:p-8">
+            <h2 className="text-xl font-extrabold">{t("dataTitle")}</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("dataBody")}</p>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <a
+                href="/api/progress/export?format=json"
+                download
+                data-testid="profile-export-json"
+                className="play-press play-focus inline-flex min-h-11 items-center gap-2 rounded-full border-3 border-ink bg-white px-5 font-extrabold text-ink hover:bg-accent-mint"
+              >
+                {t("exportJson")}
+              </a>
+
+              <a
+                href="/api/progress/export?format=csv"
+                download
+                data-testid="profile-export-csv"
+                className="play-press play-focus inline-flex min-h-11 items-center gap-2 rounded-full border-3 border-ink bg-white px-5 font-extrabold text-ink hover:bg-accent-mint"
+              >
+                {t("exportCsv")}
+              </a>
+            </div>
+
+            <p className="mt-3 text-xs text-muted-foreground">{t("dataNote")}</p>
+          </CardContent>
+        </Card>
+
         <Card className="play-card">
           <CardContent className="p-6 sm:p-8">
             <h2 className="text-xl font-semibold">{t("accountTitle")}</h2>
@@ -187,7 +225,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <Link
             href="/review"
             data-testid="profile-mistakes-cta"
-            className="play-tile play-focus flex items-center justify-between gap-4 p-6 [--tile-block:var(--warn)]"
+            className="play-tile play-focus flex items-center justify-between gap-4 p-6"
           >
             <div>
               <p className="text-lg font-semibold">{t("reviewMistakes")}</p>

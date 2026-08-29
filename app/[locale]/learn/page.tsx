@@ -57,7 +57,14 @@ export default async function LearnPage({ params, searchParams }: LearnPageProps
   const lastUnit = Math.max(1, Math.ceil(publishedCount / UNIT_SIZE));
   const unit = requestedUnit === undefined ? undefined : Math.min(requestedUnit, lastUnit);
   const requestedMode = getSingleValue(query.mode);
-  const mode = requestedMode === "comeback" || requestedMode === "review" ? requestedMode : "normal";
+  const mode =
+    requestedMode === "comeback" ||
+    requestedMode === "review" ||
+    // The mistake bank's own session: the server picks the learner's worst words, across
+    // every unit and level, so no scope travels in the URL.
+    requestedMode === "mistakes"
+      ? requestedMode
+      : "normal";
 
   return (
     /*

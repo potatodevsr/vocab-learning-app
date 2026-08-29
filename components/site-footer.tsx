@@ -31,6 +31,13 @@ const EXPLORE = [
   { href: "/english", key: "englishHub" },
   { href: "/english/test", key: "levelTest" },
   { href: "/english/words", key: "allWords" },
+  { href: "/english/search", key: "wordSearch" },
+  // The editorial families (SEO-CONTENT §U–§AB). They shipped with no route into them
+  // from anywhere in the app, which is half of why nobody noticed they were rendering
+  // translation keys: the only way to reach one was to type its URL.
+  { href: "/english/pronunciation", key: "pronunciation" },
+  { href: "/english/minimal-pairs", key: "minimalPairs" },
+  { href: "/english/phrasal-verbs", key: "phrasalVerbs" },
   { href: "/thai-alphabet", key: "thaiAlphabet" },
 ] as const;
 

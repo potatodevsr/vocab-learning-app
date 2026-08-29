@@ -176,9 +176,15 @@ test.describe("profile → review mistakes", () => {
     await expect(counts.last()).toHaveText("1× wrong");
   });
 
-  test("the practise button sends the learner to the unit the mistake came from", async ({
-    page,
-  }) => {
+  /**
+   * The button practises the mistakes, not a unit one of them belongs to.
+   *
+   * It used to link to `/quiz?level=A1&unit=1` — the unit of the first listed mistake —
+   * so under a list spanning several units it practised twenty other words. The set is
+   * chosen server-side from the learner's own worst answers (`mode=mistakes` in
+   * `backend/src/session.ts`); the client never names the words.
+   */
+  test("the practise button practises the learner's own mistake set", async ({ page }) => {
     await registerThroughUi(page);
     await recordQuizWithMistakes(page);
 
@@ -186,10 +192,70 @@ test.describe("profile → review mistakes", () => {
 
     const practise = page.getByTestId("practise-mistakes");
     await expect(practise).toBeVisible();
-    // Missed words were seeded into A1 unit 1, so that is where practice must resume.
-    await expect(practise).toHaveAttribute(
+    await expect(practise).toHaveAttribute("href", "/en/learn?mode=mistakes");
+
+    await practise.click();
+
+    // And it really is a session over the words that were missed.
+    await expect(page.getByTestId("session-card")).toBeVisible();
+  });
+});
+
+/**
+ * The takeout the privacy policy promises.
+ *
+ * `/progress/export` has existed since the API did, in both formats, and the profile never
+ * linked to it — so "you can download your data" was true of the server and false of the
+ * product. These are plain links rather than a fetch, because a navigation is what makes a
+ * browser save an attachment.
+ */
+test.describe("profile: your data", () => {
+  test("offers both export formats", async ({ page }) => {
+    await registerThroughUi(page);
+    await page.goto("/en/profile");
+
+    await expect(page.getByTestId("profile-data")).toBeVisible();
+    await expect(page.getByTestId("profile-export-json")).toHaveAttribute(
       "href",
-      `/en/quiz?level=A1&unit=${SEED.unit1.number}`,
+      "/api/progress/export?format=json",
     );
+    await expect(page.getByTestId("profile-export-csv")).toHaveAttribute(
+      "href",
+      "/api/progress/export?format=csv",
+    );
+  });
+
+  test("the JSON export really is this learner's own data", async ({ page }) => {
+    await registerThroughUi(page);
+
+    const response = await page.request.get("/api/progress/export?format=json");
+
+    expect(response.status()).toBe(200);
+
+    const body = await response.json();
+
+    expect(body).toHaveProperty("learner");
+    expect(body).toHaveProperty("summary");
+    expect(body).toHaveProperty("words");
+    // Never an id, a token or a hash — see the export route's own comment.
+    expect(JSON.stringify(body)).not.toContain("password");
+  });
+
+  test("the CSV export is an attachment", async ({ page }) => {
+    await registerThroughUi(page);
+
+    const response = await page.request.get("/api/progress/export?format=csv");
+
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toContain("text/csv");
+    expect(response.headers()["content-disposition"]).toContain("attachment");
+  });
+
+  test("an anonymous visitor cannot export anything", async ({ page, context }) => {
+    await context.clearCookies();
+
+    const response = await page.request.get("/api/progress/export?format=json");
+
+    expect(response.status()).toBe(401);
   });
 });

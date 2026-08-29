@@ -93,7 +93,7 @@ export async function TodayCard({ summary }: { summary: TodaySummary }) {
         )}
 
         <div
-          className="play-tile flex items-center justify-between gap-4 p-5 [--tile-block:var(--accent-mint)]"
+          className="play-sticker flex items-center justify-between gap-4 p-5"
           data-testid="today-weekly-goal"
         >
           <div className="flex items-center gap-3">

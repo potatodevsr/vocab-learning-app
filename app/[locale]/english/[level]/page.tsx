@@ -246,13 +246,13 @@ export default async function LevelPage({ params }: LevelPageProps) {
 
               {/* Solid chips: small white text on a white/20 wash measured 3.7:1. */}
               <div className="flex flex-wrap gap-3 text-sm">
-                <div className="play-sticker rounded-full px-4 py-2 font-bold text-ink [--tile-block:var(--ink)] [--lift:4px]">
+                <div className="rounded-full border-3 border-ink bg-card px-4 py-2 font-bold text-ink">
                   {t("statEntries", { count: totalWords, level })}
                 </div>
-                <div className="play-sticker rounded-full px-4 py-2 font-bold text-ink [--tile-block:var(--ink)] [--lift:4px]">
+                <div className="rounded-full border-3 border-ink bg-card px-4 py-2 font-bold text-ink">
                   {t("statUnits", { count: units.length })}
                 </div>
-                <div className="play-sticker rounded-full px-4 py-2 font-bold text-ink [--tile-block:var(--ink)] [--lift:4px]">
+                <div className="rounded-full border-3 border-ink bg-card px-4 py-2 font-bold text-ink">
                   {t("statPerUnit", { size: unitSize })}
                 </div>
               </div>
@@ -326,7 +326,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
             const Icon = step.icon;
 
             return (
-              <Card key={step.key} className="play-tile [--tile-block:var(--accent-mint)]">
+              <Card key={step.key} className="play-sticker">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div
@@ -396,8 +396,8 @@ export default async function LevelPage({ params }: LevelPageProps) {
                 key={unit.id}
                 className={
                   isFirst
-                    ? "play-tile relative [--tile-block:var(--accent-sun)]"
-                    : "play-tile relative [--tile-block:var(--accent-sky)]"
+                    ? "play-tile relative"
+                    : "play-tile relative"
                 }
               >
                 <CardContent className="grid gap-5 p-5 sm:grid-cols-[56px_1fr_auto] sm:items-center">

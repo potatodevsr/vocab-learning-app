@@ -41,8 +41,9 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   const bank = await getMistakesWithToken(token);
   const rows = bank?.words ?? [];
 
-  // Where to send the learner to practise: the unit their worst word came from.
-  const firstUnit = rows.find((row) => row.unit !== null);
+  // The CTA needs no scope any more — the server picks the mistake set — so the only
+  // question left is whether there is anything to practise at all.
+  const hasMistakes = rows.length > 0;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -95,7 +96,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               {rows.map((mistake) => (
                 <li
                   key={mistake.wordId}
-                  className="play-tile flex flex-wrap items-center justify-between gap-4 p-5 [--tile-block:var(--warn)]"
+                  className="play-tile flex flex-wrap items-center justify-between gap-4 p-5"
                 >
                   <div className="min-w-0">
                     <p className="text-xl font-semibold">
@@ -116,6 +117,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
 
                     <MasteryPips
                       mastery={mistake.mastery}
+                      strong={mistake.strong}
                       label={t("masteryLabel", {
                         mastery: mistake.mastery,
                         max: 5,
@@ -126,16 +128,22 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
               ))}
             </ul>
 
-            {firstUnit && (
+            {hasMistakes && (
               <Button
                 asChild
                 size="lg"
                 className="play-key mt-8 h-14 w-full rounded-2xl bg-brand px-7 text-base font-extrabold text-white hover:bg-brand sm:w-auto"
               >
-                <Link
-                  data-testid="practise-mistakes"
-                  href={`/quiz?level=${firstUnit.level}&unit=${firstUnit.unit}`}
-                >
+                {/*
+                  The exact mistakes, not the unit one of them came from.
+
+                  This used to point at `/quiz?level=…&unit=…` for the unit the first
+                  mistake belonged to, so the button under a list of words spanning several
+                  units practised twenty other words instead. `mode=mistakes` asks the
+                  server for the learner's own worst words, across every unit and level —
+                  the ids stay server-side, like every other selection.
+                */}
+                <Link data-testid="practise-mistakes" href="/learn?mode=mistakes">
                   {t("practise")}
                   <ArrowRight className="size-4" />
                 </Link>
