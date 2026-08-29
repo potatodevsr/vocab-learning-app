@@ -11,9 +11,9 @@ below instead of being left as an unchecked task with a paragraph saying it is d
 
 ## Release hold
 
-The P0 and mastery/SRS corrections are implemented in the working tree, but they are not
-release-verified. Nothing is committed or deployed, and no completed implementation should
-be treated as shipped until both full-stack e2e halves are observed green.
+The P0 and mastery/SRS corrections are implemented and committed locally, but they are not
+release-verified or deployed. No completed implementation should be treated as shipped
+until both full-stack e2e halves are observed green.
 
 Latest evidence:
 
@@ -26,7 +26,10 @@ Latest evidence:
 - Coverage audit: 181 runtime exports, 210 test IDs, and every route referenced.
 - Production migrations: 16 applied migrations immutable; 6 new migrations additive.
 - `git diff --check`: clean.
-- Worktree at the last audit: 78 changed paths.
+- Backend commit: `f88fe3d`.
+- Web commit: `998821e`.
+- The web commit still records backend `4a852f3`; the checked-out backend is
+  `f88fe3d`, so the submodule pointer remains an uncommitted web-repository change.
 
 Release-gate work:
 
@@ -37,8 +40,10 @@ Release-gate work:
 - [ ] Observe both full e2e halves green without a hidden Worker restart.
 - [ ] Re-run typecheck, lint, coverage audit, migration validation, and
   `git diff --check` on the final tree.
-- [ ] Commit in API-first order, regenerate web API types from the committed API, and
-  commit the backend submodule pointer.
+- [ ] Regenerate and verify web API types against backend `f88fe3d`.
+- [ ] After the green gate, record backend `f88fe3d` in the web submodule pointer and
+  decide whether the premature local commits should be rebuilt or followed by a
+  verification commit. Do not push them before that decision.
 - [ ] Deploy the API migration and Worker first, then the web Worker; verify the production
   service binding, incremental caches, and learner-visible behavior.
 
@@ -47,7 +52,7 @@ lockfile. The `^4.86.0` package declaration is a range, not a pin. CI retries a 
 test once and the launcher restarts a crashed Worker, so a nominally green CI result does
 not currently prove the Worker survived the run.
 
-## Implemented in the working tree
+## Implemented locally
 
 These items are awaiting the release gate above, not further product implementation:
 
