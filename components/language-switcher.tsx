@@ -43,7 +43,7 @@ export function LanguageSwitcher({
       aria-label={t("language")}
       className={cn(
         "flex items-center gap-1 rounded-full p-1",
-        onColor ? "bg-ink/25" : "bg-brand-soft",
+        onColor ? "bg-[color-mix(in_oklab,var(--ink)_30%,var(--brand))]" : "bg-brand-soft",
       )}
     >
       {/* Decoration, and the first thing to go when the bar is 390px wide. */}
@@ -74,7 +74,7 @@ export function LanguageSwitcher({
               isActive && !onColor && "bg-brand text-white",
               // The inactive chip stays readable in its own right — it is a link, not a
               // placeholder. Hover deepens it rather than revealing it.
-              !isActive && onColor && "text-white hover:bg-white/25",
+              !isActive && onColor && "text-white hover:bg-[color-mix(in_oklab,var(--ink)_55%,var(--brand))]",
               !isActive && !onColor && "text-ink hover:bg-white",
             )}
           >

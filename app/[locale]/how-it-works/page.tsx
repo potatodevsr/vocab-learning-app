@@ -74,8 +74,8 @@ export default async function HowItWorksPage({ params }: LocalePageProps) {
 
       <main className="min-h-screen bg-background text-foreground">
       <section className="border-b-3 border-ink bg-accent-deep-sky text-white">
-        <div className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
-          <h1 className="play-display">{t("h1")}</h1>
+        <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-12 lg:px-8">
+          <h1 className="play-display play-display-page">{t("h1")}</h1>
           <p className="mt-4 max-w-2xl text-lg leading-8 text-white">
             {t("intro")}
           </p>
@@ -87,7 +87,7 @@ export default async function HowItWorksPage({ params }: LocalePageProps) {
         a level is not finished until its words are strong. The rail is the structure —
         four steps on one continuous line, not four interchangeable cards.
       */}
-      <section className="mx-auto w-full max-w-4xl px-6 py-14 lg:px-8">
+      <section className="mx-auto w-full max-w-column px-4 sm:px-6 py-14 lg:px-8">
         <ol className="relative grid gap-10">
           {/* The line the steps hang from. Decorative, so it never reaches the a11y tree. */}
           <span
@@ -123,7 +123,7 @@ export default async function HowItWorksPage({ params }: LocalePageProps) {
         review — is visible rather than asserted.
       */}
       <section className="border-y-3 border-ink bg-brand-soft">
-        <div className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
+        <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-12 lg:px-8">
           <h2 className="text-2xl font-extrabold tracking-tight text-ink">
             {t("ladderHeading")}
           </h2>
@@ -134,7 +134,7 @@ export default async function HowItWorksPage({ params }: LocalePageProps) {
           <ol className="mt-8 grid gap-3">
             {REVIEW_LADDER.map((days, index) => (
               <li key={index} className="flex items-center gap-3">
-                <span className="w-10 shrink-0 text-right text-xs font-bold uppercase tracking-widest text-ink/60">
+                <span className="w-10 shrink-0 text-right play-eyebrow text-ink/60">
                   {index + 1}
                 </span>
 
@@ -153,7 +153,7 @@ export default async function HowItWorksPage({ params }: LocalePageProps) {
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
+      <section className="mx-auto w-full max-w-column px-4 sm:px-6 py-12 lg:px-8">
         <Button
           asChild
           size="lg"

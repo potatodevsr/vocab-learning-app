@@ -78,7 +78,7 @@ export default async function PrivacyPage({ params }: LocalePageProps) {
        */}
     <main className="min-h-screen bg-background text-foreground">
       <section className="border-b-3 border-ink">
-        <div className="mx-auto w-full max-w-5xl px-6 py-12 lg:px-8">
+        <div className="mx-auto w-full max-w-plate px-4 sm:px-6 py-12 lg:px-8">
           <h1 className="text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
             {t("h1")}
           </h1>
@@ -88,9 +88,9 @@ export default async function PrivacyPage({ params }: LocalePageProps) {
         </div>
       </section>
 
-      <div className="mx-auto grid w-full max-w-5xl gap-10 px-6 py-12 lg:grid-cols-[14rem_1fr] lg:px-8">
+      <div className="mx-auto grid w-full max-w-plate gap-10 px-4 sm:px-6 py-12 lg:grid-cols-[14rem_1fr] lg:px-8">
         <nav aria-label={t("contentsHeading")} className="lg:sticky lg:top-24 lg:self-start">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <h2 className="play-eyebrow">
             {t("contentsHeading")}
           </h2>
 

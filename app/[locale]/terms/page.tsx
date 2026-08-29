@@ -66,7 +66,7 @@ export default async function TermsPage({ params }: LocalePageProps) {
          Same voice, different instrument.
        */}
     <main className="min-h-screen bg-background text-foreground">
-      <section className="mx-auto w-full max-w-3xl px-6 pb-10 pt-14 lg:px-8">
+      <section className="mx-auto w-full max-w-column px-4 sm:px-6 pb-10 pt-14 lg:px-8">
         <p
           aria-hidden
           className="text-5xl font-extrabold leading-none text-accent-grape"
@@ -83,7 +83,7 @@ export default async function TermsPage({ params }: LocalePageProps) {
         </p>
       </section>
 
-      <div className="mx-auto w-full max-w-3xl px-6 pb-16 lg:px-8">
+      <div className="mx-auto w-full max-w-column px-4 sm:px-6 pb-16 lg:px-8">
         <ol className="grid gap-10">
           {clauses.map((clause, index) => (
             <li key={clause.heading} className="border-t-3 border-ink pt-5">

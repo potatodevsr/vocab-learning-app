@@ -134,7 +134,12 @@
     "feedbackWrong": "Not quite",
     "finish": "Finish",
     "next": "Next",
-    "check": "Check answer"
+    "check": "Check answer",
+    "kind": {
+      "meaning-choice": "Meaning",
+      "reverse-choice": "Reverse",
+      "spelling": "Spelling"
+    }
   },
   "Auth": {
     "magicTitle": "Sign in",
@@ -263,6 +268,8 @@
     "calendarTitle": "The last twelve weeks",
     "calendarCaption": "One square per day. Darker means more items answered.",
     "calendarEmpty": "Nothing here yet — the first square appears the day you finish a session.",
+    "calendarScaleLow": "less",
+    "calendarScaleHigh": "more",
     "calendarDay": "{day}: {items, plural, =0 {no practice} one {# item} other {# items}}",
     "collectionTitle": "Your Oxford 3000",
     "collectionCaption": "A word joins the collection once you can recall it, not once you have seen it.",
@@ -735,7 +742,14 @@
     "unit": "Unit {unit}",
     "errorTitle": "Unable to load the sitemap",
     "retry": "Try again",
-    "levelTest": "Level test"
+    "levelTest": "Level test",
+    "trustLink": {
+      "about": "About us",
+      "how-it-works": "How it works",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "contact": "Contact"
+    }
   },
   "Session": {
     "preparing": "Preparing your session…",
@@ -781,6 +795,7 @@
     "maintenanceCta": "Review your word collection",
     "weeklyGoalTitle": "Weekly goal",
     "weeklyGoalProgress": "{active} of {goal} days this week",
+    "weeklyGoalDaysSoFar": "{active, plural, =0 {no days practised this week} one {# day practised this week} other {# days practised this week}}",
     "weeklyGoalPrompt": "Want a weekly goal? Choose how many days a week you'd like to practise.",
     "weeklyGoalPromptCta": "Choose weekly goal",
     "collectionMeterTitle": "Collection",

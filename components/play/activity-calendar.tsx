@@ -28,9 +28,9 @@ const bandOf = (items: number) => {
 
 const BAND_CLASS = [
   "bg-ink/10",
+  "bg-brand-soft",
   "bg-accent-sky",
   "bg-brand",
-  "bg-success",
 ] as const;
 
 /**
@@ -54,12 +54,17 @@ export function ActivityCalendar({
   title,
   caption,
   emptyLabel,
+  scaleLow,
+  scaleHigh,
   dayLabel,
 }: {
   history: ProgressHistory;
   title: string;
   caption: string;
   emptyLabel: string;
+  /** The two ends of the density scale, e.g. "less" / "more". */
+  scaleLow: string;
+  scaleHigh: string;
   /** `(day, items) => string`, for the per-square accessible label. */
   dayLabel: (day: string, items: number) => string;
 }) {
@@ -89,8 +94,11 @@ export function ActivityCalendar({
         <p className="mt-5 text-sm font-semibold text-muted-foreground">{emptyLabel}</p>
       ) : null}
 
+      {/* `auto-cols-max` is load-bearing. Without it the implicit columns are `auto` and
+          stretch to fill the card, so twelve weeks of 18px squares rendered as a scatter
+          with 57px of air between each column instead of as a calendar. */}
       <div
-        className="mt-5 grid grid-flow-col gap-1.5 overflow-x-auto pb-2"
+        className="mt-5 grid grid-flow-col auto-cols-max justify-start gap-1.5 overflow-x-auto pb-2"
         style={{ gridTemplateRows: `repeat(${DAYS_PER_WEEK}, minmax(0, 1fr))` }}
         role="img"
         aria-label={caption}
@@ -107,6 +115,19 @@ export function ActivityCalendar({
             )}
           />
         ))}
+      </div>
+
+      {/* The caption promises "darker means more". A scale that is never shown is a
+          promise the reader has to take on trust. */}
+      <div className="mt-3 flex items-center gap-1.5" aria-hidden>
+        <span className="play-eyebrow">{scaleLow}</span>
+        {BAND_CLASS.map((band) => (
+          <span
+            key={band}
+            className={cn("size-4 rounded-[5px] border border-ink/10", band)}
+          />
+        ))}
+        <span className="play-eyebrow">{scaleHigh}</span>
       </div>
     </section>
   );

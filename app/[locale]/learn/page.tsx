@@ -60,10 +60,18 @@ export default async function LearnPage({ params, searchParams }: LearnPageProps
   const mode = requestedMode === "comeback" || requestedMode === "review" ? requestedMode : "normal";
 
   return (
-    <MixedSession
-      key={`${level}-${unit ?? "auto"}-${mode}`}
-      scope={unit === undefined ? { level, mode } : { level, unit, mode }}
-      backHref={todayHref}
-    />
+    /*
+      The session shell. Everything else in the app is measured — the app bar, the footer,
+      every page — and this route rendered the card straight into the layout with no
+      container, so a lesson ran edge to edge on a desktop while the checkpoint, which is
+      the same card, sat in a 744px column.
+    */
+    <main className="mx-auto w-full max-w-column px-4 py-6 sm:px-6 sm:py-10">
+      <MixedSession
+        key={`${level}-${unit ?? "auto"}-${mode}`}
+        scope={unit === undefined ? { level, mode } : { level, unit, mode }}
+        backHref={todayHref}
+      />
+    </main>
   );
 }

@@ -137,8 +137,8 @@ export function QuizSession({
   if (readyWords.length < 4) {
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <section className="mx-auto flex min-h-screen w-full max-w-3xl items-center px-6">
-          <Card className="play-card w-full rounded-[28px] border-0">
+        <section className="mx-auto flex min-h-screen w-full max-w-column items-center px-4 sm:px-6">
+          <Card className="play-card w-full">
             <CardContent className="p-8">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex size-12 items-center justify-center rounded-2xl border-3 border-ink bg-warn text-ink">
@@ -181,13 +181,13 @@ export function QuizSession({
   if (!started) {
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <section className="border-b-3 border-ink bg-accent-deep-sky text-white">
-          <div className="mx-auto w-full max-w-5xl px-6 py-8 lg:px-8">
+        <section className="border-b-3 border-ink bg-brand text-white">
+          <div className="mx-auto w-full max-w-column px-4 py-8 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between gap-4">
               <Button
                 asChild
                 variant="ghost"
-                className="play-press rounded-full text-white hover:bg-white/20 hover:text-white"
+                className="play-press rounded-full text-white hover:bg-[color-mix(in_oklab,var(--ink)_28%,var(--brand))] hover:text-white"
               >
                 <Link href={learnHref}>
                   <ArrowLeft className="size-4" />
@@ -202,7 +202,7 @@ export function QuizSession({
                 {tQuiz("introBadge", { level, unit })}
               </Badge>
 
-              <h1 className="play-display mt-6 max-w-3xl text-[clamp(2.25rem,6vw,3.75rem)]">
+              <h1 className="play-display mt-6 max-w-column play-display-page">
                 {tQuiz("introTitle")}
               </h1>
 
@@ -249,8 +249,8 @@ export function QuizSession({
 
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <section className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-6 py-10">
-          <Card className="play-card w-full rounded-[28px] border-0">
+        <section className="mx-auto flex min-h-screen w-full max-w-column items-center px-4 py-10 sm:px-6">
+          <Card className="play-card w-full">
             <CardContent className="p-8 sm:p-10">
               <div className="play-pop flex size-16 items-center justify-center rounded-3xl bg-success text-white">
                 <Trophy className="size-7" />
@@ -367,13 +367,13 @@ export function QuizSession({
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <section className="border-b-3 border-ink bg-accent-deep-sky text-white">
-        <div className="mx-auto w-full max-w-5xl px-6 py-8 lg:px-8">
+      <section className="border-b-3 border-ink bg-brand text-white">
+        <div className="mx-auto w-full max-w-column px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4">
             <Button
               asChild
               variant="ghost"
-              className="play-press rounded-full text-white hover:bg-white/20 hover:text-white"
+              className="play-press rounded-full text-white hover:bg-[color-mix(in_oklab,var(--ink)_28%,var(--brand))] hover:text-white"
             >
               <Link href={learnHref}>
                 <ArrowLeft className="size-4" />
@@ -389,18 +389,18 @@ export function QuizSession({
             </Badge>
           </div>
 
-          <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/25">
+          <div className="play-track-oncolor mt-6 h-3 overflow-hidden rounded-full">
             <div
               data-testid="quiz-progress-fill"
-              className="h-full rounded-full bg-white transition-[width] duration-[400ms] ease-out"
+              className="h-full rounded-full bg-white transition-[width] duration-[--dur-slow] ease-[--ease-play]"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-5xl px-6 py-10 lg:px-8">
-        <Card className="play-card rounded-[28px] border-0">
+      <section className="mx-auto w-full max-w-column px-4 py-10 sm:px-6 lg:px-8">
+        <Card className="play-sticker [--tile-block:var(--accent-sky)]">
           <CardContent className="p-6 sm:p-8">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="rounded-full bg-brand text-white hover:bg-brand">
@@ -412,7 +412,7 @@ export function QuizSession({
               </Badge>
 
               <Badge variant="outline" className="rounded-full bg-white">
-                {currentQuestion.type.replace("-", " ")}
+                {tQuiz(`kind.${currentQuestion.type}` as never)}
               </Badge>
             </div>
 

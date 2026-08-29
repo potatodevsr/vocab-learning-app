@@ -98,7 +98,7 @@ export function PlacementTest({
 
     return (
       <div className="play-sticker p-6 sm:p-8" data-testid="placement-result">
-        <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+        <p className="play-eyebrow text-sm">
           {t("resultEyebrow")}
         </p>
         <h2 className="play-display mt-2" data-testid="placement-level">

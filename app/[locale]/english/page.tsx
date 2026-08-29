@@ -108,14 +108,14 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
 
       <main className="min-h-screen bg-background text-foreground">
         <section data-testid="english-hub-hero" className="border-b-2 border-ink bg-background text-foreground">
-          <div className="mx-auto w-full max-w-6xl px-6 py-12 lg:px-8 lg:py-16">
+          <div className="mx-auto w-full max-w-plate px-4 sm:px-6 py-12 lg:px-8 lg:py-16">
             <div className="max-w-4xl border-l-[8px] border-brand pl-5 sm:pl-8">
               <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
                 {t("badge")}
               </span>
 
               <div className="mt-6 space-y-4">
-                <h1 className="play-display max-w-3xl text-[clamp(2.25rem,6vw,3.75rem)]">
+                <h1 className="play-display max-w-3xl play-display-page">
                   {t("title")}
                 </h1>
 
@@ -127,7 +127,7 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-8">
+        <section className="mx-auto w-full max-w-plate px-4 sm:px-6 py-10 lg:px-8">
           <div className="max-w-2xl">
             <h2 className="text-3xl font-semibold tracking-tight">
               {t("levelsTitle")}
@@ -191,7 +191,7 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-6xl px-6 pb-16 lg:px-8">
+        <section className="mx-auto w-full max-w-plate px-4 sm:px-6 pb-16 lg:px-8">
           <h2 className="text-3xl font-semibold tracking-tight">
             {t("exploreTitle")}
           </h2>

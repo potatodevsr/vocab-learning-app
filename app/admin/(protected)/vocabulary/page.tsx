@@ -375,7 +375,7 @@ export default function AdminVocabularyPage() {
       <header className="sticky top-0 z-10 border-b bg-background">
         <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="min-w-0">
-            <h1 className="truncate font-semibold text-foreground">
+            <h1 className="truncate text-lg font-semibold text-foreground">
               Oxford 3000 — Translations
             </h1>
             <p className="mt-0.5 text-xs text-muted-foreground">

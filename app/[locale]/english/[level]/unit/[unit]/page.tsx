@@ -196,14 +196,14 @@ export default async function UnitPage({ params }: UnitPageProps) {
     <main className="min-h-screen bg-background text-foreground">
 
       <section className="border-b-3 border-ink bg-brand text-white">
-        <div className="mx-auto w-full max-w-5xl px-6 py-10 lg:px-8">
+        <div className="mx-auto w-full max-w-plate px-4 sm:px-6 py-10 lg:px-8">
           {/* Two inline-level elements with a top margin sat on the same line and read
               as one cramped row; the back link is its own step in the hierarchy. */}
           <div>
             <Button
               asChild
               variant="ghost"
-              className="play-press -ml-2 rounded-full font-semibold text-white hover:bg-white/25 hover:text-white"
+              className="play-press -ml-2 rounded-full font-semibold text-white hover:bg-[color-mix(in_oklab,var(--ink)_28%,var(--brand))] hover:text-white"
             >
               <Link href={levelHref}>
                 <ArrowLeft className="size-4" />
@@ -216,7 +216,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
             {t("badge", { level })}
           </span>
 
-          <h1 className="play-display mt-5 max-w-3xl text-[clamp(2.25rem,6vw,3.75rem)]">
+          <h1 className="play-display mt-5 max-w-3xl play-display-page">
             {t("title", { level, unit })}
           </h1>
 
@@ -239,7 +239,7 @@ export default async function UnitPage({ params }: UnitPageProps) {
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-5xl px-6 py-10 lg:px-8">
+      <section className="mx-auto w-full max-w-plate px-4 sm:px-6 py-10 lg:px-8">
         <ul className="grid gap-3" data-testid="unit-word-list">
           {words.map((word) => (
             <li key={word.id}>

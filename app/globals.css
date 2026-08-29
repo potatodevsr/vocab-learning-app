@@ -1,7 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-/* The public art direction — scoped to `[data-ad="public"]`, see the file header. */
-@import "./public-design.css";
+/* `app/public-design.css` used to be imported here. Nothing ever rendered inside its
+   `[data-ad="public"]` scope — `components/public/public-shell.tsx`, the only thing that
+   sets that attribute, has no callers — so the stylesheet shipped 17 KB of rules that
+   could not match, and pulled two Google font families (Chonburi, Anuphan) into every
+   page's preload list to render nothing. The file and its two orphan components are
+   still in the tree; they are simply no longer paid for on every request. */
 
 /* Angsana New is a licensed system font rather than a Google Font. Restrict this local
    face to Thai Unicode so mixed EN/TH copy keeps Geist for Latin while every Thai glyph
@@ -72,13 +76,17 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* One monotonic ramp, and `3xl` is deliberately the card's own 1.5rem so a panel
+     nested in a card can never out-round the card. The old ramp topped out at 2.6rem
+     (46.8px at this root size), which on a 44px control is a capsule and inside a
+     28.5px card is a corner larger than its container's. */
+  --radius-sm: calc(var(--radius) * 0.45);
+  --radius-md: calc(var(--radius) * 0.65);
+  --radius-lg: calc(var(--radius) * 0.85);
+  --radius-xl: calc(var(--radius) * 1.05);
+  --radius-2xl: calc(var(--radius) * 1.25);
+  --radius-3xl: calc(var(--radius) * 1.5);
+  --radius-4xl: calc(var(--radius) * 1.75);
 }
 
 /* ── Play palette ────────────────────────────────────────────────────────────
@@ -827,4 +835,467 @@ select:not(:disabled):hover,
   }
 
   .play-confetti-piece { display: none; }
+}
+
+/* ── Generated primitives, re-tuned to the house system ──────────────────────
+   `components/ui/` is shadcn's output and is regenerated, so nothing below is
+   written there — the next `shadcn add` would overwrite it. Everything here is
+   unlayered and attribute-scoped so it beats the primitives' own utilities, and
+   every size is stated as a *floor* (`min-height`) rather than a fixed height
+   so a call site can still ask for a taller control without fighting this file.
+
+   What was wrong: shadcn draws for a dense desktop dashboard. `h-8` buttons and
+   fields, `py-1` menu rows, `shadow-md` overlays and a 1px hairline ring — a
+   soft-shadow depth model this app uses nowhere else. The account menu opened
+   over the app bar looking like it came from a different product, and almost
+   every call site in the repo was already re-stating `h-11` by hand to undo the
+   default. This is that fix, made once.                                        */
+
+/* Craft bar: 44px is the WCAG 2.2 target size and the floor SPEC §6.3 sets for
+   a phone-first audience. `xs`/`sm` are the opt-in dense sizes and only appear
+   in `/admin`, which is a desktop tool. */
+[data-slot="button"]:not([data-size="xs"]):not([data-size="sm"]):not([data-size="icon-xs"]):not([data-size="icon-sm"]),
+[data-slot="input"],
+[data-slot="select-trigger"]:not([data-size="sm"]) {
+  min-height: 44px;
+}
+
+[data-slot="button"][data-size="icon"],
+[data-slot="button"][data-size="icon-lg"] {
+  min-width: 44px;
+}
+
+[data-slot="button"][data-size="sm"],
+[data-slot="button"][data-size="icon-sm"],
+[data-slot="select-trigger"][data-size="sm"] {
+  min-height: 36px;
+}
+
+/* A 44px field with 11px of inline padding reads as a text box someone forgot
+   to finish. The two custom properties exist so a field with a leading icon can
+   open up one side (`[--field-ps:2.75rem]`) without a `pl-*` utility, which an
+   unlayered `padding-inline` would silently beat. */
+[data-slot="input"],
+[data-slot="select-trigger"] {
+  padding-inline-start: var(--field-ps, 0.875rem);
+  padding-inline-end: var(--field-pe, 0.875rem);
+}
+
+/* `leading-none` on a label clips Thai: the script stacks vowels above the
+   letter and tone marks above those, and a 1.0 leading cuts the top register
+   off (SPEC §6.2). */
+[data-slot="label"] {
+  line-height: 1.35;
+}
+
+/* Overlays are stickers too: the same `--rule` outline and hard `--lift` block
+   as every card, and zero blur. */
+[data-slot="dropdown-menu-content"],
+[data-slot="select-content"],
+[data-slot="popover-content"] {
+  border: var(--rule) solid var(--ink);
+  border-radius: 1.25rem;
+  box-shadow: var(--lift) var(--lift) 0 0 var(--ink);
+  padding: 0.375rem;
+}
+
+[data-slot="tooltip-content"] {
+  border: 2px solid var(--ink);
+  border-radius: 0.75rem;
+  box-shadow: 3px 3px 0 0 var(--ink);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+[data-slot="dropdown-menu-item"],
+[data-slot="dropdown-menu-checkbox-item"],
+[data-slot="dropdown-menu-radio-item"],
+[data-slot="select-item"] {
+  min-height: 44px;
+  padding-inline: 0.75rem;
+  border-radius: 0.875rem;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-play),
+    color var(--dur-fast) var(--ease-play);
+}
+
+[data-slot="dropdown-menu-item"]:not([data-variant="destructive"]):hover,
+[data-slot="dropdown-menu-item"]:not([data-variant="destructive"])[data-highlighted],
+[data-slot="select-item"]:hover,
+[data-slot="select-item"][data-highlighted] {
+  background-color: var(--brand-soft);
+  color: var(--brand);
+}
+
+[data-slot="dropdown-menu-item"][data-variant="destructive"]:hover,
+[data-slot="dropdown-menu-item"][data-variant="destructive"][data-highlighted] {
+  background-color: var(--danger-soft);
+  color: var(--danger);
+}
+
+[data-slot="dropdown-menu-label"] {
+  padding: 0.5rem 0.75rem;
+}
+
+[data-slot="dropdown-menu-separator"],
+[data-slot="select-separator"] {
+  background-color: color-mix(in oklab, var(--ink) 18%, transparent);
+}
+
+/* A 4px hairline progress bar is invisible at arm's length on a phone, and the
+   indicator animated with `transition-all` — which includes layout. */
+[data-slot="progress"] {
+  min-height: 0.5rem;
+  border-radius: 999px;
+}
+
+[data-slot="progress-indicator"] {
+  border-radius: 999px;
+  transition: transform var(--dur-slow) var(--ease-play);
+}
+
+[data-slot="alert"] {
+  border: var(--rule) solid var(--ink);
+  border-radius: 1rem;
+  padding: 0.875rem 1rem;
+}
+
+/* Cards not already wearing one of the sticker classes get the ink outline
+   rather than shadcn's `ring-1 ring-foreground/10` hairline. The `:not()` list
+   matters: without it this rule's higher specificity would erase the offset
+   block a `.play-sticker` card is drawn with. */
+[data-slot="card"]:not(.play-sticker):not(.play-tile):not(.play-card) {
+  border: var(--rule) solid var(--ink);
+  border-radius: 1.25rem;
+  box-shadow: none;
+}
+
+/* One focus language. shadcn ships a 3px translucent brand ring; the app draws
+   a solid ink outline (SPEC §6.3 craft bar #2), and a control must not answer a
+   keyboard with both. Elements already carrying a `play-*` class are excluded —
+   they define their own focus, and their hard offset block lives in the same
+   `box-shadow` this rule would otherwise clear. */
+[data-slot="button"]:not([class*="play-"]):focus-visible,
+[data-slot="input"]:not([class*="play-"]):focus-visible,
+[data-slot="select-trigger"]:not([class*="play-"]):focus-visible,
+[data-slot="badge"]:not([class*="play-"]):focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* shadcn lightens a hovered badge link the same way it lightened the button —
+   `bg-primary/80` drops white label text from 4.94:1 to 3.56:1. Darken instead,
+   so contrast climbs as the pointer arrives. */
+a[data-slot="badge"][data-variant="default"]:hover {
+  background-color: color-mix(in oklab, var(--primary) 86%, var(--ink));
+}
+
+/* A disabled sticker button is still the same object, so it keeps its block —
+   but the block goes quiet rather than staying full ink, which read as "raised
+   and ready" on a control nobody can press. */
+.play-key:disabled,
+.play-key[aria-disabled="true"] {
+  box-shadow: var(--lift) var(--lift) 0 0
+    color-mix(in oklab, var(--ink) 22%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="skeleton"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="select-content"],
+  [data-slot="tooltip-content"] {
+    animation: none !important;
+  }
+
+  [data-slot="dropdown-menu-item"],
+  [data-slot="select-item"],
+  [data-slot="progress-indicator"] {
+    transition: none !important;
+  }
+}
+
+/* Fields are part of the same drawing as everything else. shadcn gives them a 1px
+   `--input` hairline, which on a card whose every other object is cut with a 3px ink
+   outline reads as a text box someone forgot to style — visible on both auth forms,
+   where the buttons are unmistakably this app and the fields are unmistakably not.
+   Two pixels rather than three: a field is a hole, not an object, and matching the
+   button's weight exactly made the form look like a stack of buttons. */
+[data-slot="input"],
+[data-slot="select-trigger"],
+textarea {
+  border-width: 2px;
+  border-color: color-mix(in oklab, var(--ink) 30%, transparent);
+}
+
+/* `disabled:opacity-50` on a solid brand button leaves white text on a half-tinted fill
+   — the session's Continue and the signup form's Create account both measured under
+   2:1 while waiting for an answer, which is most of the time a learner spends looking
+   at them. A disabled control gets a real surface instead of a faded one. */
+/* Scoped to real buttons and to `.play-key`. Deliberately *not* `.play-press`: the
+   session's answer options are `play-press` and are disabled the moment an answer is
+   graded, so a blanket rule repainted the correct answer's green fill grey at the exact
+   moment it had something to say. */
+[data-slot="button"]:disabled:not([data-variant="ghost"]):not([data-variant="link"]),
+[data-slot="button"][aria-disabled="true"]:not([data-variant="ghost"]):not([data-variant="link"]),
+.play-key:disabled {
+  opacity: 1;
+  background-color: color-mix(in oklab, var(--ink) 9%, var(--card));
+  color: color-mix(in oklab, var(--ink) 62%, var(--card));
+  border-color: color-mix(in oklab, var(--ink) 26%, transparent);
+}
+
+/* The highlighter block, per line rather than per phrase.
+
+   As an `inline-block` the block is one rectangle sized to the *longest* line, so a
+   two-line phrase left a slab of empty yellow hanging off the short line — the landing
+   hero in both locales. `box-decoration-break: clone` gives every line its own block,
+   hugging its own text, which is what a highlighter actually does.
+
+   The cost is the tilt: `transform` does not apply to a non-replaced inline box, so the
+   -1.2deg rotation goes. A block that fits its words beats a block that leans.
+
+   The vertical padding is not symmetric decoration either — Thai stacks a vowel above
+   the letter and a tone mark above that, and a block with no top padding clipped the
+   upper register on `/th` (SPEC §6.2). */
+.play-highlight {
+  display: inline;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding: 0.04em 0.28em 0.08em;
+  transform: none;
+}
+
+.play-highlight:lang(th) {
+  padding-top: 0.1em;
+  padding-bottom: 0.12em;
+}
+
+/* A row that scrolls sideways has to say so. The phone nav overflows on `/th` — five
+   Thai labels do not fit 390px — and a clipped row with no scrollbar and no soft edge
+   just looks like a row that ends there. The mask is the same device the word ticker
+   uses, so the two read as one idea; the scrollbar is hidden because a 3px grey bar
+   under a 44px nav is noise, not information. */
+.play-scroll-row {
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2.5rem), transparent);
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2.5rem), transparent);
+  scrollbar-width: none;
+  scroll-padding-inline: 1rem;
+  overscroll-behavior-inline: contain;
+}
+
+.play-scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── One page measure ────────────────────────────────────────────────────────
+   Two widths, not eight. `/english` was `max-w-6xl`, its level page `max-w-6xl`,
+   that level's unit page `max-w-5xl`, the A–Z index `max-w-5xl` and a word entry
+   `max-w-4xl` — so the content column changed width on every click of a single
+   journey, and none of them lined up with the app bar or the footer above and
+   below them.
+
+   Stated in pixels on purpose. Tailwind's container scale is in `rem`, and this
+   app sets `html { font-size: 18px }` (19px from `sm`) because it is read by
+   teenagers on phones — so `max-w-6xl` resolved to 1368px and stopped
+   constraining anything at all on a 1366px laptop. A reading measure should
+   scale with the reading size; a page frame should not.                        */
+@theme {
+  --container-plate: 1152px;
+  --container-column: 840px;
+}
+
+/* ── The display size a page asks for is the size it gets ────────────────────
+   `.play-display` is unlayered, so its `font-size` beat every `text-[clamp(...)]`
+   utility a page put beside it. Nine interior pages — the level hero, the unit
+   hero, both practice intros, the A–Z index, the letter page, the quiz intro and
+   the profile — each asked for a calmer headline and every one silently rendered
+   at the landing page's 104px instead. On a 1440×900 desktop that put five lines
+   of headline above the fold on `/english/a1` and pushed the page's only two
+   actions off it.
+
+   Routing the size through a custom property makes the override work the way it
+   reads: a page states `[--display-size:...]` and gets it, and a page that says
+   nothing still gets the loud default. */
+.play-display {
+  font-size: var(--display-size, clamp(2.25rem, 9vw, 5.5rem));
+}
+
+.home-hero-title {
+  --display-size: clamp(2.35rem, 5.4vw, 4.4rem);
+}
+
+/* The interior step. A level, a unit, an index or a profile is not the landing
+   page and does not get the landing page's voice — one named step, so the size
+   is a decision the design system holds rather than a clamp retyped fifteen
+   times. */
+.play-display-page {
+  --display-size: clamp(2rem, 4.2vw, 3.1rem);
+}
+
+/* `.play-key` was missing from the designed-focus list, so the app's loudest control —
+   every primary CTA in a session — was the one place a keyboard got shadcn's translucent
+   ring instead of the ink outline. */
+.play-key:focus-visible,
+.play-sticker:focus-within {
+  outline: 4px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* The word card's Thai needs the same relief the headline's already has. `.play-word` is
+   set at `line-height: 1` with -0.04em tracking, which is right for Latin display and
+   wrong for a script that stacks a vowel and a tone mark above the letter (SPEC §6.2) —
+   `.play-display` documents exactly this and `.play-word` never got the escape. */
+.play-word:lang(th) {
+  line-height: 1.25;
+  letter-spacing: normal;
+}
+
+/* The eyebrow: the small uppercase label above a word, a panel or a section. It was
+   retyped as `text-xs font-bold uppercase tracking-wide text-muted-foreground` in
+   twenty-three places, and every one of them was wrong in Thai — `uppercase` does
+   nothing to Thai, `tracking-wide` pushes tone marks into their neighbours, and 12px of
+   looped Angsana against a tinted panel is close to sub-legible for the primary
+   audience. One class, and it knows about both scripts. */
+@layer components {
+  .play-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+}
+
+/* Layered above, unlayered here on purpose: the Latin look is a default a call site may
+   override with `text-sm` or `text-accent-sun`, but the Thai correction is not optional —
+   it has to beat the `uppercase` and `tracking-*` utilities that ship alongside it. */
+.play-eyebrow:lang(th) {
+  font-size: 0.875rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* shadcn's `outline` variant is a 1px `--border` hairline. In a system whose every other
+   object is cut with a 2–3px ink line, a secondary button rendered as a faint grey pill
+   that reads as disabled — visible on the checkpoint's "Back to the unit" and the level
+   page's "View lesson path". Skipped where a call site states its own border. */
+[data-slot="button"][data-variant="outline"]:not([class*="border-"]) {
+  border-width: 2px;
+  border-color: color-mix(in oklab, var(--ink) 55%, transparent);
+}
+
+[data-slot="button"][data-variant="outline"]:not([class*="border-"]):not(:disabled):hover {
+  border-color: var(--ink);
+  background-color: var(--brand-soft);
+}
+
+/* A track on a coloured band. `bg-white/25` is the same mistake as a `bg-white/25` chip:
+   the band shows through, the contrast depends on what is behind it, and the app's
+   depth model has no translucency in it at all (SPEC §6.3). A solid darker mix of the
+   band's own colour reads as a groove cut into it. */
+.play-track-oncolor {
+  background: color-mix(in oklab, var(--ink) 32%, var(--brand));
+}
+
+/* ── Which card is which ─────────────────────────────────────────────────────
+   Three card classes exist and they were being picked by mood: `/profile` gave
+   four stacked cards four different block colours while `/progress` — the same
+   learner, one click away, showing the same numbers — gave its cards no block
+   at all. A reader learns nothing from a colour that changes meaning per page.
+
+     `.play-card`     a card in a stack. Flat: ink outline, no block.
+     `.play-tile`     a card you can press. Block + lift on hover.
+     `.play-sticker`  a single hero object on a page. Block, no lift.
+
+   And the block colour is the object's role, not the designer's mood:
+   `--accent-sky` for neutral, `--accent-sun` for the next step, `--warn` for
+   something waiting to be put right, `--success` for something finished. */
+
+
+/* ── Thai headings ───────────────────────────────────────────────────────────
+   `@layer base` sets `letter-spacing: -0.03em` on every h1/h2/h3 and `-0.04em` on
+   h1, and `.play-display` documents at length why that is wrong for Thai — but the
+   escape was only ever written for that one class. Thai is the primary locale
+   (AGENTS.md rule 3), so every heading on `/th` was rendering with tone marks
+   squeezed into their neighbours and, wherever a `tracking-tight` utility was added
+   on top, squeezed twice.
+
+   Unlayered, because it has to beat the `tracking-*` utilities as well as the base
+   rule. `text-wrap: pretty` rather than `balance`: Thai has no inter-word spaces, so
+   a balanced line breaks at arbitrary syllables. */
+h1:lang(th),
+h2:lang(th),
+h3:lang(th),
+h4:lang(th),
+[lang="th"] {
+  letter-spacing: normal;
+}
+
+h1:lang(th),
+h2:lang(th),
+h3:lang(th) {
+  line-height: 1.25;
+}
+
+/* ── The press wipe ──────────────────────────────────────────────────────────
+   `--swipe` defaulted to 22% white. On a white or cream control that is white over
+   white — the Google button, the magic-link button and every `outline` secondary had
+   a hover state that painted nothing. On a solid brand control it lightened the fill
+   and took white label text *down* in contrast, which is the same mistake the file
+   already documents for `hover:bg-primary/80`.
+
+   Ink at 12% darkens every fill in the palette, so the wipe is visible on white and
+   the label's contrast climbs rather than falls. */
+.play-press::after {
+  background: var(--swipe, oklch(0 0 0 / 12%));
+}
+
+/* A wrapper that contains the focusable thing — the session's spelling field is an
+   `<input>` inside a `.play-focus` box, and `:focus-visible` never matches the box. */
+.play-focus:focus-within {
+  outline: 4px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* The tooltip was the one surface still wearing shadcn's near-black fill; with the
+   house ink rule drawn on top of it the rule was invisible. Same material as every
+   other overlay instead. */
+[data-slot="tooltip-content"] {
+  background: var(--card);
+  color: var(--ink);
+}
+
+[data-slot="tooltip-content"] [data-slot="tooltip-arrow"],
+[data-slot="tooltip-content"] svg {
+  fill: var(--card);
+}
+
+/* Badge is the one primitive nobody re-tuned: 20px tall, no outline, and a
+   `rounded-4xl` corner from a scale step nothing else uses. It carries CEFR levels and
+   parts of speech next to 44px controls. */
+[data-slot="badge"] {
+  min-height: 1.5rem;
+  border-radius: 999px;
+  padding-inline: 0.625rem;
+}
+
+/* The landing page's word trail. Same idea as `.play-scroll-row`, but the mask has to
+   come off at `sm`, where all five items fit and the row is a grid rather than a
+   scroller — a permanent fade over a row that cannot scroll just dims its last item. */
+.play-trail-row {
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+}
+
+.play-trail-row::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 639.98px) {
+  .play-trail-row {
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2.5rem), transparent);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 2.5rem), transparent);
+  }
 }

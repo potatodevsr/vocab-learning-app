@@ -182,7 +182,7 @@ export default async function WordsIndexPage({ params }: LocalePageProps) {
 
       <main className="min-h-screen bg-background text-foreground">
         <section className="border-b-3 border-ink bg-brand text-white">
-          <div className="mx-auto w-full max-w-5xl px-6 py-10 lg:px-8">
+          <div className="mx-auto w-full max-w-plate px-4 sm:px-6 py-10 lg:px-8">
             <nav
               aria-label="breadcrumb"
               className="flex flex-wrap items-center gap-2 text-sm font-semibold text-white"
@@ -203,7 +203,7 @@ export default async function WordsIndexPage({ params }: LocalePageProps) {
                 {t("badge")}
               </span>
 
-              <h1 className="play-display text-[clamp(2.25rem,6vw,3.75rem)]">
+              <h1 className="play-display play-display-page">
                 {t("title")}
               </h1>
 
@@ -216,8 +216,8 @@ export default async function WordsIndexPage({ params }: LocalePageProps) {
 
         {/* Jump nav: every letter with a count, empty letters greyed and inert (X has no
             words — SEO-CONTENT §1), so the A–Z reads as complete without dead anchors. */}
-        <section className="mx-auto w-full max-w-5xl px-6 pt-10 lg:px-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <section className="mx-auto w-full max-w-plate px-4 sm:px-6 pt-10 lg:px-8">
+          <h2 className="play-eyebrow text-sm">
             {t("navTitle")}
           </h2>
 
@@ -227,9 +227,9 @@ export default async function WordsIndexPage({ params }: LocalePageProps) {
                 <a
                   key={group.letter}
                   href={`#letter-${group.letter}`}
-                  className="play-press flex min-w-14 flex-col items-center rounded-2xl border-3 border-ink bg-white px-3 py-2 font-extrabold text-ink hover:bg-accent-sun"
+                  className="play-press flex min-h-14 min-w-14 flex-col items-center justify-center rounded-2xl border-3 border-ink bg-white px-3 py-2 font-extrabold text-ink hover:bg-accent-sun"
                 >
-                  <span className="text-lg leading-none">{group.letter}</span>
+                  <span className="text-lg leading-tight">{group.letter}</span>
                   <span className="mt-1 text-xs font-semibold text-muted-foreground">
                     {group.total}
                   </span>
@@ -238,9 +238,9 @@ export default async function WordsIndexPage({ params }: LocalePageProps) {
                 <span
                   key={group.letter}
                   title={t("noWords", { letter: group.letter })}
-                  className="flex min-w-14 flex-col items-center rounded-2xl border-3 border-dashed border-muted-foreground/40 px-3 py-2 font-extrabold text-muted-foreground/60"
+                  className="flex min-h-14 min-w-14 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-ink/25 bg-ink/[0.04] px-3 py-2 font-extrabold text-muted-foreground"
                 >
-                  <span className="text-lg leading-none">{group.letter}</span>
+                  <span className="text-lg leading-tight">{group.letter}</span>
                   <span className="mt-1 text-xs font-semibold">0</span>
                 </span>
               ),
@@ -248,7 +248,7 @@ export default async function WordsIndexPage({ params }: LocalePageProps) {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-5xl space-y-10 px-6 py-10 lg:px-8">
+        <section className="mx-auto w-full max-w-plate space-y-10 px-4 sm:px-6 py-10 lg:px-8">
           {populated.map((group) => {
             const shown = group.words.slice(0, REPRESENTATIVE_CAP);
             const hasMore = group.total > shown.length;

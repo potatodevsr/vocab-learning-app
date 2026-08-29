@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Mail } from "lucide-react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -78,7 +78,7 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="play-sticker gap-0 rounded-[28px] border-0 [--tile-block:var(--ink)]">
+    <Card className="play-sticker gap-0 [--tile-block:var(--ink)]">
       <CardContent className="pt-6">
         {sent ? (
           <div className="space-y-5 text-center" data-testid="magic-link-sent">
@@ -132,15 +132,19 @@ export function LoginForm() {
             <form onSubmit={submitPassword} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="email">{t("email")}</Label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="pl-10" placeholder="you@example.com" autoComplete="email" autoFocus aria-invalid={!!error} />
-              </div>
-              {error && <p className="text-sm font-medium text-danger" role="alert">{error}</p>}
+              <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" autoFocus aria-invalid={!!error} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">{t("password")}</Label>
               <Input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" aria-invalid={!!error} />
+            </div>
+            <div className="min-h-6" aria-live="polite">
+              {error && (
+                <p className="flex items-start gap-2 text-sm font-semibold text-danger" role="alert">
+                  <AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />
+                  {error}
+                </p>
+              )}
             </div>
             <Button type="submit" disabled={pending !== null} className="play-key h-14 w-full rounded-2xl bg-brand text-base font-extrabold text-white hover:bg-brand">
               {pending === "password" ? t("loadingLogin") : t("passwordSubmit")}

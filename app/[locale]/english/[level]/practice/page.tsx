@@ -157,7 +157,7 @@ export default async function LevelPracticePage({ params }: LevelPracticePagePro
       />
       <main className="min-h-screen bg-background text-foreground">
         <section className="border-b-3 border-ink bg-brand text-white">
-          <div className="mx-auto w-full max-w-4xl px-6 py-10 lg:px-8">
+          <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-10 lg:px-8">
             <nav aria-label="breadcrumb" className="flex flex-wrap items-center gap-2 text-sm font-semibold text-white">
               <Link href={levelHref} className="play-underline">
                 {t("breadcrumbLevel", { level })}
@@ -170,7 +170,7 @@ export default async function LevelPracticePage({ params }: LevelPracticePagePro
               {t("badge", { level })}
             </span>
 
-            <h1 className="play-display mt-5 max-w-3xl text-[clamp(2.25rem,6vw,3.75rem)]">
+            <h1 className="play-display mt-5 max-w-3xl play-display-page">
               {t("levelTitle", { level })}
             </h1>
 
@@ -186,7 +186,7 @@ export default async function LevelPracticePage({ params }: LevelPracticePagePro
 
         {/* Answer zone: satisfies the search query and the substance floor before any
             interactive content (docs/LEARNER-LIFECYCLE.md §5.3). */}
-        <section className="mx-auto w-full max-w-4xl px-6 py-10 lg:px-8">
+        <section className="mx-auto w-full max-w-column px-4 sm:px-6 py-10 lg:px-8">
           <h2 className="text-xl font-bold">{t("sampleTitle", { level })}</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("sampleBody")}</p>
 

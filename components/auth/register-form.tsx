@@ -161,7 +161,7 @@ export function RegisterForm() {
   }
 
   return (
-    <Card className="play-sticker gap-0 rounded-[28px] border-0 [--tile-block:var(--ink)]">
+    <Card className="play-sticker gap-0 [--tile-block:var(--ink)]">
       <CardContent className="space-y-4 pt-6">
         {/* One tap, and it fills in the name and email this form would otherwise ask for. */}
         <GoogleButton from={from ?? undefined} />
@@ -260,7 +260,7 @@ export function RegisterForm() {
                 placeholder="••••••••"
                 autoComplete="new-password"
                 aria-describedby="password-rules"
-                className="pe-12"
+                className="[--field-pe:3.25rem]"
                 required
               />
 

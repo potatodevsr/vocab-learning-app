@@ -227,7 +227,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
       />
     <main className="min-h-screen bg-background text-foreground">
       <section className="border-b-3 border-ink bg-brand text-white">
-        <div className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-8">
+        <div className="mx-auto w-full max-w-plate px-4 sm:px-6 py-10 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div className="space-y-6">
               <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
@@ -235,7 +235,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
               </span>
 
               <div className="space-y-4">
-                <h1 className="play-display max-w-3xl text-[clamp(2.25rem,6vw,3.75rem)]">
+                <h1 className="play-display max-w-3xl play-display-page">
                   {t("title", { level })}
                 </h1>
 
@@ -288,7 +288,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
             {/* A solid card, not a translucent one: every label on it has to be
                 readable, and a wash over the hero cannot promise that. */}
             {firstUnit && (
-              <Card className="play-card rounded-[28px] border-0">
+              <Card className="play-card">
                 <CardContent className="p-6">
                   <Badge className="rounded-full bg-brand text-sm font-bold text-white hover:bg-brand">
                     {t("firstLesson")}
@@ -320,13 +320,13 @@ export default async function LevelPage({ params }: LevelPageProps) {
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-6xl px-6 py-10 lg:px-8">
+      <section className="mx-auto w-full max-w-plate px-4 sm:px-6 py-10 lg:px-8">
         <div className="grid gap-6 md:grid-cols-3">
           {learningSteps.map((step, index) => {
             const Icon = step.icon;
 
             return (
-              <Card key={step.key} className="play-tile rounded-[28px] border-0 [--tile-block:var(--accent-mint)]">
+              <Card key={step.key} className="play-tile [--tile-block:var(--accent-mint)]">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div
@@ -360,7 +360,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
 
       <section
         id="lesson-path"
-        className="mx-auto w-full max-w-6xl px-6 pb-16 lg:px-8"
+        className="mx-auto w-full max-w-plate px-4 sm:px-6 pb-16 lg:px-8"
       >
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -396,8 +396,8 @@ export default async function LevelPage({ params }: LevelPageProps) {
                 key={unit.id}
                 className={
                   isFirst
-                    ? "play-tile relative rounded-[28px] [--tile-block:var(--accent-sun)]"
-                    : "play-tile relative rounded-[28px] [--tile-block:var(--accent-sky)]"
+                    ? "play-tile relative [--tile-block:var(--accent-sun)]"
+                    : "play-tile relative [--tile-block:var(--accent-sky)]"
                 }
               >
                 <CardContent className="grid gap-5 p-5 sm:grid-cols-[56px_1fr_auto] sm:items-center">

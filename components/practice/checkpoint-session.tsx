@@ -499,14 +499,18 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
                 key={i}
                 data-testid="checkpoint-pip"
                 data-filled={filled}
-                className={`h-2.5 flex-1 rounded-full transition-colors ${
+                className={`h-2.5 flex-1 rounded-full transition-[background-color] duration-[--dur-fast] ease-[--ease-play] ${
                   filled
                     ? known
                       ? entry.correct
                         ? "bg-success"
                         : "bg-danger"
-                      : "bg-ink/40"
-                    : "bg-ink/15"
+                      : "bg-accent-sky"
+                    // The segment you are on: five identical grey pills said nothing
+                    // about where in the gate the learner was standing.
+                    : i === answered.length
+                      ? "bg-brand"
+                      : "bg-ink/15"
                 }`}
               />
             );
@@ -518,9 +522,9 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
         </span>
       </div>
 
-      <div className="play-sticker mt-5 p-4 [--tile-block:var(--accent-grape)] sm:p-6">
+      <div className="play-sticker mt-5 p-4 [--tile-block:var(--accent-sky)] sm:p-6">
         <article className="rounded-[20px] bg-brand-soft p-5 sm:rounded-[24px] sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          <p className="play-eyebrow">
             {t("promptLabel")}
           </p>
 
@@ -579,13 +583,13 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
                       onClick={() => void submitSelection(index)}
                       className={[
                         "play-press flex min-h-14 items-center gap-3 rounded-2xl border-3 border-ink px-4 py-3 text-left text-base font-semibold font-thai transition-colors disabled:cursor-not-allowed",
-                        isSelected ? "bg-accent-sun text-ink" : "bg-white text-ink hover:bg-brand-soft",
+                        isSelected ? "bg-accent-sun text-ink" : "bg-white text-ink hover:bg-warn-soft",
                       ].join(" ")}
                     >
                       {/* Decorative index — see practice-session.tsx. */}
                       <span
                         aria-hidden
-                        className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-current text-xs font-bold"
+                        className="flex size-7 shrink-0 items-center justify-center rounded-full border-3 border-current text-xs font-bold"
                       >
                         {index + 1}
                       </span>
@@ -601,10 +605,10 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
               below never shifts (LEARNER-LIFECYCLE.md §3.10.2). A gate never reveals the
               correct choice for a recognition item — only whether the answer was right —
               so a wrong choice gets an honest, non-spoon-feeding message. */}
-          <div className="mt-4 h-[92px]">
+          <div className="mt-4 min-h-[92px]">
             {showingFeedback && (
               <div
-                className={`rounded-2xl border-3 border-ink p-4 ${lastResult.correct ? "bg-success-soft" : "bg-warn-soft"}`}
+                className={`rounded-2xl border-3 border-ink p-4 ${lastResult.correct ? "bg-success-soft" : "bg-danger-soft"}`}
                 data-testid="checkpoint-feedback"
                 data-correct={lastResult.correct}
                 role="status"
@@ -617,7 +621,7 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
                     </>
                   ) : (
                     <>
-                      <X className="size-4 text-ink" />
+                      <X className="size-4 text-danger" />
                       {isSpelling
                         ? t("feedbackWrongSpelling", { word: lastResult.correctSpelling ?? "" })
                         : t("feedbackWrong")}

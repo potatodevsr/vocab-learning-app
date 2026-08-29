@@ -74,7 +74,7 @@ export default async function FaqPage({ params }: FaqPageProps) {
 
       <main className="min-h-screen bg-background text-foreground">
         <section className="bg-accent-deep-sky text-white">
-        <div className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
+        <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-12 lg:px-8">
           <h1>{t("title")}</h1>
           <p className="mt-3 max-w-2xl text-base leading-7 text-white">
             {t("subtitle")}
@@ -82,12 +82,20 @@ export default async function FaqPage({ params }: FaqPageProps) {
         </div>
         </section>
 
-        <section className="mx-auto w-full max-w-4xl px-6 py-10 lg:px-8">
+        <section className="mx-auto w-full max-w-column px-4 sm:px-6 py-10 lg:px-8">
         <dl className="grid gap-4" data-testid="faq-list">
-          {FAQ.map((item) => (
-            <div key={item} className="play-card p-6">
-              <dt className="text-xl font-bold">{t(`q${item}`)}</dt>
-              <dd className="mt-2 leading-7 text-muted-foreground">
+          {FAQ.map((item, index) => (
+            <div key={item} className="play-card p-6 sm:p-7">
+              <dt className="flex items-start gap-3 text-lg font-bold leading-snug sm:text-xl">
+                <span
+                  aria-hidden
+                  className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-accent-sun text-xs font-extrabold text-ink"
+                >
+                  {index + 1}
+                </span>
+                {t(`q${item}`)}
+              </dt>
+              <dd className="mt-3 max-w-[62ch] pl-10 leading-7 text-muted-foreground">
                 {t(`a${item}`)}
               </dd>
             </div>

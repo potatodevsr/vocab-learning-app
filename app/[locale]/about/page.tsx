@@ -116,8 +116,8 @@ export default async function AboutPage({ params }: LocalePageProps) {
         so the answer — the size of the list — is the largest thing on it, and the list
         itself scrolls underneath as evidence.
       */}
-      <section className="mx-auto w-full max-w-5xl px-6 pb-10 pt-12 lg:px-8">
-        <p className="play-stamp bg-accent-sun px-3 py-1 text-xs font-bold uppercase tracking-widest text-ink">
+      <section className="mx-auto w-full max-w-column px-4 sm:px-6 pb-10 pt-12 lg:px-8">
+        <p className="play-stamp bg-accent-sun px-3 py-1 play-eyebrow text-ink">
           {t("eyebrow")}
         </p>
 
@@ -129,7 +129,7 @@ export default async function AboutPage({ params }: LocalePageProps) {
           <span className="play-outline-word">3,000</span>
         </p>
 
-        <h1 className="play-display mt-2 max-w-3xl text-ink">{t("h1")}</h1>
+        <h1 className="play-display play-display-page mt-2 max-w-3xl text-ink">{t("h1")}</h1>
 
         <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
           {t("intro")}
@@ -167,7 +167,7 @@ export default async function AboutPage({ params }: LocalePageProps) {
         block colour and the middle one is inset, so the eye moves down the page instead
         of scanning three equal rectangles.
       */}
-      <section className="mx-auto w-full max-w-5xl px-6 py-14 lg:px-8">
+      <section className="mx-auto w-full max-w-column px-4 sm:px-6 py-14 lg:px-8">
         <div className="grid gap-8">
           {sections.map((section, index) => (
             <article

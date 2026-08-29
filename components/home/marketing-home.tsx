@@ -154,7 +154,7 @@ export async function MarketingHome({ locale }: { locale: string }) {
           padding above the kicker and a 48px grid gap; a 390×844 phone cannot — that
           alone was 128px of the space the primary CTA needed to clear the fold.
         */}
-        <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-10 sm:gap-12 sm:py-16 lg:grid-cols-[1.18fr_0.82fr] lg:items-center lg:px-8 lg:py-20">
+        <div className="mx-auto grid w-full max-w-plate gap-8 px-4 sm:px-6 py-10 sm:gap-12 sm:py-16 lg:grid-cols-[1.18fr_0.82fr] lg:items-center lg:px-8 lg:py-20">
           <div>
             <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
               {t("heroKicker")}
@@ -223,7 +223,10 @@ export async function MarketingHome({ locale }: { locale: string }) {
             </p>
 
             {/* Three claims, each one checkable on the site itself. */}
-            <dl className="mt-8 grid max-w-xl grid-cols-3 gap-3 sm:mt-10">
+            {/* One column on a phone. Three 106px columns left the labels 74px of
+                content and four wrapped lines of 11px type — the claims are the reason
+                to trust the page and they were the least readable thing on it. */}
+            <dl className="mt-8 grid max-w-xl gap-3 sm:mt-10 sm:grid-cols-3">
               {[
                 { value: t("proofWords"), label: t("proofWordsLabel"), tilt: "-1.5deg" },
                 { value: t("proofMinutes"), label: t("proofMinutesLabel"), tilt: "1deg" },
@@ -231,13 +234,11 @@ export async function MarketingHome({ locale }: { locale: string }) {
               ].map((proof) => (
                 <div
                   key={proof.label}
-                  className="play-sticker p-4 text-ink [--tile-block:var(--ink)]"
+                  className="play-sticker flex items-baseline gap-3 p-4 text-ink [--tile-block:var(--ink)] sm:block"
                   style={{ transform: `rotate(${proof.tilt})` }}
                 >
-                  <dt className="text-2xl font-extrabold tracking-tight">
-                    {proof.value}
-                  </dt>
-                  <dd className="mt-1 text-xs font-medium leading-4 text-muted-foreground">
+                  <dt className="text-2xl font-extrabold">{proof.value}</dt>
+                  <dd className="text-sm font-medium leading-5 text-muted-foreground sm:mt-1 sm:text-xs sm:leading-4">
                     {proof.label}
                   </dd>
                 </div>
@@ -254,7 +255,7 @@ export async function MarketingHome({ locale }: { locale: string }) {
       {/* Features: four stickers, each with its own colour, each tilted a hair
           differently so the row reads as objects placed by hand. */}
       <section className="bg-background">
-        <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-12 sm:gap-10 sm:py-20 lg:px-8">
+        <div className="mx-auto grid w-full max-w-plate gap-8 px-4 sm:px-6 py-12 sm:gap-10 sm:py-20 lg:px-8">
           <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
             <div>
               <span className="play-stamp bg-accent-mint px-4 py-1.5 text-sm font-extrabold text-ink">
@@ -314,7 +315,7 @@ export async function MarketingHome({ locale }: { locale: string }) {
       {/* The loop, drawn as the path it is: four numbered nodes on one ink rule.
           This is the product's core metaphor, so it is a picture, not a list. */}
       <section className="border-y-3 border-ink bg-accent-mint">
-        <div className="mx-auto w-full max-w-6xl px-6 py-12 sm:py-20 lg:px-8">
+        <div className="mx-auto w-full max-w-plate px-4 sm:px-6 py-12 sm:py-20 lg:px-8">
           <div className="max-w-2xl">
             <span className="play-stamp bg-white px-4 py-1.5 text-sm font-extrabold text-ink">
               {t("pathBadge")}
@@ -330,13 +331,20 @@ export async function MarketingHome({ locale }: { locale: string }) {
           <ol className="relative mt-8 grid gap-6 sm:mt-12 md:grid-cols-4">
             {/* The rule the nodes sit on. Decorative: the ordered list carries the
                 sequence for anyone not looking at it. */}
-            <div
-              aria-hidden
-              className="absolute left-7 right-7 top-7 hidden h-1 rounded-full bg-ink/40 md:block"
-            />
-
             {steps.map((step, index) => (
               <li key={step} className="relative">
+                {/* The connector belongs to the node it leaves, not to the list: a single
+                    absolutely-positioned rule across the <ol> was anchored to the
+                    container's edges while the nodes are left-aligned inside four grid
+                    columns, so it overshot node 04 by most of a column. Drawn per step,
+                    it starts at this node's right edge and ends at the next node's left
+                    edge whatever the column width turns out to be. */}
+                {index < steps.length - 1 && (
+                  <span
+                    aria-hidden
+                    className="absolute left-16 -right-6 top-[calc(1.75rem-2px)] hidden h-1 rounded-full bg-ink/40 md:block"
+                  />
+                )}
                 <span className="relative z-10 flex size-14 items-center justify-center rounded-2xl border-3 border-ink bg-white text-lg font-extrabold text-ink">
                   {String(index + 1).padStart(2, "0")}
                 </span>

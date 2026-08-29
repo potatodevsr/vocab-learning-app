@@ -97,7 +97,7 @@ export default async function UnitPracticePage({ params }: UnitPracticePageProps
       <TrackPageView family="unit" locale={locale} level={level} unit={unit} />
       <main className="min-h-screen bg-background text-foreground">
         <section className="border-b-3 border-ink bg-brand text-white">
-          <div className="mx-auto w-full max-w-4xl px-6 py-10 lg:px-8">
+          <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-10 lg:px-8">
             <nav aria-label="breadcrumb" className="flex flex-wrap items-center gap-2 text-sm font-semibold text-white">
               <Link href={levelHref} className="play-underline">
                 {t("breadcrumbLevel", { level })}
@@ -114,7 +114,7 @@ export default async function UnitPracticePage({ params }: UnitPracticePageProps
               {t("badge", { level })}
             </span>
 
-            <h1 className="play-display mt-5 max-w-3xl text-[clamp(2.25rem,6vw,3.75rem)]">
+            <h1 className="play-display mt-5 max-w-3xl play-display-page">
               {t("unitTitle", { level, unit })}
             </h1>
 
@@ -128,7 +128,7 @@ export default async function UnitPracticePage({ params }: UnitPracticePageProps
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-4xl px-6 py-10 lg:px-8">
+        <section className="mx-auto w-full max-w-column px-4 sm:px-6 py-10 lg:px-8">
           <PracticeSession
             scope={{ level, unit }}
             scopeKey={`unit-${level}-${unit}`}

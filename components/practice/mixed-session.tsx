@@ -363,8 +363,16 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
               key={i}
               data-testid="session-pip"
               data-filled={i < answered.length}
-              className={`h-2.5 flex-1 rounded-full transition-colors ${
-                i < answered.length ? (answered[i].correct ? "bg-success" : "bg-danger") : "bg-ink/15"
+              className={`h-2.5 flex-1 rounded-full transition-[background-color] duration-[--dur-fast] ease-[--ease-play] ${
+                i < answered.length
+                  ? answered[i].correct
+                    ? "bg-success"
+                    : "bg-danger"
+                  // The segment you are on. Eight identical grey pills said "0 of 8
+                  // answered" and nothing at all about where the learner is standing.
+                  : i === answered.length
+                    ? "bg-brand"
+                    : "bg-ink/15"
               }`}
             />
           ))}
@@ -384,7 +392,7 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
 
       <div className="play-sticker mt-5 p-4 [--tile-block:var(--accent-sky)] sm:p-6">
         <article className="rounded-[20px] bg-brand-soft p-5 sm:rounded-[24px] sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          <p className="play-eyebrow">
             {isMatchPairs ? t("matchPromptLabel") : t("promptLabel")}
           </p>
 
@@ -512,13 +520,13 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
                             ? "bg-danger text-white"
                             : isSelected
                               ? "bg-accent-sun text-ink"
-                              : "bg-white text-ink hover:bg-brand-soft",
+                              : "bg-white text-ink hover:bg-warn-soft",
                       ].join(" ")}
                     >
                       {/* Decorative index — see practice-session.tsx. */}
                       <span
                         aria-hidden
-                        className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-current text-xs font-bold"
+                        className="flex size-7 shrink-0 items-center justify-center rounded-full border-3 border-current text-xs font-bold"
                       >
                         {index + 1}
                       </span>
@@ -532,13 +540,22 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
             </>
           )}
 
-          {/* Feedback appears in a reserved, fixed-height slot so the continue button
-              below never shifts when it shows (LEARNER-LIFECYCLE.md §3.10.2 — the button
-              is pressed by muscle memory and must not move). */}
-          <div className="mt-4 h-[92px]">
+        </article>
+      </div>
+
+      {/* Feedback appears in a reserved, fixed-height slot so the continue button below
+          never shifts when it shows (LEARNER-LIFECYCLE.md §3.10.2 — the button is pressed
+          by muscle memory and must not move).
+
+          The slot sits outside the tinted panel rather than inside it. Reserved *within*
+          the panel, the 92px showed as 140px of empty blue under the last answer on every
+          card — the panel looked like it had failed to fill rather than like a card
+          waiting for an answer. Out here the panel hugs its content and the reserve is
+          just card. */}
+      <div className="mt-4 min-h-[92px]">
             {showingFeedback && (
               <div
-                className={`rounded-2xl border-3 border-ink p-4 ${lastResult.correct ? "bg-success-soft" : "bg-warn-soft"}`}
+                className={`rounded-2xl border-3 border-ink p-4 ${lastResult.correct ? "bg-success-soft" : "bg-danger-soft"}`}
                 data-testid="session-feedback"
                 role="status"
               >
@@ -550,7 +567,7 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
                     </>
                   ) : (
                     <>
-                      <X className="size-4 text-ink" />
+                      <X className="size-4 text-danger" />
                       {isSpelling
                         ? t("feedbackWrongSpelling", { word: lastResult.correctSpelling ?? "" })
                         : t("feedbackWrongGeneric")}
@@ -559,12 +576,10 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
                 </p>
               </div>
             )}
-          </div>
-        </article>
       </div>
 
       {/* The continue button never moves (LEARNER-LIFECYCLE.md §3.10.2). */}
-      <div className="mt-5">
+      <div className="mt-1">
         <Button
           size="lg"
           data-testid="session-continue"
@@ -582,7 +597,7 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
             }
             if (isSpelling) void submitSpelling();
           }}
-          className="play-key h-14 w-full rounded-2xl bg-brand text-base font-extrabold text-white hover:bg-brand disabled:opacity-40"
+          className="play-key h-14 w-full rounded-2xl bg-brand text-base font-extrabold text-white hover:bg-brand"
         >
           {phase === "checking" ? (
             <>

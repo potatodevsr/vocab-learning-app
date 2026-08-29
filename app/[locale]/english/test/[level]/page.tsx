@@ -138,15 +138,15 @@ export default async function LevelTestPage({ params }: LevelTestPageProps) {
 
       <main className="min-h-screen bg-background text-foreground">
         <section className="border-b-3 border-ink bg-brand text-white">
-          <div className="mx-auto w-full max-w-3xl px-6 py-12 lg:px-8">
-            <h1 className="play-display">{t("levelH1", { level })}</h1>
+          <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-12 lg:px-8">
+            <h1 className="play-display play-display-page">{t("levelH1", { level })}</h1>
             <p className="mt-3 max-w-xl text-white/90">
               {t("levelIntro", { level, count: total })}
             </p>
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-3xl px-6 py-10 lg:px-8">
+        <section className="mx-auto w-full max-w-column px-4 sm:px-6 py-10 lg:px-8">
           <PlacementTest locale={locale} level={level} />
 
           <div className="mt-10 flex flex-wrap gap-3">

@@ -465,7 +465,7 @@ export function PracticeSession({
               key={i}
               data-testid="practice-pip"
               data-filled={i < answered.length}
-              className={`h-2.5 flex-1 rounded-full transition-colors ${
+              className={`h-2.5 flex-1 rounded-full transition-[background-color] duration-[--dur-fast] ease-[--ease-play] ${
                 i < answered.length
                   ? answered[i].correct
                     ? "bg-success"
@@ -483,7 +483,7 @@ export function PracticeSession({
 
       <div className="play-sticker mt-5 p-4 [--tile-block:var(--accent-sky)] sm:p-6">
         <article className="rounded-[20px] bg-brand-soft p-5 sm:rounded-[24px] sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          <p className="play-eyebrow">
             {t("promptLabel")}
           </p>
 
@@ -528,7 +528,7 @@ export function PracticeSession({
                         ? "bg-danger text-white"
                         : isSelected
                           ? "bg-accent-sun text-ink"
-                          : "bg-white text-ink hover:bg-brand-soft",
+                          : "bg-white text-ink hover:bg-warn-soft",
                   ].join(" ")}
                 >
                   {/*
@@ -538,7 +538,7 @@ export function PracticeSession({
                   */}
                   <span
                     aria-hidden
-                    className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-current text-xs font-bold"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-full border-3 border-current text-xs font-bold"
                   >
                     {index + 1}
                   </span>

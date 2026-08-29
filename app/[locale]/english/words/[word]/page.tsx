@@ -289,7 +289,7 @@ export default async function WordPage({ params }: WordPageProps) {
       )}
     <main className="min-h-screen bg-background text-foreground">
       <section className="border-b-3 border-ink bg-brand text-white">
-        <div className="mx-auto w-full max-w-4xl px-6 py-10 lg:px-8">
+        <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-10 lg:px-8">
           {/*
             A crawl path back up the hierarchy. Every word page previously linked to the
             A1 hub regardless of the word's level, so an A2 word had no route to its own
@@ -368,7 +368,7 @@ export default async function WordPage({ params }: WordPageProps) {
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-4xl space-y-4 px-6 py-10 lg:px-8">
+      <section className="mx-auto w-full max-w-column space-y-4 px-4 sm:px-6 py-10 lg:px-8">
         {entries.map((entry) => {
           const usages = alignPosUsages(
             entry.partOfSpeech,
@@ -382,7 +382,7 @@ export default async function WordPage({ params }: WordPageProps) {
           const pronunciation = trustedThai(entry.pronunciationTh);
 
           return (
-          <Card key={entry.id} className="play-card rounded-[28px] border-0">
+          <Card key={entry.id} className="play-card">
             <CardContent className="p-6 sm:p-8">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className="rounded-full bg-brand text-white hover:bg-brand">
@@ -413,7 +413,7 @@ export default async function WordPage({ params }: WordPageProps) {
               */}
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl bg-brand-soft/50 p-5">
-                  <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <h2 className="play-eyebrow">
                     {t("thaiMeaning")}
                   </h2>
                   {meaning ? (
@@ -431,7 +431,7 @@ export default async function WordPage({ params }: WordPageProps) {
                 </div>
 
                 <div className="rounded-2xl bg-brand-soft/50 p-5">
-                  <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <h2 className="play-eyebrow">
                     {t("pronunciation")}
                   </h2>
                   {pronunciation ? (
@@ -463,7 +463,7 @@ export default async function WordPage({ params }: WordPageProps) {
                   className="mt-4 rounded-2xl bg-accent-sky/15 p-5"
                   data-testid="thai-reading"
                 >
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <p className="play-eyebrow">
                     {t("thaiReading")}
                   </p>
 
@@ -510,7 +510,7 @@ export default async function WordPage({ params }: WordPageProps) {
                   className="mt-4 rounded-2xl bg-accent-mint/15 p-5"
                   data-testid="pos-usages"
                 >
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <p className="play-eyebrow">
                     {t("usageTitle")}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -558,7 +558,7 @@ export default async function WordPage({ params }: WordPageProps) {
               ) : (
                 entry.exampleEn && (
                   <div className="mt-4 rounded-2xl bg-accent-mint/15 p-5">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <p className="play-eyebrow">
                       {t("example")}
                     </p>
                     <p className="mt-2 text-base leading-7 text-foreground">
@@ -600,7 +600,7 @@ export default async function WordPage({ params }: WordPageProps) {
                 href={`/english/words/${previous.slug}`}
                 className="play-tile play-focus flex min-h-11 flex-1 basis-56 flex-col justify-center gap-1 p-4 text-left"
               >
-                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <span className="play-eyebrow">
                   {t("previousWord")}
                 </span>
                 <span className="text-lg font-bold" lang="en">
@@ -614,7 +614,7 @@ export default async function WordPage({ params }: WordPageProps) {
                 href={`/english/words/${next.slug}`}
                 className="play-tile play-focus flex min-h-11 flex-1 basis-56 flex-col justify-center gap-1 p-4 text-right"
               >
-                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <span className="play-eyebrow">
                   {t("nextWord")}
                 </span>
                 <span className="text-lg font-bold" lang="en">
@@ -628,7 +628,7 @@ export default async function WordPage({ params }: WordPageProps) {
         {siblings.length > 0 && (
           <section
             data-testid="related-words"
-            className="play-card rounded-[28px] border-0 p-6 sm:p-8"
+            className="play-card p-6 sm:p-8"
           >
             <h2 className="text-lg font-bold">
               {t("relatedTitle", { unit: head.unit ?? 1 })}

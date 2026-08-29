@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
  * - **Auth screens are a single task.** The bar would offer "log in" to someone already
  *   on the login form.
  */
-const HIDDEN_ON = [/^\/learn/, /^\/quiz/, /^\/auth\//];
+const HIDDEN_ON = [/^\/learn/, /^\/quiz/, /^\/auth\//, /\/checkpoint$/];
 
 export function AppBar({ locale }: { locale: string }) {
   const pathname = usePathname();
@@ -77,8 +77,8 @@ export function AppBar({ locale }: { locale: string }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b-2 border-ink bg-card">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b-3 border-ink bg-card">
+      <div className="mx-auto flex h-16 w-full max-w-plate items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8">
         {/*
           The wordmark is hidden below `sm`, and the mark itself is `aria-hidden`, so on a
           phone this link used to contain nothing readable at all: no text, no label, no
@@ -131,7 +131,7 @@ export function AppBar({ locale }: { locale: string }) {
       */}
       <nav
         aria-label={t("sections")}
-        className="flex items-center gap-5 overflow-x-auto border-t border-border px-4 text-sm md:hidden"
+        className="play-scroll-row flex items-center gap-5 overflow-x-auto border-t border-border px-4 text-sm md:hidden"
       >
         {links.map((link) => navLink(link, ""))}
       </nav>

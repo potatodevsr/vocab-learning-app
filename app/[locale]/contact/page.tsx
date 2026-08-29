@@ -96,8 +96,8 @@ export default async function ContactPage({ params }: LocalePageProps) {
       />
 
       <main className="min-h-screen bg-background text-foreground">
-      <section className="mx-auto w-full max-w-5xl px-6 pb-8 pt-12 lg:px-8">
-        <h1 className="play-display max-w-3xl text-ink">{t("h1")}</h1>
+      <section className="mx-auto w-full max-w-column px-4 sm:px-6 pb-8 pt-12 lg:px-8">
+        <h1 className="play-display play-display-page max-w-3xl text-ink">{t("h1")}</h1>
         <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
           {t("intro")}
         </p>
@@ -130,7 +130,7 @@ export default async function ContactPage({ params }: LocalePageProps) {
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-5xl px-6 pb-14 lg:px-8">
+      <section className="mx-auto w-full max-w-column px-4 sm:px-6 pb-14 lg:px-8">
         <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {routes.map((route) => (
             <li

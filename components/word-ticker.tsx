@@ -35,11 +35,15 @@ export async function WordTicker() {
       data-testid="word-trail"
       className="border-b-2 border-ink bg-accent-sun text-ink"
     >
-      <ul className="mx-auto grid w-full max-w-6xl grid-cols-2 px-6 sm:grid-cols-5 lg:px-8">
+      {/* One row that scrolls, not a grid that leaves holes. Five items in two columns
+          is three rows with the bottom-right cell empty, and `odd:border-r-2` then drew a
+          divider on item 5 pointing into that hole. A phone gets the trail as a row it
+          can push; from `sm` all five fit and the row stops scrolling on its own. */}
+      <ul className="play-trail-row mx-auto flex w-full max-w-plate snap-x snap-mandatory overflow-x-auto px-4 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-6 lg:px-8">
         {SAMPLE.slice(0, 5).map((word, index) => (
           <li
             key={word.en}
-            className="flex min-h-20 items-center justify-between gap-3 border-ink py-3 odd:border-r-2 odd:pr-4 even:pl-4 sm:border-r-2 sm:px-4 sm:odd:border-r-2 sm:last:border-r-0"
+            className="flex min-h-20 min-w-[42vw] shrink-0 snap-start items-center justify-between gap-3 border-ink py-3 pr-4 [&:not(:last-child)]:border-r-2 sm:min-w-0 sm:px-4 sm:last:border-r-0"
           >
             <span>
               <span className="block text-base font-extrabold tracking-tight sm:text-lg">{word.en}</span>

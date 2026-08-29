@@ -47,7 +47,7 @@ export default function VerifyMagicLinkPage() {
       className="flex min-h-screen items-center justify-center bg-brand px-4"
       data-testid="magic-verify-invalid"
     >
-      <Card className="play-sticker w-full max-w-md rounded-[28px] border-0 [--tile-block:var(--ink)]">
+      <Card className="play-sticker w-full max-w-md [--tile-block:var(--ink)]">
         <CardContent className="space-y-5 pt-6 text-center">
           <h1 className="text-2xl font-extrabold">{t("magicInvalidTitle")}</h1>
           <p className="text-sm text-muted-foreground">{t("magicInvalidBody")}</p>

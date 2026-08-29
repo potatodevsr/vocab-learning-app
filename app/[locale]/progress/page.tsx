@@ -74,9 +74,9 @@ export default async function ProgressPage({ params }: ProgressPageProps) {
   return (
     <main className="min-h-screen bg-background text-foreground" data-testid="progress-page">
       <section className="border-b-3 border-ink bg-brand text-white">
-        <div className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
-          <h1 className="play-display">{t("title")}</h1>
-          <p className="mt-3 max-w-xl text-white/90">{t("subtitle")}</p>
+        <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-12 lg:px-8">
+          <h1 className="play-display play-display-page">{t("title")}</h1>
+          <p className="mt-3 max-w-xl text-white">{t("subtitle")}</p>
 
           {/* Same numbers as the Today card, from the same read — a streak that disagrees
               with itself across two screens is worse than no streak. */}
@@ -107,7 +107,7 @@ export default async function ProgressPage({ params }: ProgressPageProps) {
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-4xl gap-6 px-6 py-10 lg:px-8">
+      <section className="mx-auto grid w-full max-w-column gap-6 px-4 sm:px-6 py-10 lg:px-8">
         <div className="grid gap-3 sm:grid-cols-4" data-testid="progress-stats">
           {stats.map((stat) => (
             <div
@@ -127,6 +127,8 @@ export default async function ProgressPage({ params }: ProgressPageProps) {
             title={t("calendarTitle")}
             caption={t("calendarCaption")}
             emptyLabel={t("calendarEmpty")}
+            scaleLow={t("calendarScaleLow")}
+            scaleHigh={t("calendarScaleHigh")}
             dayLabel={(day, items) => t("calendarDay", { day, items })}
           />
         ) : null}
@@ -148,7 +150,7 @@ export default async function ProgressPage({ params }: ProgressPageProps) {
         {summary.mistakes > 0 ? (
           <Link
             href="/review"
-            className="play-card flex items-center justify-between gap-4 p-6 transition-transform hover:-translate-y-0.5"
+            className="play-tile play-focus flex items-center justify-between gap-4 p-6 [--tile-block:var(--warn)]"
             data-testid="progress-mistakes-link"
           >
             <span>

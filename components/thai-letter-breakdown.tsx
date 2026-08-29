@@ -51,7 +51,7 @@ export function ThaiLetterBreakdown({
 
   return (
     <div className="mt-4 rounded-2xl bg-accent-mint/15 p-5" data-testid="thai-letters">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <p className="play-eyebrow">
         {title}
       </p>
       <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
@@ -74,24 +74,24 @@ export function ThaiLetterBreakdown({
               setActive(index);
               speak(part.letter.name);
             }}
-            className={`flex min-h-16 min-w-14 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-ink px-2 py-2 transition-colors hover:bg-accent-sun disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`flex min-h-20 min-w-16 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-2xl border-2 border-ink px-2.5 py-2 transition-colors hover:bg-accent-sun disabled:cursor-not-allowed disabled:opacity-50 ${
               active === index ? "bg-accent-sun" : "bg-white"
             }`}
           >
-            <span className="font-thai text-lg leading-none" lang="th">
+            <span className="font-thai text-2xl leading-tight" lang="th">
               {part.char}
             </span>
 
             <span
               data-testid="thai-letter-roman"
-              className="mt-1.5 text-[11px] font-medium leading-none text-ink"
+              className="text-xs font-semibold leading-tight text-ink"
             >
               {part.known ? part.letter.roman : "?"}
             </span>
 
             {part.known && (
               <span
-                className="font-thai mt-1 text-[9px] leading-none text-muted-foreground"
+                className="font-thai text-xs leading-tight text-muted-foreground"
                 lang="th"
               >
                 {part.letter.name}

@@ -46,7 +46,7 @@ export default async function CheckpointPage({ params }: CheckpointPageProps) {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto w-full max-w-2xl px-6 py-10 lg:px-8">
+      <div className="mx-auto w-full max-w-column px-4 py-6 sm:px-6 sm:py-10">
         <CheckpointSession
           scope={{ level, unit }}
           unitHref={unitHref}

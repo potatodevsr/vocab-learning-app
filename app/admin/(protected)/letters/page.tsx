@@ -285,7 +285,7 @@ export default function AdminLettersPage() {
   return (
     <div className="min-h-screen bg-muted/40">
       <header className="border-b bg-background px-4 py-4 sm:px-6">
-        <h1 className="font-semibold text-foreground">
+        <h1 className="text-lg font-semibold text-foreground">
           ตัวอักษรไทย — คำถอดอักษรโรมัน (RTGS)
         </h1>
         <p className="mt-0.5 text-xs text-muted-foreground">

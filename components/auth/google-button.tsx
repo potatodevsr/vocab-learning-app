@@ -56,7 +56,7 @@ export function AuthDivider() {
   return (
     <div className="flex items-center gap-3" aria-hidden>
       <span className="h-0.5 flex-1 bg-ink/15" />
-      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+      <span className="play-eyebrow">
         {t("orDivider")}
       </span>
       <span className="h-0.5 flex-1 bg-ink/15" />

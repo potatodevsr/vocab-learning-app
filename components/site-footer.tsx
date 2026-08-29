@@ -14,7 +14,7 @@ import { Link, usePathname } from "@/i18n/navigation";
  * Hidden wherever the app bar is hidden, for the same reasons: a lesson is immersive,
  * and an auth screen is a single task.
  */
-const HIDDEN_ON = [/^\/learn/, /^\/quiz/, /^\/auth\//];
+const HIDDEN_ON = [/^\/learn/, /^\/quiz/, /^\/auth\//, /\/checkpoint$/];
 
 const LEVELS = ["a1", "a2", "b1", "b2"] as const;
 
@@ -62,7 +62,7 @@ export function SiteFooter() {
         below content nobody had asked to scroll past. Paired, the same links cost about
         half that. The brand block keeps the full width; it carries a paragraph.
       */}
-      <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-x-6 gap-y-8 px-6 py-10 sm:gap-10 sm:py-14 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] lg:px-8">
+      <div className="mx-auto grid w-full max-w-plate grid-cols-2 gap-x-6 gap-y-8 px-4 sm:px-6 py-10 sm:gap-10 sm:py-14 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] lg:px-8">
         <div className="col-span-2 lg:col-span-1">
           <Link
             href="/"
@@ -77,7 +77,7 @@ export function SiteFooter() {
             <span className="text-lg font-extrabold">{t("brand")}</span>
           </Link>
 
-          <p className="mt-4 max-w-sm text-sm leading-6 text-white/90">
+          <p className="mt-4 max-w-sm text-sm leading-6 text-white">
             {tFooter("blurb")}
           </p>
 
@@ -87,7 +87,7 @@ export function SiteFooter() {
         </div>
 
         <nav aria-label={tFooter("levelsHeading")}>
-          <p className="text-sm font-bold uppercase tracking-widest text-accent-sun">
+          <p className="play-eyebrow text-sm text-accent-sun">
             {tFooter("levelsHeading")}
           </p>
 
@@ -106,7 +106,7 @@ export function SiteFooter() {
         </nav>
 
         <nav aria-label={tFooter("appHeading")}>
-          <p className="text-sm font-bold uppercase tracking-widest text-accent-sun">
+          <p className="play-eyebrow text-sm text-accent-sun">
             {tFooter("appHeading")}
           </p>
 
@@ -147,7 +147,7 @@ export function SiteFooter() {
         </nav>
 
         <nav aria-label={tFooter("exploreHeading")}>
-          <p className="text-sm font-bold uppercase tracking-widest text-accent-sun">
+          <p className="play-eyebrow text-sm text-accent-sun">
             {tFooter("exploreHeading")}
           </p>
 
@@ -166,7 +166,7 @@ export function SiteFooter() {
         </nav>
 
         <nav aria-label={tFooter("aboutHeading")}>
-          <p className="text-sm font-bold uppercase tracking-widest text-accent-sun">
+          <p className="play-eyebrow text-sm text-accent-sun">
             {tFooter("aboutHeading")}
           </p>
 
@@ -186,7 +186,7 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-white/15">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-6 text-xs text-white/80 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+        <div className="mx-auto flex w-full max-w-plate flex-col gap-4 px-4 sm:px-6 py-6 text-xs text-white sm:flex-row sm:items-center sm:justify-between lg:px-8">
           <p>{tFooter("credit")}</p>
 
           <nav aria-label={tFooter("legalHeading")}>

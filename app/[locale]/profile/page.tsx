@@ -118,7 +118,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <section className="border-b-3 border-ink bg-brand text-white">
-        <div className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
+        <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-12 lg:px-8">
           <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
             {t("badge")}
           </span>
@@ -132,7 +132,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </div>
 
             <div>
-              <h1 className="play-display text-[clamp(2rem,5vw,3rem)]">
+              <h1 className="play-display play-display-page">
                 {fullName || user.username}
               </h1>
               <p className="mt-1 text-sm text-white">{user.email}</p>
@@ -141,8 +141,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-4xl gap-6 px-6 py-10 lg:px-8">
-        <Card className="play-sticker rounded-3xl [--tile-block:var(--accent-sky)]">
+      <section className="mx-auto grid w-full max-w-column gap-6 px-4 sm:px-6 py-10 lg:px-8">
+        <Card className="play-card">
           <CardContent className="p-6 sm:p-8">
             <h2 className="text-xl font-semibold">{t("accountTitle")}</h2>
 
@@ -157,7 +157,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   >
                     <Icon className="mt-0.5 size-4 shrink-0 text-brand" />
                     <div className="min-w-0">
-                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                      <dt className="play-eyebrow">
                         {detail.label}
                       </dt>
                       <dd
@@ -201,7 +201,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </Link>
         )}
 
-        <Card className="play-sticker rounded-3xl [--tile-block:var(--accent-mint)]">
+        <Card className="play-card">
           <CardContent className="p-6 sm:p-8">
             <h2 className="text-xl font-semibold">
               {hasProgress ? t("progressTitle") : t("progressEmptyTitle")}
@@ -210,13 +210,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             {hasProgress ? (
               <>
                 <div
-                  className="mt-6 grid gap-3 sm:grid-cols-4"
+                  className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
                   data-testid="profile-stats"
                 >
                   {stats.map((stat) => (
                     <div
                       key={stat.key}
-                      className="rounded-2xl border border-border bg-brand-soft/40 p-4"
+                      className="rounded-2xl border-2 border-ink/15 bg-brand-soft p-4"
                     >
                       <p
                         className="text-3xl font-semibold"
@@ -310,7 +310,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           rendered at all until a second list is published in /admin/lists.
         */}
         {wordlists.length > 1 && currentWordlist ? (
-          <Card className="play-sticker rounded-3xl [--tile-block:var(--accent-sky)]">
+          <Card className="play-card">
             <CardContent className="p-6 sm:p-8">
               <WordlistPicker lists={wordlists} current={currentWordlist} />
             </CardContent>
@@ -318,7 +318,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         ) : null}
 
         {reminderSettings && (
-          <Card className="play-sticker rounded-3xl [--tile-block:var(--accent-sun)]">
+          <Card className="play-card">
             <CardContent className="p-6 sm:p-8">
               <ReminderSettingsCard initial={reminderSettings} />
             </CardContent>

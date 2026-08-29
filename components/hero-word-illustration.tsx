@@ -89,7 +89,7 @@ export function HeroWordIllustration({ mode }: { mode: LearnerMode }) {
             <div className="mt-5">
               {mode === "thai" ? (
                 <>
-                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  <p className="play-eyebrow">
                     English prompt · {card.word}
                   </p>
                   <h3 className="font-thai mt-2 text-4xl font-semibold tracking-tight" lang="th">

@@ -137,9 +137,9 @@ export function UserNavbar({
           <DropdownMenuSeparator />
 
           <DropdownMenuItem
+            variant="destructive"
             onClick={handleLogout}
             disabled={loggingOut}
-            className="cursor-pointer text-destructive focus:text-destructive"
           >
             <LogOut className="mr-2 size-4" />
             {t("logOut")}

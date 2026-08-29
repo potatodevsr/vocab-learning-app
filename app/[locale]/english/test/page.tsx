@@ -104,13 +104,13 @@ export default async function PlacementTestPage({ params }: TestPageProps) {
 
       <main className="min-h-screen bg-background text-foreground">
         <section className="border-b-3 border-ink bg-brand text-white">
-          <div className="mx-auto w-full max-w-3xl px-6 py-12 lg:px-8">
-            <h1 className="play-display">{t("h1")}</h1>
+          <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-12 lg:px-8">
+            <h1 className="play-display play-display-page">{t("h1")}</h1>
             <p className="mt-3 max-w-xl text-white/90">{t("intro")}</p>
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-3xl px-6 py-10 lg:px-8">
+        <section className="mx-auto w-full max-w-column px-4 sm:px-6 py-10 lg:px-8">
           <PlacementTest locale={locale} />
 
           <h2 className="mt-12 text-2xl font-extrabold tracking-tight">

@@ -218,7 +218,7 @@ export async function WordsLetter({ locale, letter, page: rawPage }: LetterPageP
 
       <main className="min-h-screen bg-background text-foreground">
         <section className="border-b-3 border-ink bg-brand text-white">
-          <div className="mx-auto w-full max-w-5xl px-6 py-10 lg:px-8">
+          <div className="mx-auto w-full max-w-plate px-4 py-10 sm:px-6 lg:px-8">
             <nav
               aria-label="breadcrumb"
               className="flex flex-wrap items-center gap-2 text-sm font-semibold text-white"
@@ -243,7 +243,7 @@ export async function WordsLetter({ locale, letter, page: rawPage }: LetterPageP
                 {t("badge", { letter: upper })}
               </span>
 
-              <h1 className="play-display text-[clamp(2.25rem,6vw,3.75rem)]">
+              <h1 className="play-display play-display-page">
                 {t("title", { letter: upper })}
               </h1>
 
@@ -260,13 +260,13 @@ export async function WordsLetter({ locale, letter, page: rawPage }: LetterPageP
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-5xl space-y-8 px-6 py-10 lg:px-8">
+        <section className="mx-auto w-full max-w-plate space-y-8 px-4 py-10 sm:px-6 lg:px-8">
           <ul className="flex flex-wrap gap-2">
             {shown.map((word) => (
               <li key={word.slug}>
                 <Link
                   href={wordHref(word)}
-                  className="play-press inline-flex rounded-full border-2 border-ink bg-white px-3 py-1 text-sm font-semibold text-ink hover:bg-accent-mint"
+                  className="play-press inline-flex min-h-11 items-center rounded-full border-2 border-ink bg-white px-4 text-sm font-semibold text-ink hover:bg-accent-mint"
                 >
                   {word.displayWord}
                 </Link>

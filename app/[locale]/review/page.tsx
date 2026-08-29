@@ -47,7 +47,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <section className="border-b-3 border-ink bg-warn text-ink">
-        <div className="mx-auto w-full max-w-4xl px-6 py-12 lg:px-8">
+        <div className="mx-auto w-full max-w-column px-4 sm:px-6 py-12 lg:px-8">
           <div className="flex size-14 items-center justify-center rounded-3xl border-3 border-ink bg-white">
             <Target className="size-7" />
           </div>
@@ -67,7 +67,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-4xl px-6 py-10 lg:px-8">
+      <section className="mx-auto w-full max-w-column px-4 sm:px-6 py-10 lg:px-8">
         {rows.length === 0 ? (
           <div className="play-sticker p-8 text-center [--tile-block:var(--success)]" data-testid="mistakes-empty">
             <div className="mx-auto flex size-14 items-center justify-center rounded-3xl bg-success-soft">

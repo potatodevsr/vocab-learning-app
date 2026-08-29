@@ -134,7 +134,12 @@
     "feedbackWrong": "ยังไม่ถูก",
     "finish": "เสร็จสิ้น",
     "next": "ถัดไป",
-    "check": "ตรวจคำตอบ"
+    "check": "ตรวจคำตอบ",
+    "kind": {
+      "meaning-choice": "เลือกความหมาย",
+      "reverse-choice": "เลือกคำศัพท์",
+      "spelling": "สะกดคำ"
+    }
   },
   "Auth": {
     "magicTitle": "เข้าสู่ระบบ",
@@ -263,6 +268,8 @@
     "calendarTitle": "12 สัปดาห์ที่ผ่านมา",
     "calendarCaption": "หนึ่งช่องคือหนึ่งวัน สีเข้มขึ้นแปลว่าตอบไปมากขึ้น",
     "calendarEmpty": "ยังไม่มีข้อมูล ช่องแรกจะขึ้นในวันที่คุณเรียนจบหนึ่งบทเรียน",
+    "calendarScaleLow": "น้อย",
+    "calendarScaleHigh": "มาก",
     "calendarDay": "{day}: {items, plural, =0 {ไม่ได้ฝึก} other {# ข้อ}}",
     "collectionTitle": "Oxford 3000 ของคุณ",
     "collectionCaption": "คำจะถูกนับเข้าคลังเมื่อคุณนึกออกเอง ไม่ใช่แค่เคยเห็น",
@@ -735,7 +742,14 @@
     "unit": "บทที่ {unit}",
     "errorTitle": "โหลดแผนผังเว็บไซต์ไม่ได้",
     "retry": "ลองอีกครั้ง",
-    "levelTest": "แบบทดสอบวัดระดับ"
+    "levelTest": "แบบทดสอบวัดระดับ",
+    "trustLink": {
+      "about": "เกี่ยวกับเรา",
+      "how-it-works": "วิธีใช้งาน",
+      "privacy": "นโยบายความเป็นส่วนตัว",
+      "terms": "ข้อกำหนดการใช้งาน",
+      "contact": "ติดต่อเรา"
+    }
   },
   "Session": {
     "preparing": "กำลังเตรียมบทเรียน…",
@@ -781,6 +795,7 @@
     "maintenanceCta": "ทบทวนคลังคำศัพท์ของคุณ",
     "weeklyGoalTitle": "เป้าหมายรายสัปดาห์",
     "weeklyGoalProgress": "{active} จาก {goal} วันในสัปดาห์นี้",
+    "weeklyGoalDaysSoFar": "ฝึกแล้ว {active} วันในสัปดาห์นี้",
     "weeklyGoalPrompt": "อยากตั้งเป้าหมายรายสัปดาห์ไหม เลือกจำนวนวันที่อยากฝึกต่อสัปดาห์",
     "weeklyGoalPromptCta": "ตั้งเป้าหมายรายสัปดาห์",
     "collectionMeterTitle": "คอลเลกชัน",

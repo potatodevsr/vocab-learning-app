@@ -134,7 +134,7 @@ export default function AdminUsersPage() {
     <div className="min-h-screen bg-muted/40">
       <div className="px-6 py-4 flex gap-3 flex-wrap items-center bg-background border-b">
         <div>
-          <h1 className="font-semibold text-foreground">ผู้ใช้งาน</h1>
+          <h1 className="text-lg font-semibold text-foreground">ผู้ใช้งาน</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             จัดการบัญชีผู้ใช้ทั้งหมด
           </p>

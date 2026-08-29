@@ -57,10 +57,12 @@ export async function TodayCard({ summary }: { summary: TodaySummary }) {
   return (
     <main className="min-h-screen bg-background text-foreground" data-testid="today-card">
       <section className="border-b-3 border-ink bg-brand text-white">
-        <div className="mx-auto w-full max-w-3xl px-6 py-12 lg:px-8">
-          <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
-            {t("greeting")}
-          </span>
+        <div className="mx-auto w-full max-w-column px-4 py-12 sm:px-6 lg:px-8">
+          <div>
+            <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
+              {t("greeting")}
+            </span>
+          </div>
 
           <Button
             asChild
@@ -76,7 +78,7 @@ export async function TodayCard({ summary }: { summary: TodaySummary }) {
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-3xl gap-6 px-6 py-10 lg:px-8">
+      <section className="mx-auto grid w-full max-w-column gap-6 px-4 py-10 sm:px-6 lg:px-8">
         {courseLevel && (
           <CollectionMeter
             owned={courseLevel.strong}
@@ -110,7 +112,9 @@ export async function TodayCard({ summary }: { summary: TodaySummary }) {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   <CalendarCheck className="mr-1 inline size-4" aria-hidden />
-                  {summary.weeklyGoal.activeDaysThisWeek}
+                  {t("weeklyGoalDaysSoFar", {
+                    active: summary.weeklyGoal.activeDaysThisWeek,
+                  })}
                 </p>
               )}
             </div>

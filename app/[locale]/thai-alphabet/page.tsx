@@ -3,7 +3,12 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
-import { getConsonants, getVowelSounds, type ThaiLetter } from "@/lib/thai-letters";
+import {
+  getConsonants,
+  getVowelSounds,
+  getWrittenLetters,
+  type ThaiLetter,
+} from "@/lib/thai-letters";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
 import { TrackPageView } from "@/components/track-page-view";
 
@@ -55,10 +60,17 @@ const LetterTable = ({
   letters,
   columns,
   scrollHint,
+  linked = false,
 }: {
   letters: ThaiLetter[];
   columns: { char: string; name: string; roman: string; sound: string };
   scrollHint: string;
+  /**
+   * Whether each character links to its own page (SEO-CONTENT §W). True for the written
+   * marks, false for the 32 vowel *sounds* — several of those are drawn across characters
+   * that already have their own row, so there is no single page for one to point at.
+   */
+  linked?: boolean;
 }) => (
   // Wide content scrolls inside its own container so the page body never scrolls sideways
   // at 390px, which is the width this is designed at. The table is 612px inside a 345px
@@ -97,7 +109,16 @@ const LetterTable = ({
             className="border-b border-ink/15 last:border-b-0"
           >
             <td className="font-thai px-4 py-2.5 text-xl" lang="th">
-              {letter.char}
+              {linked ? (
+                <Link
+                  href={`/thai-alphabet/${letter.id}`}
+                  className="play-underline font-bold text-brand"
+                >
+                  {letter.char}
+                </Link>
+              ) : (
+                letter.char
+              )}
             </td>
             <td
               data-testid="alphabet-roman"
@@ -134,10 +155,22 @@ export default async function ThaiAlphabetPage({ params }: LocalePageProps) {
   // Two reads rather than one filtered locally: each is a single request well under the
   // guard ceiling, and asking for exactly what is rendered keeps the page honest about
   // what it needs. They are independent, so they run together.
-  const [consonants, vowels] = await Promise.all([
+  const [consonants, vowels, written] = await Promise.all([
     getConsonants(),
     getVowelSounds(),
+    getWrittenLetters(),
   ]);
+
+  /**
+   * The marks that are not consonants — vowel signs and tone marks.
+   *
+   * They were the gap in this table: a reader met `ั` under a word and had nowhere to go,
+   * because the two tables here are consonants and vowel *sounds*. Each has its own page
+   * now (SEO-CONTENT §W), and without this strip those 26 pages would be orphans.
+   */
+  const marks = written
+    .filter((letter) => letter.kind !== "consonant")
+    .sort((a, b) => a.ordinal - b.ordinal);
 
   const columns = {
     char: t("columnLetter"),
@@ -160,7 +193,7 @@ export default async function ThaiAlphabetPage({ params }: LocalePageProps) {
         })}
       />
 
-      <main className="mx-auto w-full max-w-3xl px-5 py-10">
+      <main className="mx-auto w-full max-w-column px-4 py-10 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-ink">
           {t("title")}
         </h1>
@@ -182,7 +215,33 @@ export default async function ThaiAlphabetPage({ params }: LocalePageProps) {
             letters={consonants}
             columns={columns}
             scrollHint={t("tableScrollHint")}
+            linked
           />
+        </section>
+
+        <section className="mt-12" data-testid="alphabet-marks">
+          <h2 className="text-xl font-bold text-ink">
+            {t("marksTitle", { count: marks.length })}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {t("marksBody")}
+          </p>
+
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {marks.map((letter) => (
+              <li key={letter.id}>
+                <Link
+                  href={`/thai-alphabet/${letter.id}`}
+                  className="play-press inline-flex items-center gap-2 rounded-full border-2 border-ink bg-white px-3 py-1.5 text-sm font-semibold text-ink hover:bg-accent-mint"
+                >
+                  <span className="font-thai text-lg" lang="th">
+                    {letter.char}
+                  </span>
+                  <span className="text-muted-foreground">{letter.roman}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="mt-12" data-testid="alphabet-vowels">
@@ -212,7 +271,7 @@ export default async function ThaiAlphabetPage({ params }: LocalePageProps) {
             {t("nextEnglish")}
           </Link>
           <Link
-            href="/english/A1"
+            href="/english/a1"
             className="rounded-2xl border-2 border-ink bg-white px-5 py-3 text-sm font-bold text-ink transition-colors hover:bg-accent-sun"
           >
             {t("nextLevel")}

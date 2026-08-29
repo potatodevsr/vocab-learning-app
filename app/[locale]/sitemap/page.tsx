@@ -45,13 +45,13 @@ export default async function HtmlSitemapPage({ params }: Props) {
       <script {...jsonLd({ "@context": "https://schema.org", "@type": "CollectionPage", name: t("title"), url: absoluteUrl(localePath(locale, "sitemap")) })} />
       <main className="min-h-screen bg-background text-foreground">
         <header className="border-b-3 border-ink bg-brand px-6 py-12 text-white">
-          <div className="mx-auto max-w-6xl"><h1 className="play-display text-4xl">{t("title")}</h1><p className="mt-3 max-w-2xl leading-7">{t("intro")}</p></div>
+          <div className="mx-auto max-w-plate"><h1 className="play-display text-4xl">{t("title")}</h1><p className="mt-3 max-w-2xl leading-7">{t("intro")}</p></div>
         </header>
-        <div className="mx-auto grid max-w-6xl gap-6 px-6 py-10 lg:grid-cols-2">
+        <div className="mx-auto grid max-w-plate gap-6 px-4 sm:px-6 py-10 lg:grid-cols-2">
           <Section title={t("core")}><SiteLink href="/">{t("home")}</SiteLink><SiteLink href="/english">{t("english")}</SiteLink><SiteLink href="/english/test">{t("levelTest")}</SiteLink><SiteLink href="/english/words">{t("collection")}</SiteLink><SiteLink href="/thai-alphabet">{t("alphabet")}</SiteLink></Section>
           <Section title={t("levels")}>{levels.map((level) => { const count = words.filter((word) => word.level === level).length; const units = Math.max(1, Math.ceil(count / UNIT_SIZE)); return <div key={level} className="mb-3"><SiteLink href={`/english/${level.toLowerCase()}`}>{level}</SiteLink><SiteLink href={`/english/${level.toLowerCase()}/practice`}>{t("practice", { level })}</SiteLink>{Array.from({ length: units }, (_, i) => <SiteLink key={i} href={`/english/${level.toLowerCase()}/unit/${i + 1}`}>{level} · {t("unit", { unit: i + 1 })}</SiteLink>)}</div>; })}</Section>
           <Section title={t("letters")}><div className="flex flex-wrap gap-2">{letters.map((letter) => <SiteLink key={letter} href={`/english/words/letter/${letter}`}>{letter.toUpperCase()}</SiteLink>)}</div></Section>
-          <Section title={t("trust")}>{TRUST.map((path) => <SiteLink key={path} href={`/${path}`}>{path.replaceAll("-", " ")}</SiteLink>)}</Section>
+          <Section title={t("trust")}>{TRUST.map((path) => <SiteLink key={path} href={`/${path}`}>{t(`trustLink.${path}` as never)}</SiteLink>)}</Section>
           <section className="play-card p-6 lg:col-span-2"><h2 className="text-2xl font-extrabold">{t("words")}</h2><div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 md:grid-cols-5">{uniqueWords.map((word) => <SiteLink key={word.slug} href={`/english/words/${word.slug}`}>{word.displayWord}</SiteLink>)}</div></section>
         </div>
       </main>
