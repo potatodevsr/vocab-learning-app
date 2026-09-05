@@ -2,7 +2,8 @@ import type { MetadataRoute } from "next";
 
 import { routing } from "@/i18n/routing";
 import { absoluteUrl, localePath } from "@/lib/seo";
-import { getAllPublishedWords, UNIT_SIZE } from "@/lib/oxford-words";
+import { getAllPublishedWords } from "@/lib/oxford-words";
+import { getPublishedLevels } from "@/lib/curriculum";
 import { isTrustworthyThai } from "@/lib/thai-text";
 import { isIndexableReview } from "@/lib/review";
 import { indexableFamilyPaths, publishedSlugSet } from "@/lib/content-index";
@@ -127,13 +128,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
    * A level hub, a unit hub and a letter page each *list* words — none of them is
    * `noindex` because one of the words it lists has a doubtful gloss, and each exists
    * whether or not its contents have been proofread. Deriving them from the filtered set
-   * submits fewer URLs than the site actually has: with most of the corpus imported from
-   * an unproofread PDF, `ceil(count / UNIT_SIZE)` collapses toward one unit per level and
-   * ~167 real, indexable unit hubs stop being advertised.
+   * submits fewer URLs than the site actually has.
+   *
+   * The unit list itself comes from the curriculum inventory, not from arithmetic. This
+   * loop used to submit `ceil(count / UNIT_SIZE)` units per level, which is only right if
+   * every unit holds twenty published rows; they hold 3 to 20, so the sitemap advertised
+   * 156 of the 167 real unit hubs and eleven of them — 171 published rows — were never
+   * offered to a crawler at all.
    *
    * The floor belongs on the word tail below, and only there, because that is the only
    * family whose page answers `noindex` when it fails.
    */
+  /** Real units per level, keyed for the hub loop below (`lib/curriculum.ts`). */
+  const inventoryByLevel = new Map(
+    (await getPublishedLevels()).map(
+      (entry) => [entry.level.toUpperCase() as CefrLevel, entry.units] as const,
+    ),
+  );
+
   const byLevel = new Map<CefrLevel, number>();
 
   for (const word of published) {
@@ -152,7 +164,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (!current || updated > current) newestByLevel.set(word.level, updated);
   }
 
-  for (const [level, count] of byLevel) {
+  // `byLevel` still decides *which* levels get a hub (a level with no published row
+  // has no page); how many units each one has comes from the inventory below.
+  for (const [level] of byLevel) {
     const slug = level.toLowerCase();
     const levelUpdated = newestByLevel.get(level);
 
@@ -164,9 +178,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // `noindex, follow` and absent here — see its page metadata.
     push(`english/${slug}/practice`, 0.75, levelUpdated);
 
-    const units = Math.max(Math.ceil(count / UNIT_SIZE), 1);
-
-    for (let unit = 1; unit <= units; unit += 1) {
+    for (const { unit } of inventoryByLevel.get(level) ?? []) {
       // One URL per unit, not per round: rounds are a session device, not content.
       push(`english/${slug}/unit/${unit}`, 0.7, levelUpdated);
     }

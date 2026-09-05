@@ -27,6 +27,59 @@ test.describe("proxy: learner-protected paths", () => {
     expect(decodeURIComponent(page.url())).toContain("from=/en/profile");
   });
 
+  /**
+   * The query string is part of "where you were going".
+   *
+   * `from` was built from `pathname` alone, and every protected route that means anything
+   * carries its scope in the query. A learner who followed a unit's CTA into the sign-in
+   * wall came back to a bare `/en/learn` — the default lesson — rather than the unit,
+   * level and mode they asked for, and `/en/profile` above could never notice because it
+   * has no query to lose. Both locales, and every parameter each route uses.
+   */
+  for (const { locale, target } of [
+    { locale: "en", target: "/learn?level=A2&unit=4&mode=review" },
+    { locale: "th", target: "/learn?level=A2&unit=4&mode=review" },
+    { locale: "en", target: "/quiz?level=A1&unit=2" },
+    { locale: "th", target: "/quiz?level=A1&unit=2" },
+  ]) {
+    test(`the redirect keeps the whole query for /${locale}${target}`, async ({ page }) => {
+      await page.goto(`/${locale}${target}`);
+
+      await expect(page).toHaveURL(new RegExp(`/${locale}/auth/login\\?from=`));
+      expect(decodeURIComponent(page.url())).toContain(`from=/${locale}${target}`);
+    });
+  }
+
+  test("signing in from the wall lands back on the exact unit that was asked for", async ({
+    page,
+    context,
+  }) => {
+    // The whole point of `from`, driven end to end rather than asserted on a URL: register,
+    // drop the session, hit a scoped private route, sign in, and check where you land.
+    const user = await registerThroughUi(page);
+    await context.clearCookies();
+
+    await page.goto("/en/learn?level=A1&unit=2");
+    await expect(page).toHaveURL(/\/en\/auth\/login\?from=/);
+
+    await page.fill("#email", user.email);
+    await page.fill("#password", user.password);
+    await page.getByRole("button", { name: "Log in with password" }).click();
+
+    await expect(page).toHaveURL("/en/learn?level=A1&unit=2", { timeout: 20_000 });
+    // Unit 2, not the default lesson: `word21` is its first published row.
+    await expect(page.getByTestId("session-prompt")).toHaveText("word21");
+  });
+
+  test("a protected route with no query is unchanged by that", async ({ page }) => {
+    // The no-query case must stay byte-identical: `nextUrl.search` is "" here, so the
+    // encoded value has no trailing "?" bolted onto it.
+    await page.goto("/en/today");
+
+    expect(decodeURIComponent(page.url())).toContain("from=/en/today");
+    expect(page.url()).not.toContain("%3F");
+  });
+
   test("the same protection applies under the Thai locale", async ({ page }) => {
     await page.goto("/th/profile");
 

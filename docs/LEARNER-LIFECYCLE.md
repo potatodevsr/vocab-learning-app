@@ -197,9 +197,20 @@ replays the server verdict through the normal idempotent progress path.
 
 Public trial contract:
 
+**A scope smaller than five words is still a trial.** Stored units hold 3 to 20 published
+rows, so a unit is routinely smaller than the five items a trial would like and sometimes
+smaller than the four options a single item needs — A1 Unit 32 has three words. The item
+count is therefore the scope's size, capped at five, and the *option* shortfall is filled
+from the rest of the same published level: the unit's own words are the only prompts, and
+a word from outside it can only ever appear as a wrong answer. A trial is refused (`422`)
+only when the scope publishes nothing of its own, or when even the wider level cannot
+supply four distinct options. The unit page's public "practise this unit" CTA must be able
+to start a session for every unit it links to; before this, three-word units answered the
+CTA with an error screen.
+
 | Route | Contract |
 | --- | --- |
-| `POST /practice/start` | Accepts a permitted content scope and returns five items without answer keys plus a signed trial-state token. Rate-limited; no user progress write. |
+| `POST /practice/start` | Accepts a permitted content scope and returns **up to** five items without answer keys plus a signed trial-state token. Rate-limited; no user progress write. |
 | `POST /practice/answer` | Accepts the signed state and one selected answer, grades server-side, returns feedback and rotates the signed state. The final response sets the claim cookie. |
 | `POST /practice/claim` | Authenticated and idempotent by trial ID. Verifies the server signature, records attempts through gameplay verbs, calculates any reward server-side and clears the claim. |
 

@@ -299,3 +299,57 @@ test.describe("copy promises only what the page delivers", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * Claims the implementation cannot currently back.
+ *
+ * Each entry here was live copy that the 2026-08-30 audit paired with the code
+ * contradicting it (`todo.md`, "Immediate truth corrections"). Removing the string is a
+ * mitigation, not a fix — the behavioural findings stay open — so this suite exists to
+ * stop the sentence coming back before the behaviour does. Delete an entry only in the
+ * same change that makes its claim true.
+ */
+test.describe("copy makes no claim the code cannot back", () => {
+  const FORBIDDEN: { why: string; finding: string; patterns: RegExp[] }[] = [
+    {
+      why: "authorship of the Thai fields is unresolved: they were imported through an OCR-backed pipeline whose author, licence and permission are unrecorded",
+      finding: "F-06",
+      patterns: [/written by us/i, /เราเขียนเอง/],
+    },
+    {
+      why: "no scheduled job deletes inactive accounts, and there is no self-service deletion",
+      finding: "F-07",
+      patterns: [/12 months/i, /months? of inactivity/i, /12 เดือน/],
+    },
+    {
+      why: "a wrong choice never marks the correct option — the API sends no correct index for choice items",
+      finding: "F-04",
+      patterns: [/highlighted answer/i, /ไฮไลต์/],
+    },
+    {
+      why: "production publishes no audio, so no session item can ask a learner to listen",
+      finding: "F-05 / Stage 09",
+      patterns: [/nothing but the sound/i, /บางข้อในบทเรียนจะให้ฟังเสียง/],
+    },
+  ];
+
+  for (const { why, finding, patterns } of FORBIDDEN) {
+    test(`${finding}: ${why}`, () => {
+      const offenders: string[] = [];
+
+      for (const [name, messages] of [
+        ["en", en],
+        ["th", th],
+      ] as const) {
+        for (const key of flatten(messages as Messages)) {
+          const value = String(valueAt(messages as Messages, key));
+          if (patterns.some((pattern) => pattern.test(value))) {
+            offenders.push(`${name}.${key}`);
+          }
+        }
+      }
+
+      expect(offenders, `${finding}: ${why}`).toEqual([]);
+    });
+  }
+});

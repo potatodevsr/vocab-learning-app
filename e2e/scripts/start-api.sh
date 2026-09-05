@@ -119,25 +119,41 @@ stop_worker() {
 
 trap stop_worker INT TERM
 
-while true; do
-  pnpm exec wrangler dev --local "${PERSIST[@]}" \
-    --port 4100 \
-    --var FRONTEND_URL:http://localhost:3100 \
-    --var APP_URL:http://localhost:3100 \
-    --var E2E_MODE:true \
-    --var MAGIC_LINK_DEV_MODE:true \
-    --var GOOGLE_AUTH_DEV_MODE:true &
-  worker_pid="$!"
+# A Worker crash is terminal, and it takes the run down with it.
+#
+# This used to be a `while true` loop that restarted the Worker on any non-zero exit and
+# logged one line about it. That is why a nominally green suite could not be trusted: the
+# documented release evidence is "1,121 passed, 1 failed with an API Worker-crash
+# signature", and a crash that restarts is a crash the report never has to mention. Every
+# test after it ran against a Worker that had died and come back — a different process,
+# with whatever in-memory state the previous one held now gone.
+#
+# Playwright kills this script when the run ends, which arrives as SIGTERM and is handled
+# by `stop_worker` above, so the only way past `wait` here is the Worker exiting on its
+# own. That is never normal. The status is preserved and re-raised so the harness fails
+# the run instead of quietly continuing.
+pnpm exec wrangler dev --local "${PERSIST[@]}" \
+  --port 4100 \
+  --var FRONTEND_URL:http://localhost:3100 \
+  --var APP_URL:http://localhost:3100 \
+  --var E2E_MODE:true \
+  --var MAGIC_LINK_DEV_MODE:true \
+  --var GOOGLE_AUTH_DEV_MODE:true &
+worker_pid="$!"
 
-  set +e
-  wait "$worker_pid"
-  status="$?"
-  set -e
-  worker_pid=""
+set +e
+wait "$worker_pid"
+status="$?"
+set -e
+worker_pid=""
 
-  if [[ "$status" -eq 0 ]]; then
-    exit 0
-  fi
+if [[ "$status" -ne 0 ]]; then
+  echo "[e2e] the API Worker exited on its own with status $status." >&2
+  echo "[e2e] This is a crash, not a shutdown: Playwright stops this script with SIGTERM," >&2
+  echo "[e2e] which is handled above. The run is failed rather than restarted, because a" >&2
+  echo "[e2e] restarted Worker makes every later test a test against a different process." >&2
+fi
 
-  echo "[e2e] worker exited with status $status; restarting against existing isolated state"
-done
+release_lock
+trap - EXIT
+exit "$status"

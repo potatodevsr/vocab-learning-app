@@ -1000,9 +1000,11 @@ path, and the gate is deliberately soft:
   transactions in D1 a missed flip strands a learner on a unit they finished.
 - **The order is guidance, not enforcement.** The first attempt had `/progress/session/start`
   silently serve unit 1 to a learner who asked for unit 7. It broke three tests in
-  `units.spec`, and those tests were right: "each unit serves its own twenty words" is the
+  `units.spec`, and those tests were right: "each unit serves its own words" is the
   invariant behind AGENTS.md rule 9, and a lesson teaching unit 1 under a unit 7 request is
-  a lie no response field makes honest. So the order lives where a learner can act on it —
+  a lie no response field makes honest. (Its *own* words, not twenty of them: stored units
+  hold 3-20 published rows, which is what `lib/curriculum.ts` exists to report and what
+  `ceil(total / UNIT_SIZE)` got wrong in seven places.) So the order lives where a learner can act on it —
   `nextUnit` from `/progress/units`, which the Today card and level page point at — and an
   explicit request is always honoured. The public level test exists precisely to let
   someone skip ahead on purpose.
@@ -1102,7 +1104,7 @@ declares which side of that line it is on — there is no default.
 | --- | --- | --- |
 | `/` (`/th`, `/en`) | Landing. The one page allowed to be marketing. | ✅ |
 | `/english/[level]` | Level hub: A1–B2, each listing its units. Today only `/english/a1` exists and is hardcoded. | ✅ |
-| `/english/[level]/unit/[n]` | Unit page: the 20 words, with meanings and examples. **The main long-tail surface.** | ✅ |
+| `/english/[level]/unit/[n]` | Unit page: that unit's words (3-20 of them), with meanings and examples. **The main long-tail surface.** | ✅ |
 | `/english/words/[word]` | Word page: meaning, pronunciation, IPA, examples, part of speech, related words. **Highest-volume surface — ~3,000 of them.** | ✅ |
 | `/about`, `/how-it-works`, `/faq` | Trust and query coverage ("how to learn English vocabulary"). | ✅ |
 | `/learn`, `/quiz`, `/review`, `/profile` | Private, behind auth. | ❌ `noindex` |

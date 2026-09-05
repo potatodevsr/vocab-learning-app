@@ -14,6 +14,7 @@ import {
 } from "@/lib/thai-text";
 import { isIndexableEntries } from "@/lib/review";
 import { WordAudio } from "@/components/play/word-audio";
+import { ThaiSpeech } from "@/components/play/thai-speech";
 import type { OxfordWord } from "@/lib/types";
 import { getWrittenLetters, type ThaiLetter } from "@/lib/thai-letters";
 import { alignPosUsages, isPosUsageFilled, posMessageKeys } from "@/lib/pos";
@@ -462,15 +463,29 @@ export default async function WordPage({ params }: WordPageProps) {
                 The reverse direction: how the Thai meaning is read, for someone whose
                 English is the strong side. Only on /en — a Thai reader already knows how
                 วัฒนธรรม sounds, so on /th the card would be noise.
+
+                Gated on the trusted `meaning` alone. It used to require
+                `meaningThReading || meaningThRoman`, and **all 3,082 published rows have
+                neither**: the transliteration columns are populated in the e2e seed and
+                nowhere else, so the whole block — the speech control included — was dead
+                code in production while every test said it worked. The meaning is the one
+                field that is really there, it is the field the browser is asked to speak,
+                and the respelling and romanisation are optional decorations on top of it.
               */}
-              {mode === "thai" && (entry.meaningThReading || entry.meaningThRoman) && (
+              {mode === "thai" && meaning && (
                 <div
                   className="mt-4 rounded-2xl bg-accent-sky/15 p-5"
                   data-testid="thai-reading"
                 >
-                  <p className="play-eyebrow">
-                    {t("thaiReading")}
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="play-eyebrow">
+                      {t("thaiReading")}
+                    </p>
+
+                    {/* `meaning`, not the raw field: never ask the browser to speak a
+                        gloss that failed the same trust check used by the visible card. */}
+                    <ThaiSpeech text={meaning} />
+                  </div>
 
                   {entry.meaningThReading && (
                     <p
@@ -562,7 +577,10 @@ export default async function WordPage({ params }: WordPageProps) {
                 </div>
               ) : (
                 entry.exampleEn && (
-                  <div className="mt-4 rounded-2xl bg-accent-mint/15 p-5">
+                  <div
+                    className="mt-4 rounded-2xl bg-accent-mint/15 p-5"
+                    data-testid="word-example"
+                  >
                     <p className="play-eyebrow">
                       {t("example")}
                     </p>

@@ -59,7 +59,8 @@ Measured from `data/oxford-3000-seed.json` (the JSON seed; if the CSV becomes ca
 | **Unique slugs** (= word pages) | **2,972** |
 | Entries per level | A1 898 · A2 870 · B1 803 · B2 727 |
 | Slugs appearing in more than one level | 304 |
-| Units at `UNIT_SIZE = 20` | A1 45 · A2 44 · B1 41 · B2 37 = **167** |
+| Units, from the stored `unit` column | A1 45 · A2 44 · B1 41 · B2 37 = **167** |
+| Published rows per stored unit | **3-20**, never a flat 20 — see `lib/curriculum.ts` |
 | Distinct first letters | 25 (no `X`); S 345 · C 291 · P 241 … Z 2 · Y 13 |
 | Normalised parts of speech | noun 1,788 · verb 826 · adj 645 · adv 261 · pron 75 · prep 59 · det 42 · number 37 · conj 30 · exclam 20 · article 2 |
 | Raw `partOfSpeech` values | 96 distinct strings, of which **13 are OCR garbage** (`"n. shoe n."`, `"adj. perce"`, `"pron. outd"`) |
@@ -533,6 +534,24 @@ A human-readable index of every level, unit, letter, topic, list and guide. Not 
 crawlers primarily — for click depth. It guarantees no page in this document is more than
 three clicks from the home page, which is the cheapest fix for a 6,000-page site.
 
+**An empty corpus is a failure here, never a page.** Everything above the word list —
+the header, the core/guides/trust sections, the footer — renders from message strings and
+needs no API at all, so a failed word or curriculum read still produced a heading, five
+static links and an HTTP `200`. That is a soft 404 on the one page whose whole purpose is
+the link graph, and it is the worst place in the site to serve one: a crawler asking for
+the graph is told the honest answer is "there is almost nothing here", and the URLs it can
+no longer see linked lose the only thing this page exists to give them.
+
+`lib/sitemap-corpus.ts` refuses instead. Both reads are issued concurrently and both are
+required; either one coming back empty throws, which puts the route on its `error.tsx`
+boundary. Because the route carries a `loading.tsx`, Next 16's streaming contract has
+already committed the response to `200 OK` by then and cannot downgrade it
+(`node_modules/next/dist/docs/01-app/02-guides/streaming.md` § "The HTTP contract"), so
+that boundary carries `<meta name="robots" content="noindex, follow">` — the same tag Next
+injects itself for a mid-stream `notFound()`. The page is also prerendered with
+`revalidate`, so a failed regeneration keeps serving the last good copy rather than
+replacing it with an empty one.
+
 ---
 
 ## 5. Internal linking — the part that decides whether any of this works
@@ -544,7 +563,7 @@ forgets. The graph is a deliverable, not a side effect:
 /                    → /english, /guides, top 3 lists
 /english             → 4 levels, A–Z, 10 POS, topics index, lists, guides
 /english/[level]     → its units, its POS pages, its practice page, its top topics
-/english/[level]/unit/[n]  → its 20 words, prev/next unit, its level
+/english/[level]/unit/[n]  → its own words (3-20), prev/next unit, its level
 /english/words/letter/[x]  → its words, adjacent letters, /english/words
 /english/topics/[t]  → its words, 3 related topics, its practice page
 /english/words/[slug] → its unit, its level, its topics, its letter, 6–10 related words,

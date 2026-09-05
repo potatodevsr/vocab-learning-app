@@ -345,7 +345,21 @@ export default async function proxy(request: NextRequest) {
 
         if (!isUser) {
             const locale = pathname.split("/")[1] || "en";
-            const from = encodeURIComponent(pathname);
+            /**
+             * The whole address, query string included.
+             *
+             * This encoded only `pathname`, and every protected route that means anything
+             * carries its scope in the query: `/en/learn?level=A1&unit=45` and
+             * `/en/quiz?level=B2&unit=12` both came back as a bare `/en/learn` and
+             * `/en/quiz` after signing in, so a learner who followed a unit's CTA into the
+             * login wall was returned to the default lesson rather than the unit they
+             * asked for. `nextUrl.search` is `""` when there is no query, so the
+             * no-query case is byte-identical to what this produced before.
+             *
+             * `lib/return-path.ts` re-validates the value on the way out and compares the
+             * path portion only, so carrying a query here widens nothing.
+             */
+            const from = encodeURIComponent(`${pathname}${request.nextUrl.search}`);
 
             return NextResponse.redirect(
                 new URL(`/${locale}/auth/login?from=${from}`, request.url),

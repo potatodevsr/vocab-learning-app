@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, Loader2, Timer, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { AlertTriangle, Check, Loader2, LockKeyhole, Timer, X } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,8 @@ type MixedSessionProps = {
   backHref: string;
 };
 
+type SessionErrorCode = "generic" | "not-enough" | "unauth";
+
 export function MixedSession({ scope, backHref }: MixedSessionProps) {
   const t = useTranslations("Session");
   const [phase, setPhase] = useState<Phase>("loading");
@@ -66,7 +68,7 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [typedSpelling, setTypedSpelling] = useState("");
   const [lastResult, setLastResult] = useState<AnsweredItem | null>(null);
-  const [errorCode, setErrorCode] = useState<"generic" | "not-enough" | null>(null);
+  const [errorCode, setErrorCode] = useState<SessionErrorCode | null>(null);
   const [showClose, setShowClose] = useState(false);
   const [speedLeft, setSpeedLeft] = useState(SPEED_ROUND_SECONDS);
 
@@ -78,6 +80,21 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
   const currentIndex = answered.length;
   const visibleIndex = phase === "feedback" ? Math.max(currentIndex - 1, 0) : currentIndex;
   const currentItem = items[visibleIndex];
+  /**
+   * Where to come back to after signing in — locale-qualified, because it does not travel
+   * through `<Link>`.
+   *
+   * Everything else in this file routes through `@/i18n/navigation`, which adds the active
+   * locale prefix for you. This string does not: it is percent-encoded into `?from=` and
+   * handed to `/auth/login`, which redirects to it verbatim. An unprefixed `/learn?...`
+   * therefore lands on the locale middleware's default — Thai — so an English learner who
+   * hit the sign-in wall inside a session came back to `/th/learn`, in a language they may
+   * not read, having already lost the session they were in.
+   */
+  const locale = useLocale();
+  const sessionHref = `/${locale}/learn?level=${scope.level}${
+    scope.unit === undefined ? "" : `&unit=${scope.unit}`
+  }${scope.mode === undefined || scope.mode === "normal" ? "" : `&mode=${scope.mode}`}`;
 
   const boot = useCallback(async () => {
     setPhase("loading");
@@ -113,7 +130,9 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
         });
       }
     } catch (err) {
-      if (err instanceof SessionApiError && err.status === 422) {
+      if (err instanceof SessionApiError && err.status === 401) {
+        setErrorCode("unauth");
+      } else if (err instanceof SessionApiError && err.status === 422) {
         setErrorCode("not-enough");
       } else {
         setErrorCode("generic");
@@ -162,8 +181,8 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
             correctCount: result.correctCount,
           });
         }
-      } catch {
-        setErrorCode("generic");
+      } catch (err) {
+        setErrorCode(err instanceof SessionApiError && err.status === 401 ? "unauth" : "generic");
         setPhase("error");
       }
     },
@@ -203,8 +222,8 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
           correctCount: result.correctCount,
         });
       }
-    } catch {
-      setErrorCode("generic");
+    } catch (err) {
+      setErrorCode(err instanceof SessionApiError && err.status === 401 ? "unauth" : "generic");
       setPhase("error");
     }
   }, [phase, sessionId, currentItem, currentIndex, typedSpelling, answered, items.length, scope.level, scope.unit]);
@@ -278,16 +297,44 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
   }
 
   if (phase === "error") {
-    const titleKey = errorCode === "not-enough" ? "notEnoughTitle" : "errorTitle";
-    const bodyKey = errorCode === "not-enough" ? "notEnoughBody" : "errorBody";
+    const isUnauth = errorCode === "unauth";
+    const titleKey = isUnauth
+      ? "unauthTitle"
+      : errorCode === "not-enough"
+        ? "notEnoughTitle"
+        : "errorTitle";
+    const bodyKey = isUnauth
+      ? "unauthBody"
+      : errorCode === "not-enough"
+        ? "notEnoughBody"
+        : "errorBody";
     return (
-      <div className="play-card flex flex-col items-center gap-4 p-8 text-center" data-testid="session-error">
-        <div className="flex size-12 items-center justify-center rounded-2xl border-3 border-ink bg-danger text-white">
-          <AlertTriangle className="size-5" />
+      <div
+        className="play-card flex flex-col items-center gap-4 p-8 text-center"
+        data-testid={isUnauth ? "session-unauth" : "session-error"}
+      >
+        <div
+          className={`flex size-12 items-center justify-center rounded-2xl border-3 border-ink text-white ${
+            isUnauth ? "bg-brand" : "bg-danger"
+          }`}
+        >
+          {isUnauth ? <LockKeyhole className="size-5" /> : <AlertTriangle className="size-5" />}
         </div>
         <h2 className="text-xl font-bold">{t(titleKey)}</h2>
         <p className="max-w-md text-sm text-muted-foreground">{t(bodyKey)}</p>
-        {errorCode !== "not-enough" && (
+        {isUnauth ? (
+          <Button
+            asChild
+            className="play-key h-12 rounded-2xl bg-brand px-6 font-extrabold text-white hover:bg-brand"
+          >
+            <Link
+              href={`/auth/login?from=${encodeURIComponent(sessionHref)}`}
+              data-testid="session-signin"
+            >
+              {t("signIn")}
+            </Link>
+          </Button>
+        ) : errorCode !== "not-enough" ? (
           <Button
             data-testid="session-retry"
             className="play-key h-12 rounded-2xl bg-brand px-6 font-extrabold text-white hover:bg-brand"
@@ -298,7 +345,7 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
           >
             {t("retry")}
           </Button>
-        )}
+        ) : null}
       </div>
     );
   }

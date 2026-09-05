@@ -34,7 +34,15 @@ type QuizSessionProps = {
   words: OxfordWord[];
   pathHref: string;
   learnHref: string;
-  nextUnitHref: string;
+  /**
+   * The next unit's session, or `null` on the last unit of a level.
+   *
+   * It used to fall back to the current unit, so "Next unit" on the final unit of a level
+   * pointed at the unit the learner had just finished — a dead end wearing a forward
+   * label. There is no honest onward unit here, so the button is simply not offered and
+   * "back to the path" carries the exit. (Deleted with this whole route in Stage 06.)
+   */
+  nextUnitHref: string | null;
 };
 
 const QUIZ_TYPE_COUNT = 3;
@@ -331,17 +339,19 @@ export function QuizSession({
                   <RotateCcw className="size-4" />
                 </Button>
 
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="play-press h-12 rounded-full bg-white px-6"
-                >
-                  <Link href={nextUnitHref}>
-                    {tQuiz("nextUnit")}
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
+                {nextUnitHref && (
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="play-press h-12 rounded-full bg-white px-6"
+                  >
+                    <Link href={nextUnitHref} data-testid="quiz-next-unit">
+                      {tQuiz("nextUnit")}
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  </Button>
+                )}
 
                 <Button
                   asChild

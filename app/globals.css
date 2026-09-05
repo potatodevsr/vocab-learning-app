@@ -621,9 +621,17 @@
   transition: transform var(--dur-fast) var(--ease-play);
 }
 
-.play-press:hover:not(:disabled)::after,
 .play-press:focus-visible::after {
   transform: scaleX(1);
+}
+
+/* A touch browser can make the first tap establish `:hover` for a generated layer and
+   defer the button's click until the second tap. Keep the wipe for actual pointers; touch
+   controls still get the same pressed depth through `:active`. */
+@media (hover: hover) and (pointer: fine) {
+  .play-press:hover:not(:disabled)::after {
+    transform: scaleX(1);
+  }
 }
 
 

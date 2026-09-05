@@ -631,10 +631,11 @@ test.describe("admin overview", () => {
     const content = page.getByTestId("admin-content-stats");
     await expect(content).toBeVisible();
 
-    // The seed is 45 words, 40 of them published — the coverage line must say so rather
-    // than round it away.
-    await expect(content).toContainText("45");
-    await expect(content).toContainText("40");
+    // Both totals come from the fixture, not from a number typed here: the seed's row
+    // count moved once already (an added A2 row) and a literal in this assertion was the
+    // only thing that noticed, one full suite run later.
+    await expect(content).toContainText(String(SEED.seededWordCount));
+    await expect(content).toContainText(String(SEED.publishedWordCount));
 
     await expect(page.getByTestId("admin-learner-stats")).toBeVisible();
   });

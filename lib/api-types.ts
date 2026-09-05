@@ -436,6 +436,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/curriculum": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Which levels and units actually exist, from stored rows */
+        get: operations["curriculumInventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -525,7 +542,7 @@ export interface components {
             level: string;
             unit: number | null;
             /** @enum {string} */
-            mode: "normal" | "comeback" | "review";
+            mode: "normal" | "comeback" | "review" | "mistakes";
             itemCount: number;
             dueCount: number;
             items: components["schemas"]["SessionItem"][];
@@ -774,6 +791,26 @@ export interface components {
             hour: number;
             timezone?: string | null;
         };
+        UnitInventory: {
+            /** @description The stored unit number */
+            unit: number;
+            /** @description Published rows really in it (3-20 today) */
+            words: number;
+        };
+        LevelInventory: {
+            level: string;
+            words: number;
+            /** @description Count of stored units. Never ceil(words / UNIT_SIZE). */
+            unitCount: number;
+            firstUnit: number;
+            lastUnit: number;
+            units: components["schemas"]["UnitInventory"][];
+        };
+        CurriculumInventory: {
+            wordlistId: string;
+            words: number;
+            levels: components["schemas"]["LevelInventory"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -880,7 +917,7 @@ export interface operations {
                     level?: "A1" | "A2" | "B1" | "B2";
                     unit?: number;
                     /** @enum {string} */
-                    mode?: "normal" | "comeback" | "review";
+                    mode?: "normal" | "comeback" | "review" | "mistakes";
                 };
             };
         };
@@ -1969,6 +2006,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    curriculumInventory: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the free Oxford 3000 list */
+                wordlistId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published levels, their real units, and real row counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurriculumInventory"];
                 };
             };
         };

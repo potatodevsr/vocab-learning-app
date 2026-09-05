@@ -22,10 +22,12 @@ test.describe("word lists", () => {
     const course = lists.find((list: { id: string }) => list.id === "oxford-3000");
 
     expect(course, "the Oxford 3000 course is always in the catalogue").toBeTruthy();
-    // The e2e corpus is 45 words, 40 of them published — a list is as big as what a
+    // The e2e corpus is `SEED.seededWordCount` rows: 45 A1 (40 published, 5 draft) plus
+    // the 9-row irregular A2 level (`SEED.irregularLevel`). A list is as big as what a
     // learner can actually reach, never as big as what was imported.
     expect(course.wordCount).toBeGreaterThan(0);
-    expect(course.wordCount).toBeLessThan(45);
+    expect(course.wordCount).toBe(SEED.publishedWordCount);
+    expect(course.wordCount).toBeLessThan(SEED.seededWordCount);
     // The entitlement seam is exposed as data rather than inferred from a name.
     expect(course.isFree).toBe(true);
   });

@@ -27,6 +27,82 @@ export const SEED = {
   },
 
   /**
+   * A2 — the irregular-unit level, the undersized-unit level, and the production-shaped
+   * level. One fixture, three production failures A1 cannot reproduce.
+   *
+   * **Irregular units.** Nine published rows across four units, sized 2, 2, 2, 3.
+   * `ceil(9 / UNIT_SIZE)` is **1**; the real unit count is **4**. A1 above cannot catch
+   * the defect, because at twenty rows per unit the arithmetic and the stored truth agree;
+   * here they disagree by three whole units, which is the same shape as production
+   * (A1: 45 real units, 38 by arithmetic).
+   *
+   * **Undersized units.** Every unit here is smaller than the four options a trial item
+   * needs, and the tail unit's three rows are exactly the size of production's A1 Unit 32
+   * — the unit whose public "practise this unit" CTA answered 422. Unit words stay the
+   * only trial targets; the API fills the option shortfall from the rest of the level.
+   *
+   * **Production shape.** These rows carry a trusted meaning and a trusted pronunciation
+   * and nothing else: no `meaningThReading`, no `meaningThRoman`, no `ipa`, no example,
+   * no audio — which is the state of all 3,082 published production rows. A1 keeps its
+   * fully-furnished rows, so both shapes are covered.
+   *
+   * Mirrors `A2_UNIT_SIZES` and the A2 loop in backend/scripts/generate-e2e-seed.mjs.
+   */
+  irregularLevel: {
+    level: "A2" as const,
+    /**
+     * Published rows, all with meanings.
+     *
+     * Kept under the API's `take.default` of 50 **for the whole corpus** — see
+     * `publishedWordCount`. Adding rows here is not free.
+     */
+    wordCount: 9,
+    /** What the stored rows say. */
+    unitCount: 4,
+    unitSizes: [2, 2, 2, 3],
+    /** What `ceil(wordCount / UNIT_SIZE)` used to claim. Must never be the answer again. */
+    arithmeticUnitCount: 1,
+    firstWord: "a2word1",
+    /** The tail the old arithmetic hid: unit 4 exists and must be reachable everywhere. */
+    lastUnit: 4,
+    /** First word of that tail unit — what a session scoped to it must open on. */
+    lastUnitFirstWord: "a2word7",
+    lastWord: "a2word9",
+    /**
+     * The unit that is smaller than a trial item's option count, and every word in it.
+     *
+     * A trial needs four options per item and this unit holds three words, so it is the
+     * fixture for "the unit is studiable anyway, with distractors borrowed from the rest
+     * of the level". Prompts must never leave this list.
+     */
+    undersizedUnit: {
+      unit: 4,
+      words: ["a2word7", "a2word8", "a2word9"] as const,
+      /** The Thai glosses those three rows carry — the only option texts that are in-unit. */
+      meanings: [
+        "ความหมายเอทูเจ็ด",
+        "ความหมายเอทูแปด",
+        "ความหมายเอทูเก้า",
+      ] as const,
+      /** Three words means a three-item trial, not a refusal and not five items. */
+      expectedItemCount: 3,
+      /** Options per item, whatever the unit's size — `TRIAL_OPTION_COUNT`. */
+      optionCount: 4,
+    },
+    /**
+     * One row with the exact optional-field coverage production has: none.
+     *
+     * `meaning` and `pronunciation` are trusted Thai — the *optional* content is what is
+     * missing, not the substance of the row.
+     */
+    productionShaped: {
+      word: "a2word1",
+      meaning: "ความหมายเอทูหนึ่ง",
+      pronunciation: "คำอ่านเอทูหนึ่ง",
+    },
+  },
+
+  /**
    * The two rows a quality heuristic doubted (`reviewState = 'flagged'`).
    *
    * `readOnly` proves the split the state exists for: a doubted row keeps working for the
@@ -97,7 +173,21 @@ export const SEED = {
 
   /** Orders 41-45 are `draft` and must never be visible to a learner. */
   draftWord: "word41",
-  publishedWordCount: 40,
+  /**
+   * Published rows across the whole corpus: 40 in A1 plus the 9 in `irregularLevel`.
+   * Deliberately below the public read's `take.default` of 50 so an unpaged API read
+   * still returns everything — one row of headroom left, so a new fixture row means
+   * either replacing one or re-deciding what every unpaged assertion in the suite means.
+   */
+  publishedWordCount: 49,
+  /**
+   * Every seeded row, drafts included: 45 A1 (40 published + 5 draft) plus the 9 in
+   * `irregularLevel`. The admin dashboard reports this as the corpus it curates, against
+   * `publishedWordCount` as the part a learner can reach.
+   */
+  seededWordCount: 54,
+  /** Published rows in A1 alone — what a level page reports. */
+  a1PublishedWordCount: 40,
   admin: {
     username: "admin",
     password: "admin-e2e-password",

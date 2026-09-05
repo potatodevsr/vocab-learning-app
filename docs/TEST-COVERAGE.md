@@ -197,7 +197,12 @@ impossible to repeat.
 | `lib/text.ts` | `normalizeAnswer` × 8 inputs; `hashString` determinism/range; `uniqueValues` dedupe/trim/empty/order | `unit/text-and-word` |
 | `lib/word.ts` | `getWordLabel` with and without a sense; `hasMeaning` empty/whitespace/present | `unit/text-and-word` |
 | `lib/quiz.ts` | no ready words; empty unit; full 10-question plan; all 3 types; correct answer always among options; no duplicate options; ≥2 options; spelling shape; single-word unit; duplicate meanings; determinism; pronunciation helper branch | `unit/quiz-builder` |
-| `lib/oxford-words.ts` | unit size, ceiling, clamping | `unit/oxford-words` |
+| `lib/oxford-words.ts` | `UNIT_SIZE` is a target, and no module divides by it | `unit/oxford-words` |
+| `lib/curriculum.ts` · `backend/src/curriculum-inventory.ts` | stored units of any size, CEFR ordering, null unit kept, empty corpus, real-vs-invented unit resolution, the unit after the last one | `unit/curriculum`, `curriculum.spec` |
+| `lib/level-units.ts` | full / partial / absent preview → range or none; count always the inventory's; empty level lists no units; a null-unit row groups into unit 1 | `unit/level-units` |
+| `lib/sitemap-corpus.ts` | both inputs pass through; no words, no levels, and neither → explicit failure rather than an empty 200 | `unit/sitemap-corpus` |
+| `backend/src/helpers/json-body.ts` | a parsed body; no body; a rejected read; a partially filled body | `unit/json-body` |
+| `backend/scripts/generate-e2e-seed.mjs` ↔ `e2e/support/fixtures.ts` | the committed seed is what the generator emits; every fixture number matches the rows; `posUsages`/`reviewFlags` are `'[]'`; the corpus stays under the public read's page size | `unit/seed-parity` |
 | `backend/src/password.ts` | hash format; salting; no plaintext; correct/wrong/empty/case/unicode; 7 malformed stored formats; tampered digest; wrong iteration count | `unit/password` |
 | `backend/src/guard-shapes.ts` | `resolveVariant` for admin/user/anonymous/missing/unexpected/case; never undefined; shape contents (no password, no source columns, forced status, take caps, update whitelist) | `unit/guard-shapes` |
 
@@ -207,10 +212,15 @@ impossible to repeat.
 | --- | --- | --- |
 | Locales | en and th both render | `content.spec` |
 | Fonts | body/headings resolve to Geist, Thai to Noto | `typography.spec` (4) |
-| A1 path | unit count from the published total; drafts absent | `content.spec` |
-| Learn | unknown/missing/lowercase level; unit 0, negative, non-numeric, past-the-end | `ui-branches`, `units.spec` |
+| A1 path | unit count from the stored `unit` column; drafts absent | `content.spec` |
+| Irregular level (A2: units of 2, 2, 2, 3) | every real unit listed, studyable, and in both sitemaps; unit cards state their size once; the tail unit page says "unit 4 of 4" in both locales | `curriculum.spec` |
+| Undersized unit (3 words, 4 options needed) | the public practice CTA starts a 3-item trial; prompts stay in the unit, distractors come from the level; an empty scope is still 422 | `curriculum.spec`, `api/practice.api` |
+| Production-shaped row (meaning only) | Thai speech renders from the meaning alone; transliteration, IPA, example and audio are absent rather than faked | `content.spec` |
+| Learn | unknown/missing/lowercase level; unit 0, negative, non-numeric; an unreal unit redirects to the level's automatic session, keeping locale and mode | `ui-branches`, `units.spec` |
 | | first card, tallies, last-card message, progress %, completion | `learn.spec`, `ui-branches` |
-| Quiz | not-ready branch; correct and wrong feedback; check disabled until chosen; options lock; intro stats; try again | `quiz.spec`, `ui-branches` |
+| Quiz | not-ready branch; correct and wrong feedback; check disabled until chosen; options lock; intro stats; try again; "next unit" names the following unit and is absent on a level's last | `quiz.spec`, `ui-branches`, `unit/curriculum` |
+| Return paths | login `from` keeps path **and** query for `/learn` and `/quiz` in both locales; a no-query route is unchanged; signing in lands back on the exact unit; the in-session sign-in link is locale-qualified | `proxy.spec`, `ui-branches` |
+| HTML sitemap | a healthy page carries a link per published word and per unit and never renders its boundary; an empty read fails explicitly and the boundary is `noindex` | `curriculum.spec`, `unit/sitemap-corpus` |
 | Word detail | seeded entry renders; unknown slug 404s; entry count | `content.spec`, `ui-branches` |
 | Profile | details render; reachable from the menu; Thai; anonymous redirect | `profile.spec` (4) |
 | | real stats after a lesson/quiz; survives re-login; honest empty state | `progress.spec` (4) |

@@ -25,24 +25,77 @@ test.describe("learn page branches", () => {
     await expect(page.getByTestId("session-prompt")).toHaveText("word1");
   });
 
-  test("a zero or negative unit falls back to unit 1", async ({ page }) => {
+  /**
+   * A unit the learner asked for and cannot have is answered, whatever shape it took.
+   *
+   * These three used to assert the prompt only, so they passed while the address bar still
+   * read `?unit=0` over an automatic session — the same dishonest URL the unreal-unit
+   * redirect below exists to prevent, reached through a different door. `0`, `-4` and
+   * `abc` all normalised to "no unit was requested" and slipped past the redirect
+   * entirely; only out-of-range values like `999` were caught.
+   */
+  test("a zero or negative unit redirects to the automatic session", async ({ page }) => {
     await page.goto("/en/learn?level=A1&unit=0");
+    await expect(page).toHaveURL("/en/learn?level=A1");
     await expect(page.getByTestId("session-prompt")).toHaveText("word1");
 
     await page.goto("/en/learn?level=A1&unit=-4");
+    await expect(page).toHaveURL("/en/learn?level=A1");
     await expect(page.getByTestId("session-prompt")).toHaveText("word1");
   });
 
-  test("a non-numeric unit falls back to unit 1", async ({ page }) => {
+  test("a non-numeric unit redirects to the automatic session", async ({ page }) => {
     await page.goto("/en/learn?level=A1&unit=abc");
 
+    await expect(page).toHaveURL("/en/learn?level=A1");
     await expect(page.getByTestId("session-prompt")).toHaveText("word1");
+  });
+
+  test("no unit at all is left exactly as it is", async ({ page }) => {
+    // The URL is already honest, so there is nothing to correct — and a redirect here
+    // would be a pointless round trip on the most common entry point to the route.
+    await page.goto("/en/learn?level=A1");
+
+    await expect(page).toHaveURL("/en/learn?level=A1");
+    await expect(page.getByTestId("session-card")).toBeVisible();
   });
 
   test("a lowercase level is accepted", async ({ page }) => {
     await page.goto("/en/learn?level=a1&unit=2");
 
     await expect(page.getByTestId("session-prompt")).toHaveText("word21");
+  });
+
+  /**
+   * A unit that does not exist is answered, not ignored.
+   *
+   * The hint used to be dropped during render: the learner got the level's automatic
+   * session while the address bar still said `?unit=999`. Reload it, bookmark it or share
+   * it and it goes on promising a unit nobody can be given — and, worse, it is
+   * indistinguishable from the old clamping bug that silently taught unit 38 when unit 45
+   * was asked for. The redirect makes the URL describe the session that actually renders.
+   */
+  test("an unreal unit redirects to the level's automatic session", async ({ page }) => {
+    await page.goto("/en/learn?level=A1&unit=999");
+
+    await expect(page).toHaveURL("/en/learn?level=A1");
+    await expect(page.getByTestId("session-card")).toBeVisible();
+  });
+
+  test("the unreal-unit redirect keeps the locale and a valid mode, and drops only the unit", async ({
+    page,
+  }) => {
+    await page.goto("/th/learn?level=A2&unit=999&mode=review");
+
+    await expect(page).toHaveURL("/th/learn?level=A2&mode=review");
+  });
+
+  test("an unreal unit is a redirect even when the mode is invalid too", async ({ page }) => {
+    // `mode=nonsense` normalises to "normal", which carries no query parameter of its own,
+    // so the target is the bare level session — not `?mode=normal`.
+    await page.goto("/en/learn?level=A1&unit=999&mode=nonsense");
+
+    await expect(page).toHaveURL("/en/learn?level=A1");
   });
 
   test("the mixed session exposes all eight progress slots without leaking answers", async ({ page }) => {
@@ -221,6 +274,49 @@ test.describe("mixed session branches", () => {
     await page.unroute(START);
     await page.getByTestId("session-retry").click();
     await expect(page.getByTestId("session-card")).toBeVisible();
+  });
+
+  /**
+   * The sign-in return path, in both locales.
+   *
+   * `from` is percent-encoded into a query parameter and handed to `/auth/login`, which
+   * redirects to it verbatim — it does **not** travel through the localized `<Link>` that
+   * built the login URL itself. So an unprefixed `/learn?...` was resolved by the locale
+   * middleware's default, Thai: an English learner whose token expired mid-session signed
+   * in and landed on `/th/learn`, in a language they may not read. The `/en` and `/th`
+   * halves below are the same assertion twice on purpose — one locale passing proves
+   * nothing about a prefix that was simply absent.
+   */
+  test("a 401 session start asks the learner to sign in again, returning to this locale", async ({
+    page,
+  }) => {
+    await page.route(START, (route) =>
+      route.fulfill({ status: 401, contentType: "application/json", body: '{"message":"unauth"}' }),
+    );
+
+    await page.goto("/en/learn?level=A1&unit=2");
+    await expect(page.getByTestId("session-unauth")).toBeVisible();
+    await expect(page.getByTestId("session-error")).toHaveCount(0);
+    await expect(page.getByTestId("session-retry")).toHaveCount(0);
+    await expect(page.getByTestId("session-signin")).toHaveAttribute(
+      "href",
+      "/en/auth/login?from=%2Fen%2Flearn%3Flevel%3DA1%26unit%3D2",
+    );
+  });
+
+  test("the sign-in return path keeps the Thai locale, the level, the unit and the mode", async ({
+    page,
+  }) => {
+    await page.route(START, (route) =>
+      route.fulfill({ status: 401, contentType: "application/json", body: '{"message":"unauth"}' }),
+    );
+
+    await page.goto("/th/learn?level=A1&unit=2&mode=review");
+    await expect(page.getByTestId("session-unauth")).toBeVisible();
+    await expect(page.getByTestId("session-signin")).toHaveAttribute(
+      "href",
+      "/th/auth/login?from=%2Fth%2Flearn%3Flevel%3DA1%26unit%3D2%26mode%3Dreview",
+    );
   });
 
   test("a 422 session start shows the not-enough screen without a retry", async ({ page }) => {

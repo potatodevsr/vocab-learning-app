@@ -19,7 +19,7 @@ test.describe("public content", () => {
     await page.goto("/en/english/a1");
 
     await expect(
-      page.getByText(`${SEED.publishedWordCount} Thai meanings`),
+      page.getByText(`${SEED.a1PublishedWordCount} Thai meanings`),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", {
@@ -113,7 +113,7 @@ test.describe("public content", () => {
     ).toBeVisible();
   });
 
-  test("the Thai reading is offered on /en and withheld on /th", async ({
+  test("the Thai reading can be heard on /en and is withheld on /th", async ({
     page,
   }) => {
     // A learner of Thai needs to know that ความหมาย1 is said "ความ-หมาย-1" /
@@ -125,8 +125,105 @@ test.describe("public content", () => {
     await expect(card).toContainText(SEED.unit1.firstMeaningReading);
     await expect(card).toContainText(SEED.unit1.firstMeaningRoman);
 
+    const audio = card.getByTestId("thai-meaning-audio");
+    await expect(audio).toBeVisible();
+    await expect(audio).toHaveAttribute(
+      "aria-label",
+      `Listen to the Thai “${SEED.unit1.firstMeaning}”`,
+    );
+
+    // Browser speech is the product seam here (not a mocked API response): capture the
+    // utterance at that seam and prove both the spoken text and Thai voice hint.
+    await page.evaluate(() => {
+      Object.defineProperty(window.speechSynthesis, "speak", {
+        configurable: true,
+        value: (utterance: SpeechSynthesisUtterance) => {
+          document.body.dataset.spokenThai = utterance.text;
+          document.body.dataset.spokenLanguage = utterance.lang;
+        },
+      });
+    });
+    await audio.click();
+    await expect(page.locator("body")).toHaveAttribute(
+      "data-spoken-thai",
+      SEED.unit1.firstMeaning,
+    );
+    await expect(page.locator("body")).toHaveAttribute("data-spoken-language", "th-TH");
+
     await page.goto(`/th/english/words/${SEED.unit1.firstWord}`);
     await expect(page.getByTestId("thai-reading")).toHaveCount(0);
+    await expect(page.getByTestId("thai-meaning-audio")).toHaveCount(0);
+  });
+
+  /**
+   * The same control, on a row shaped like production.
+   *
+   * The block above passes against `word1`, which carries a transliteration, a
+   * romanisation, an IPA string, an example sentence and an audio clip. **No production
+   * row carries any of those** — all 3,082 have empty `meaningThReading`,
+   * `meaningThRoman`, `ipa`, `exampleEn` and `audioKeyEn` — and the page gated the whole
+   * Thai-reading card, speech control included, on `meaningThReading || meaningThRoman`.
+   * So the feature was dead everywhere it shipped while this suite reported it working.
+   *
+   * `SEED.irregularLevel.productionShaped` is a row with a trusted meaning, a trusted
+   * pronunciation, and nothing else. The gate is now the meaning — the field that is
+   * really there, and the field the browser is asked to speak.
+   */
+  test("Thai speech renders from the meaning alone on a row with no optional content", async ({
+    page,
+  }) => {
+    const { word, meaning } = SEED.irregularLevel.productionShaped;
+
+    await page.goto(`/en/english/words/${word}`);
+
+    const card = page.getByTestId("thai-reading").first();
+    await expect(card, "the reading card must not need a transliteration to exist").toBeVisible();
+
+    const audio = card.getByTestId("thai-meaning-audio");
+    await expect(audio).toBeVisible();
+    await expect(audio).toHaveAttribute("aria-label", `Listen to the Thai “${meaning}”`);
+
+    await page.evaluate(() => {
+      Object.defineProperty(window.speechSynthesis, "speak", {
+        configurable: true,
+        value: (utterance: SpeechSynthesisUtterance) => {
+          document.body.dataset.spokenThai = utterance.text;
+          document.body.dataset.spokenLanguage = utterance.lang;
+        },
+      });
+    });
+    await audio.click();
+    await expect(page.locator("body")).toHaveAttribute("data-spoken-thai", meaning);
+    await expect(page.locator("body")).toHaveAttribute("data-spoken-language", "th-TH");
+  });
+
+  test("the optional fields a production row lacks are absent, not faked", async ({
+    page,
+  }) => {
+    const { word, meaning, pronunciation } = SEED.irregularLevel.productionShaped;
+
+    await page.goto(`/en/english/words/${word}`);
+    const main = page.locator("main");
+
+    // What is really there.
+    await expect(main.getByText(meaning).first()).toBeVisible();
+    await expect(main.getByText(pronunciation).first()).toBeVisible();
+    await expect(page.getByTestId("meaning-pending")).toHaveCount(0);
+    await expect(page.getByTestId("pronunciation-pending")).toHaveCount(0);
+
+    // What is not: no example card, no clip, and no IPA line — an empty `ipa` must not
+    // render as a bare "//".
+    await expect(page.getByTestId("word-example")).toHaveCount(0);
+    await expect(page.getByTestId("pos-usages")).toHaveCount(0);
+    await expect(page.getByTestId("word-audio")).toHaveCount(0);
+    // The IPA line renders as `/{ipa}/`, so an empty value must drop the whole line
+    // rather than printing a bare pair of slashes.
+    await expect(main.getByText("//", { exact: true })).toHaveCount(0);
+
+    // And still nothing for a Thai reader, who does not need the card at all.
+    await page.goto(`/th/english/words/${word}`);
+    await expect(page.getByTestId("thai-reading")).toHaveCount(0);
+    await expect(page.getByTestId("thai-meaning-audio")).toHaveCount(0);
   });
 
   test("the letter breakdown decodes the Thai meaning and lights the tapped letter on /en", async ({

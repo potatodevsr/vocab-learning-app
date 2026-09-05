@@ -61,6 +61,7 @@ import {
   getWordsBySlug,
   getWordsByUnit,
 } from "../../lib/oxford-words";
+import { SEED } from "../support/fixtures";
 
 /**
  * The wrappers around fetch. Their unhappy paths matter as much as the happy ones: a
@@ -206,7 +207,7 @@ test.describe("admin-api", () => {
 
     expect(page.data.length).toBeGreaterThan(0);
     expect(page.data.every((word) => word.status === "published")).toBe(true);
-    expect(page.total).toBe(40);
+    expect(page.total).toBe(SEED.publishedWordCount);
   });
 
   test("updateWord throws when unauthorised", async () => {
@@ -292,7 +293,7 @@ test.describe("oxford-words reads", () => {
   test("getWordsByUnit returns that unit's published words", async () => {
     const words = await getWordsByUnit("A1", 1);
 
-    expect(words).toHaveLength(20);
+    expect(words).toHaveLength(SEED.unit1.wordCount);
     expect(words.every((w) => w.status === "published")).toBeTruthy();
   });
 
@@ -305,7 +306,7 @@ test.describe("oxford-words reads", () => {
   });
 
   test("getLevelWordCount counts published words only", async () => {
-    expect(await getLevelWordCount("A1")).toBe(40);
+    expect(await getLevelWordCount("A1")).toBe(SEED.a1PublishedWordCount);
   });
 
   test("getLevelWordCount is zero for an unseeded level", async () => {
@@ -317,9 +318,11 @@ test.describe("oxford-words reads", () => {
     // one page would silently publish a fraction of the site.
     const words = await getAllPublishedWords(8);
 
-    expect(words).toHaveLength(40);
+    expect(words).toHaveLength(SEED.publishedWordCount);
     expect(words.every((word) => word.status === "published")).toBe(true);
-    expect(new Set(words.map((word) => word.id)).size).toBe(40);
+    expect(new Set(words.map((word) => word.id)).size).toBe(
+      SEED.publishedWordCount,
+    );
   });
 
   test("getAllPublishedWords excludes drafts", async () => {
@@ -335,7 +338,7 @@ test.describe("oxford-words reads", () => {
     const a1 = await getLevelWordCount("A1");
 
     expect(all).toBeGreaterThanOrEqual(a1);
-    expect(all).toBe(40); // the e2e seed publishes 40 words, all A1
+    expect(all).toBe(SEED.publishedWordCount);
   });
 
   test("getPreviewWords respects the requested take", async () => {

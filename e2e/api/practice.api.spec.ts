@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
 import { API, asNewUser, cookieValue, newApiContext, uniqueUser } from "../support/api";
+import { SEED } from "../support/fixtures";
 
 /**
  * Backend coverage for anonymous practice (LEARNER-LIFECYCLE.md §3.2-3.3): the trial is
@@ -95,6 +96,141 @@ test.describe("POST /practice/start", () => {
     const body = (await res.json()) as StartResponse;
     for (const item of body.items) {
       expect(item.prompt.displayWord).toMatch(/^word\d+$/);
+    }
+  });
+});
+
+/**
+ * Units smaller than an item's option count.
+ *
+ * Real units hold **3 to 20** published rows, an item needs four options, and the trial
+ * used to draw prompts *and* distractors from the same scoped read — so every unit under
+ * four words answered 422 while its unit page went on advertising "practise this unit"
+ * and linking to it. Production A1 Unit 32 has three words: an indexed public CTA led
+ * straight to an error screen for anyone who clicked it.
+ *
+ * The policy: a unit's own words are the only things it teaches, and wrong answers are not
+ * curriculum, so the option shortfall is filled from the rest of the same published level.
+ * `SEED.irregularLevel.undersizedUnit` is A2 unit 4 — three rows, the same size as A1
+ * Unit 32 — and the rest of A2 supplies the distractors.
+ */
+test.describe("POST /practice/start — undersized units", () => {
+  const { level, undersizedUnit } = SEED.irregularLevel;
+  const unitWords: readonly string[] = undersizedUnit.words;
+  const unitMeanings: readonly string[] = undersizedUnit.meanings;
+
+  test("a three-word unit starts a three-item trial with a full set of options", async () => {
+    const ctx = await newApiContext();
+    const res = await start(ctx, { level, unit: undersizedUnit.unit });
+
+    expect(res.status(), "an undersized unit must be studiable, not a 422").toBe(200);
+
+    const body = (await res.json()) as StartResponse;
+    expect(body.itemCount).toBe(undersizedUnit.expectedItemCount);
+    expect(body.items.length).toBe(undersizedUnit.expectedItemCount);
+
+    for (const item of body.items) {
+      expect(item.options.length).toBe(undersizedUnit.optionCount);
+      // Four *distinct* options: padding an item by repeating a meaning would satisfy a
+      // length check and give the learner a question with two identical answers.
+      expect(new Set(item.options.map((option) => option.meaningTh)).size).toBe(
+        undersizedUnit.optionCount,
+      );
+    }
+  });
+
+  test("outside-unit words are distractors only, never prompts", async () => {
+    const ctx = await newApiContext();
+    const body = (await (
+      await start(ctx, { level, unit: undersizedUnit.unit })
+    ).json()) as StartResponse;
+
+    // Every question is about this unit …
+    const prompts = body.items.map((item) => item.prompt.displayWord);
+    expect(new Set(prompts).size).toBe(prompts.length);
+    for (const prompt of prompts) {
+      expect(unitWords, `${prompt} is not in unit ${undersizedUnit.unit}`).toContain(prompt);
+    }
+
+    // … and at least one wrong answer per item necessarily is not, because the unit only
+    // holds three meanings and each item needs four options. This is the assertion that
+    // fails if the supplement is ever removed: the endpoint would go back to 422.
+    for (const item of body.items) {
+      const borrowed = item.options.filter(
+        (option) => !unitMeanings.includes(option.meaningTh),
+      );
+      expect(borrowed.length).toBeGreaterThan(0);
+    }
+  });
+
+  test("the trial still grades against the unit's own word", async () => {
+    const ctx = await newApiContext();
+    const { items } = (await (
+      await start(ctx, { level, unit: undersizedUnit.unit })
+    ).json()) as StartResponse;
+
+    const { graded, final } = await runTrial(ctx, items);
+
+    expect(graded.length).toBe(undersizedUnit.expectedItemCount);
+    for (const result of graded) {
+      expect(result.correct).toBe(result.correctOptionIndex === 0);
+    }
+    expect(final.total).toBe(undersizedUnit.expectedItemCount);
+  });
+
+  test("a scope with no published words of its own is still refused", async () => {
+    // 422 is not retired, it is narrowed: the wider pool cannot rescue a scope that
+    // teaches nothing, and B1 publishes no rows in this corpus.
+    const ctx = await newApiContext();
+    const res = await start(ctx, { level: "B1" });
+
+    expect(res.status()).toBe(422);
+  });
+
+  test("a real level with an invented unit teaches nothing and is refused", async () => {
+    const ctx = await newApiContext();
+    const res = await start(ctx, { level, unit: 99 });
+
+    expect(res.status()).toBe(422);
+  });
+
+  /**
+   * The supplement borrows from one level — the prompts' own.
+   *
+   * A unit number is not a scope on its own: unit 4 exists in every level, so `{ unit: 4 }`
+   * selected A2 unit 4 *and* A1 unit 4 as prompts, and the supplement, with no level to
+   * filter on, drew wrong answers from the entire corpus. The observed result was an A2
+   * prompt answered by A1 meanings — the exact rule the supplement exists to keep. There is
+   * no defensible level to infer, and every real caller already sends one
+   * (`components/practice/practice-session.tsx` scopes by `{ level, unit }`), so the
+   * combination is refused outright.
+   */
+  test("a unit without a level is refused rather than answered from four levels at once", async () => {
+    const ctx = await newApiContext();
+    const res = await start(ctx, { unit: undersizedUnit.unit });
+
+    expect(res.status()).toBe(400);
+    expect((await res.json()).message).toContain("level");
+  });
+
+  test("every option in a scoped trial comes from the scoped level", async () => {
+    const ctx = await newApiContext();
+    const body = (await (
+      await start(ctx, { level, unit: undersizedUnit.unit })
+    ).json()) as StartResponse;
+
+    /**
+     * A2's meanings are distinguishable from A1's by construction: the seed gives every A2
+     * row a `ความหมายเอทู…` gloss and every A1 row a `ความหมาย{n}` one. So "no option came
+     * from another level" is directly assertable, rather than inferred from counts.
+     */
+    for (const item of body.items) {
+      for (const option of item.options) {
+        expect(
+          option.meaningTh,
+          `${option.meaningTh} is not an ${level} meaning`,
+        ).toContain("เอทู");
+      }
     }
   });
 });

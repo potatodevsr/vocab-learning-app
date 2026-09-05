@@ -1,5 +1,6 @@
 import { QuizSession } from "@/components/quiz-session";
-import { getLevelWordCount, getWordsByUnit, UNIT_SIZE } from "@/lib/oxford-words";
+import { getWordsByUnit } from "@/lib/oxford-words";
+import { getUnitNumbers, nextUnitAfter } from "@/lib/curriculum";
 import type { CefrLevel } from "@/lib/types";
 import { getTranslations } from "next-intl/server";
 
@@ -45,11 +46,22 @@ export default async function QuizPage({ searchParams }: QuizPageProps) {
   const level = normalizeLevel(query.level);
   const requestedUnit = normalizeUnit(query.unit);
 
-  const total = await getLevelWordCount(level);
-  const unitCount = Math.max(Math.ceil(total / UNIT_SIZE), 1);
-  const unit = Math.min(requestedUnit, unitCount);
+  // Deleted in Stage 06 (F-01: this route persists nothing). Until it goes, it must not
+  // hold a curriculum boundary of its own: an unreal unit falls back to the level's first
+  // unit rather than being clamped to an arithmetic ceiling that hides the level's tail.
+  const units = await getUnitNumbers(level);
+  const unit = units.includes(requestedUnit) ? requestedUnit : (units[0] ?? 1);
 
   const words = await getWordsByUnit(level, unit);
+
+  /**
+   * The unit *after* this one, or nothing.
+   *
+   * `?? unit` used to close this expression, so the last unit of a level offered "Next
+   * unit" pointing back at itself. The component now omits the button rather than
+   * inventing a destination for it.
+   */
+  const nextUnit = await nextUnitAfter(level, unit);
 
   return (
     <QuizSession
@@ -58,7 +70,9 @@ export default async function QuizPage({ searchParams }: QuizPageProps) {
       words={words}
       pathHref={pathHref}
       learnHref={`/learn?level=${level}&unit=${unit}`}
-      nextUnitHref={`/learn?level=${level}&unit=${Math.min(unit + 1, unitCount)}`}
+      nextUnitHref={
+        nextUnit === null ? null : `/learn?level=${level}&unit=${nextUnit}`
+      }
     />
   );
 }

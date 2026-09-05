@@ -2,18 +2,16 @@ import { ArrowRight, BookOpen, Play, Repeat2, Sparkles } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
-import type { CefrLevel, OxfordWord } from "@/lib/types";
+import type { CefrLevel } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import {
-  getLevelWordCount,
-  getPreviewWords,
-  UNIT_SIZE,
-} from "@/lib/oxford-words";
+import { getPreviewWords, UNIT_SIZE } from "@/lib/oxford-words";
+import { getLevelInventory, getLevelWordCount } from "@/lib/curriculum";
+import { createLessonUnits } from "@/lib/level-units";
 import {
   absoluteUrl,
   jsonLd,
@@ -35,56 +33,9 @@ import { UnitProgressBadges } from "@/components/play/unit-progress-badges";
 export const revalidate = 3600;
 
 
-type LessonUnit = {
-  id: string;
-  number: number;
-  words: OxfordWord[];
-  wordRange: string;
-  href: string;
-};
-
+/** "up to {size} per unit" copy only — never a count of units. */
 const unitSize = UNIT_SIZE;
 const visibleUnitCount = 8;
-
-/**
- * Units come from the `unit` column, not from slicing a full-level fetch — the API caps
- * how many rows one read returns, so slicing locally silently lost most of the level.
- * Preview words are whatever the first page of results covers; later units render
- * without a preview rather than pretending they are empty.
- */
-const createLessonUnits = (
-  level: CefrLevel,
-  totalWords: number,
-  previewWords: OxfordWord[]
-): LessonUnit[] => {
-  const unitCount = Math.max(Math.ceil(totalWords / unitSize), 1);
-  const byUnit = new Map<number, OxfordWord[]>();
-
-  for (const word of previewWords) {
-    const unit = word.unit ?? Math.floor((word.sourceOrder - 1) / unitSize) + 1;
-    byUnit.set(unit, [...(byUnit.get(unit) ?? []), word]);
-  }
-
-  return Array.from({ length: unitCount }, (_, index) => {
-    const number = index + 1;
-    const unitWords = byUnit.get(number) ?? [];
-    const firstWord = unitWords.at(0);
-    const lastWord = unitWords.at(-1);
-
-    return {
-      id: `${level.toLowerCase()}-unit-${number}`,
-      number,
-      words: unitWords,
-      wordRange:
-        firstWord && lastWord
-          ? `${firstWord.displayWord} → ${lastWord.displayWord}`
-          : `${unitSize} words`,
-      // Public and playable logged out (docs/LEARNER-LIFECYCLE.md §3.1) — `/learn` is
-      // behind auth and was the funnel's highest-leverage acquisition defect.
-      href: `/english/${level.toLowerCase()}/unit/${number}/practice`,
-    };
-  });
-};
 
 /** Copy is translated; only the icon belongs in the component. */
 const learningSteps = [
@@ -141,12 +92,23 @@ export default async function LevelPage({ params }: LevelPageProps) {
   const t = await getTranslations("Level");
   const tNav = await getTranslations("Nav");
 
-  const [totalWords, previewWords] = await Promise.all([
-    getLevelWordCount(level),
+  const [levelInventory, previewWords] = await Promise.all([
+    getLevelInventory(level),
     getPreviewWords(level),
   ]);
 
-  const units = createLessonUnits(level, totalWords, previewWords);
+  /**
+   * A level that publishes nothing renders as itself with no units — not as one unit.
+   *
+   * `Math.max(ceil(total / UNIT_SIZE), 1)` invented a unit here whenever a level was
+   * empty, so the hub linked to `unit/1` and that page answered 404: a soft-404 hub
+   * pointing at a hard 404. The hub is still a real page for a real CEFR band, so it is
+   * not itself a 404; it simply lists what exists, which may be nothing yet.
+   */
+  const storedUnits = levelInventory?.units ?? [];
+  const totalWords = levelInventory?.words ?? 0;
+
+  const units = createLessonUnits(level, storedUnits, previewWords);
   const visibleUnits = units.slice(0, visibleUnitCount);
   const firstUnit = units[0];
 
@@ -298,9 +260,11 @@ export default async function LevelPage({ params }: LevelPageProps) {
                     {t("firstLessonTitle", { level })}
                   </h2>
 
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {t("promptRange", { range: firstUnit.wordRange })}
-                  </p>
+                  {firstUnit.wordRange && (
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {t("promptRange", { range: firstUnit.wordRange })}
+                    </p>
+                  )}
 
                   <div className="mt-5 flex flex-wrap gap-2">
                     {firstUnit.words.slice(0, 6).map((word) => (
@@ -394,11 +358,8 @@ export default async function LevelPage({ params }: LevelPageProps) {
             return (
               <Card
                 key={unit.id}
-                className={
-                  isFirst
-                    ? "play-tile relative"
-                    : "play-tile relative"
-                }
+                data-testid={`unit-card-${unit.number}`}
+                className="play-tile relative"
               >
                 <CardContent className="grid gap-5 p-5 sm:grid-cols-[56px_1fr_auto] sm:items-center">
                   <div
@@ -422,7 +383,7 @@ export default async function LevelPage({ params }: LevelPageProps) {
                         className="rounded-full bg-white"
                       >
                         {t("wordsCount", {
-                          count: unit.words.length || unitSize,
+                          count: unit.wordCount,
                         })}
                       </Badge>
 
@@ -433,9 +394,14 @@ export default async function LevelPage({ params }: LevelPageProps) {
                       )}
                     </div>
 
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {unit.wordRange}
-                    </p>
+                    {unit.wordRange && (
+                      <p
+                        className="mt-2 text-sm text-muted-foreground"
+                        data-testid={`unit-range-${unit.number}`}
+                      >
+                        {unit.wordRange}
+                      </p>
+                    )}
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       {unit.words.slice(0, 6).map((word) => (

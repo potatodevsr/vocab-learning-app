@@ -98,7 +98,8 @@
     "masteryLabel": "Mastery {mastery} of {max}"
   },
   "Audio": {
-    "play": "Listen to “{word}”"
+    "play": "Listen to “{word}”",
+    "playThai": "Listen to the Thai “{word}”"
   },
   "Quiz": {
     "notReadyTitle": "Quiz is not ready yet",
@@ -325,7 +326,7 @@
     "blurbB2": "Learn more precise Thai vocabulary through upper-intermediate English prompts, meanings and readings.",
     "statEntries": "{count} Thai meanings",
     "statUnits": "{count} units",
-    "statPerUnit": "{size} prompts per unit",
+    "statPerUnit": "up to {size} prompts per unit",
     "startFirstUnit": "Start unit 1",
     "viewPath": "View lesson path",
     "firstLesson": "First lesson",
@@ -348,7 +349,7 @@
     "preview": "Preview",
     "wordsCount": "{count} words",
     "allUnitsTitle": "Every {level} unit",
-    "allUnitsBody": "{count} units · {size} words each",
+    "allUnitsBody": "{count} units · up to {size} words each",
     "unitAria": "Unit {unit}",
     "crownCount": "{count, plural, =0 {No crowns yet} one {# crown} other {# crowns}}",
     "continueAtUnit": "Continue at unit {unit}",
@@ -775,11 +776,11 @@
       "cta": "Explore English vocabulary",
       "eyebrow": "The Oxford 3000",
       "sourcingHeading": "Where the words and meanings come from",
-      "sourcingBody": "The word list is the Oxford 3000, a published list of the English words that matter most to a learner, grouped here by CEFR level. The list tells us which words to teach; it does not come with Thai. Every Thai meaning and every Thai pronunciation on this site is written by us, which is also why we are the ones accountable for them.",
+      "sourcingBody": "The word list is the Oxford 3000, a published list of the English words that matter most to a learner, grouped here by CEFR level. The list tells us which words to teach; it does not come with Thai. The Thai meanings and pronunciations were imported into this site through an OCR-backed pipeline, and every entry is being read again by a person before we describe it as reviewed. We are recording where each field came from and how it was transformed. Until an entry clears that reading we do not present it as verified, and we are accountable for everything we publish here either way.",
       "reviewHeading": "How Thai meanings are checked",
       "reviewBody": "A meaning is drafted, then read again character by character before it is published — Thai written with the wrong vowel or a missing tone mark looks almost right and teaches the wrong word. Entries that have not cleared that reading are held back from search results and from our sitemap rather than published as filler. If a word page tells you its meaning is still being reviewed, that is literal: we would rather show you nothing than show you a guess. Automatic checks read every entry for the damage a scan leaves behind — Latin letters inside a Thai word, a tone mark with no consonant under it, one meaning copied across dozens of entries — and anything they doubt goes into a review queue, and out of search, until a person has read it.",
       "limitsHeading": "What this course does not have yet",
-      "limitsBody": "There are no example sentences and no IPA transcriptions yet. Audio is being added word by word, starting at A1: where a clip exists you will see a speaker button, and where it does not there is nothing to press — we would rather show you that than a control that plays silence. Pronunciation is also written in Thai script, which is what a Thai reader can act on without learning a second notation first.",
+      "limitsBody": "There are no example sentences and no IPA transcriptions yet, and no published recordings: audio generation is built but not yet switched on, so there is currently no speaker button to press. When clips do arrive they will appear word by word, starting at A1 — where one exists you will see a speaker button, and where it does not there is nothing to press, which we prefer to a control that plays silence. Pronunciation is also written in Thai script, which is what a Thai reader can act on without learning a second notation first.",
       "contactHeading": "Telling us we got one wrong",
       "contactBody": "If a meaning or a pronunciation is wrong, tell us and we will fix the entry. A dictionary that cannot be corrected is just a confident one."
     },
@@ -797,7 +798,7 @@
       "s4Heading": "Finish a level honestly",
       "s4Body": "A level is collected when its required words are strong. Mastery remains a longer-term stretch goal.",
       "s5Heading": "Hear the word, not just read it",
-      "s5Body": "Where a word has a recording, a speaker button plays it, and some session items give you nothing but the sound and ask what it means. Clips are generated ahead of time, so every learner is graded on exactly the same audio.",
+      "s5Body": "Recordings are generated ahead of time rather than spoken by your device, so when a word has one, every learner hears exactly the same audio. Coverage is still being built: where a word has no clip there is no speaker button, and no session item asks you to listen to one.",
       "cta": "Choose a level",
       "ladderHeading": "When words come back",
       "ladderCaption": "Each correct recall moves a word one rung up this schedule. The gaps widen because recall you have to work for is the recall that lasts.",
@@ -818,7 +819,7 @@
       "s4Body": "Signed-in learners can export their own portable progress. For a correction or a deletion, write to chadapohn.srkn@gmail.com from the address the account uses; ownership is verified before any account data is changed.",
       "contentsHeading": "Contents",
       "s5Heading": "How long we keep it",
-      "s5Body": "Learning progress stays for as long as the account does. An account with no sign-in for 12 months is treated as inactive and is deleted together with its progress rows. Deleting an account yourself removes it straight away rather than waiting out that window."
+      "s5Body": "Learning progress stays for as long as the account does. We do not delete accounts automatically after a period of inactivity. Your data stays until you ask us to delete it — see “Your data” above — apart from anything we have to keep for legal or operational reasons."
     },
     "terms": {
       "metaTitle": "Terms of use",
@@ -887,6 +888,9 @@
     "errorTitle": "Something went wrong",
     "errorBody": "We couldn't load your session. Please try again.",
     "retry": "Try again",
+    "unauthTitle": "Sign in again",
+    "unauthBody": "We couldn't verify your session. Sign in again to continue this lesson.",
+    "signIn": "Sign in",
     "notEnoughTitle": "Not ready yet",
     "notEnoughBody": "This level doesn't have enough published content for a session yet.",
     "closeAria": "Close session",
@@ -899,7 +903,7 @@
     "spellingQuestion": "Type the English word for this meaning",
     "speedSecondsLeft": "{seconds}s left",
     "feedbackCorrect": "Correct!",
-    "feedbackWrongGeneric": "Not yet — check the highlighted answer.",
+    "feedbackWrongGeneric": "Not quite — this word will come back for review.",
     "feedbackWrongSpelling": "Not yet — this word is spelled \"{word}\".",
     "continue": "Continue",
     "check": "Check",

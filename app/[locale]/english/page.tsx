@@ -5,7 +5,7 @@ import { ArrowRight, BookOpen, LibraryBig, Play, Type } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import type { CefrLevel } from "@/lib/types";
-import { getLevelWordCount, UNIT_SIZE } from "@/lib/oxford-words";
+import { getLevelInventory } from "@/lib/curriculum";
 import { absoluteUrl, jsonLd, localePath, publicMetadata } from "@/lib/seo";
 import { TrackPageView } from "@/components/track-page-view";
 
@@ -58,16 +58,18 @@ export default async function EnglishHubPage({ params }: LocalePageProps) {
   const t = await getTranslations("EnglishHub");
   const tLevel = await getTranslations("Level");
 
-  // One count per level, in parallel — the card size and the unit count both derive from it.
-  const counts = await Promise.all(LEVELS.map((level) => getLevelWordCount(level)));
+  // One inventory read for every level: row totals and unit counts come from the same
+  // stored `(level, unit)` grouping, so a card can never advertise a unit count the level
+  // page then contradicts.
+  const inventories = await Promise.all(LEVELS.map((level) => getLevelInventory(level)));
 
   const levels = LEVELS.map((level, index) => {
-    const total = counts[index];
+    const inventory = inventories[index];
     return {
       level,
       slug: level.toLowerCase(),
-      total,
-      units: Math.max(Math.ceil(total / UNIT_SIZE), 1),
+      total: inventory?.words ?? 0,
+      units: inventory?.unitCount ?? 0,
     };
   });
 

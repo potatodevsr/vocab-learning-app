@@ -395,7 +395,7 @@ test.describe("accountability pages name a real channel", () => {
       );
     });
 
-    test(`the ${locale} privacy policy states a retention period`, async ({
+    test(`the ${locale} privacy policy states a retention policy it implements`, async ({
       page,
     }) => {
       await page.goto(`/${locale}/privacy`);
@@ -403,9 +403,28 @@ test.describe("accountability pages name a real channel", () => {
       const retention = page.locator("#retention");
 
       await expect(retention).toBeVisible();
-      // The number is the point of the section; a heading with no period in the body
-      // would pass a mere "section exists" check.
-      await expect(retention).toContainText("12");
+
+      /**
+       * It used to assert the string "12" — the promise that an account untouched for
+       * twelve months is deleted automatically. Nothing implemented it: the scheduled
+       * handler sends reminders and nothing else, and there is no deletion route at all
+       * (`todo.md` F-07). Asserting the number kept a promise the product could not keep
+       * pinned in place, so the assertion is inverted: the page must NOT claim a timer,
+       * and must say what actually happens instead.
+       *
+       * When self-service deletion and a real retention job ship, this flips back — to
+       * whatever the implemented policy then is.
+       */
+      await expect(retention).not.toContainText("12 months");
+      await expect(retention).not.toContainText("12 เดือน");
+
+      const body = (await retention.innerText()).toLowerCase();
+      const saysWhatHappens =
+        locale === "th"
+          ? body.includes("ลบ")
+          : body.includes("delete");
+
+      expect(saysWhatHappens, "the section must say how data is removed").toBe(true);
     });
   }
 });

@@ -6,11 +6,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  getLevelWordCount,
-  getWordsByUnit,
-  UNIT_SIZE,
-} from "@/lib/oxford-words";
+import { getWordsByUnit } from "@/lib/oxford-words";
+import { getLevelInventory } from "@/lib/curriculum";
 import {
   absoluteUrl,
   jsonLd,
@@ -113,16 +110,19 @@ export default async function UnitPage({ params }: UnitPageProps) {
 
   if (!level || !unit) notFound();
 
-  const [words, levelTotal] = await Promise.all([
+  const [words, levelInventory] = await Promise.all([
     getWordsByUnit(level, unit),
-    getLevelWordCount(level),
+    getLevelInventory(level),
   ]);
 
   if (words.length === 0) notFound();
 
   const t = await getTranslations("Unit");
   const tNav = await getTranslations("Nav");
-  const unitCount = Math.max(Math.ceil(levelTotal / UNIT_SIZE), 1);
+  // "Unit 45 of 45", not "unit 45 of 38". The count is how many units the level really
+  // has (`lib/curriculum.ts`); deriving it from the level total claimed 38 for A1 and made
+  // this page describe itself as being outside its own level.
+  const unitCount = levelInventory?.unitCount ?? 1;
   const levelHref = `/english/${level.toLowerCase()}`;
 
   return (
