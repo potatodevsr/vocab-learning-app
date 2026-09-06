@@ -75,7 +75,22 @@ export default defineConfig({
       command: "bash e2e/scripts/start-api.sh",
       url: `http://localhost:${API_PORT}/health`,
       reuseExistingServer: false,
-      timeout: 180_000,
+      /**
+       * Seven minutes, because this entry is not "start a server".
+       *
+       * `start-api.sh` regenerates the Prisma client runtime, resets `.wrangler/e2e-state`,
+       * applies every migration, loads the deterministic seed, pushes the audio fixtures
+       * into local R2 and *then* boots `wrangler dev` — six `pnpm exec` spawns before
+       * anything can answer `/health`. On an idle machine that fits inside three minutes,
+       * which is what this budget used to allow; on a loaded one it measured a little over
+       * five, and the run then failed with `Timed out waiting 180000ms from
+       * config.webServer` having executed **zero** tests.
+       *
+       * A startup budget that is too small does not report a slow machine — it reports a
+       * red gate that tested nothing, which is strictly worse than waiting. The web entry
+       * below already carries five minutes for the same reason.
+       */
+      timeout: 420_000,
       stdout: "pipe",
       stderr: "pipe",
     },
@@ -86,7 +101,21 @@ export default defineConfig({
       command: `pnpm build && pnpm start --port ${WEB_PORT}`,
       url: `http://localhost:${WEB_PORT}/en`,
       reuseExistingServer: false,
-      timeout: 300_000,
+      /**
+       * Fifteen minutes, because this entry is a production build, not a server start.
+       *
+       * `next build` prerenders ~50 routes and each one fetches the API — `/english/search`,
+       * `/english/words` and the HTML sitemap walk the entire published corpus 100 rows at
+       * a time. On an idle machine that lands inside five minutes, which is what this used
+       * to allow; on a loaded one it does not, and the run then dies with
+       * `Timed out waiting 300000ms from config.webServer` having built nothing and tested
+       * nothing.
+       *
+       * Same reasoning as the API entry above: a budget that is too small does not report a
+       * slow machine, it reports a red gate that never ran. Erring long costs waiting; erring
+       * short costs a result nobody can trust.
+       */
+      timeout: 900_000,
       env: {
         NEXT_PUBLIC_API_URL: `http://localhost:${API_PORT}`,
         // Canonicals and the sitemap are absolute; they must match where the suite runs.

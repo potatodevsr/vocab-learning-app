@@ -1,7 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 import { expect, test } from "@playwright/test";
+
+import { fileExists } from "../support/fs-exists";
 
 // AGENTS.md rule 6: every route that fetches gets error.tsx and loading.tsx. These are the
 // fetch-owning segments; each colocated boundary must exist and, where a shared boundary
@@ -36,7 +38,7 @@ test.describe("colocated route boundaries", () => {
   for (const segment of FETCH_SEGMENTS) {
     for (const kind of ["error", "loading"] as const) {
       test(`${segment} has ${kind}.tsx`, () => {
-        expect(existsSync(resolve(appDir, segment, `${kind}.tsx`))).toBe(true);
+        expect(fileExists(resolve(appDir, segment, `${kind}.tsx`))).toBe(true);
       });
     }
   }
@@ -53,7 +55,7 @@ test.describe("colocated route boundaries", () => {
         if (!match) continue;
         reexports += 1;
         const target = resolve(dirname(file), `${match[1]}.tsx`);
-        expect(existsSync(target), `${segment}/${kind}.tsx target`).toBe(true);
+        expect(fileExists(target), `${segment}/${kind}.tsx target`).toBe(true);
         // A thin re-export owns no markup and no strings of its own.
         expect(readFileSync(file, "utf8")).not.toContain("<");
       }

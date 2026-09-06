@@ -20,6 +20,12 @@ const withBody = (json: () => Promise<unknown>) =>
   ({ req: { json } }) as Parameters<typeof readJsonBody>[0];
 
 test.describe("readJsonBody", () => {
+  for (const value of [null, [], ["A1"], "A1", 1, true]) {
+    test(`non-object JSON ${JSON.stringify(value)} reads as no fields`, async () => {
+      await expect(readJsonBody(withBody(async () => value))).resolves.toEqual({});
+    });
+  }
+
   test("returns the parsed body when there is one", async () => {
     const body = await readJsonBody<{ level: string; unit: number }>(
       withBody(async () => ({ level: "A2", unit: 4 })),

@@ -1,8 +1,8 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { BrandMark } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Link, usePathname } from "@/i18n/navigation";
 
@@ -75,12 +75,7 @@ export function SiteFooter() {
             href="/"
             className="play-lift play-focus inline-flex items-center gap-2"
           >
-            <span
-              aria-hidden
-              className="flex size-10 items-center justify-center rounded-xl border-2 border-white bg-accent-sun text-ink"
-            >
-              <Sparkles className="size-5" />
-            </span>
+            <BrandMark className="size-10" />
             <span className="text-lg font-extrabold">{t("brand")}</span>
           </Link>
 

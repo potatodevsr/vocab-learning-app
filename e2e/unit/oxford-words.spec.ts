@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { expect, test } from "@playwright/test";
 
-import { UNIT_SIZE } from "../../lib/oxford-words";
+import { UNIT_SIZE, withRetry } from "../../lib/oxford-words";
 
 /**
  * `extractWords` is not exported, so its branches are covered through the API specs.
@@ -68,5 +68,72 @@ test.describe("unit sizing", () => {
       offenders,
       "unit counts come from lib/curriculum.ts (the stored rows), never from dividing a level total by UNIT_SIZE",
     ).toEqual([]);
+  });
+});
+
+/**
+ * `withRetry`, and specifically the pause inside it.
+ *
+ * Every corpus read goes through this, and at build time `/english/search`,
+ * `/english/words` and the HTML sitemap each walk the whole published corpus through it a
+ * hundred rows at a time — so its behaviour under a dropped connection decides whether one
+ * bad socket costs a page or the entire build.
+ *
+ * The case that matters is the one that actually happened: Node pools HTTP connections, the
+ * server closed an idle one, and the request arrived as `ECONNRESET` with
+ * `reusedSocket: true`. The previous implementation retried in the same tick, took another
+ * socket from the same poisoned pool, and failed again — so "retries once" was true and
+ * useless. These pin that a *second* retry exists and that time passes before it.
+ */
+test.describe("withRetry", () => {
+  test("returns the first success without retrying", async () => {
+    let calls = 0;
+    const value = await withRetry(async () => {
+      calls += 1;
+      return "ok";
+    });
+
+    expect(value).toBe("ok");
+    expect(calls).toBe(1);
+  });
+
+  test("survives two consecutive failures, which one immediate retry could not", async () => {
+    let calls = 0;
+    const value = await withRetry(async () => {
+      calls += 1;
+      if (calls < 3) throw Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" });
+      return "recovered";
+    });
+
+    expect(value).toBe("recovered");
+    expect(calls).toBe(3);
+  });
+
+  test("waits between attempts rather than hammering the same dead pool", async () => {
+    const started = Date.now();
+    let calls = 0;
+
+    await withRetry(async () => {
+      calls += 1;
+      if (calls < 2) throw new Error("read ECONNRESET");
+      return null;
+    });
+
+    // The first backoff is 250ms. Asserting "some real time passed" rather than an exact
+    // figure keeps this from becoming a timing test that fails on a loaded machine.
+    expect(Date.now() - started).toBeGreaterThanOrEqual(200);
+  });
+
+  test("gives up after three attempts and rethrows the last error", async () => {
+    let calls = 0;
+
+    await expect(
+      withRetry(async () => {
+        calls += 1;
+        throw new Error(`attempt ${calls} failed`);
+      }),
+    ).rejects.toThrow("attempt 3 failed");
+
+    expect(calls).toBe(3);
   });
 });

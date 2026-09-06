@@ -96,6 +96,13 @@ test.describe("POST /practice/start", () => {
     const body = (await res.json()) as StartResponse;
     for (const item of body.items) {
       expect(item.prompt.displayWord).toMatch(/^word\d+$/);
+      // The legacy A1 fixture has digit-bearing OCR respellings, which must not be
+      // projected raw even when its meaning is usable and it can still be a prompt.
+      expect(item.prompt.pronunciationTh).toBe("");
+      for (const option of item.options) {
+        expect(option.meaningTh).toMatch(/[฀-๿]/);
+        expect(option.meaningTh).not.toMatch(/[A-Za-z]/);
+      }
     }
   });
 });
@@ -118,6 +125,26 @@ test.describe("POST /practice/start — undersized units", () => {
   const { level, undersizedUnit } = SEED.irregularLevel;
   const unitWords: readonly string[] = undersizedUnit.words;
   const unitMeanings: readonly string[] = undersizedUnit.meanings;
+
+  for (const invalidLevel of ["", " ", "A3", "a2", null, 2]) {
+    test(`rejects invalid level ${JSON.stringify(invalidLevel)} instead of widening the scope`, async () => {
+      const ctx = await newApiContext();
+      const res = await start(ctx, { level: invalidLevel, unit: undersizedUnit.unit });
+      expect(res.status()).toBe(400);
+      expect((await res.json()).message).toContain("level");
+      await ctx.dispose();
+    });
+  }
+
+  test("JSON null follows the absent-body contract instead of crashing", async () => {
+    const ctx = await newApiContext();
+    const res = await ctx.post(`${API}/practice/start`, {
+      headers: { "content-type": "application/json" }, data: "null",
+    });
+    expect(res.status()).toBe(200);
+    expect((await res.json()).itemCount).toBe(5);
+    await ctx.dispose();
+  });
 
   test("a three-word unit starts a three-item trial with a full set of options", async () => {
     const ctx = await newApiContext();

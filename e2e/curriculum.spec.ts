@@ -165,6 +165,9 @@ test.describe("curriculum inventory", () => {
 
     // A card, not the "not enough words yet" screen.
     await expect(page.getByTestId("practice-card")).toBeVisible();
+    await expect(page).toHaveTitle(/up to 5 questions/);
+    await expect(page.getByText(/Answer up to 5 quick questions/)).toBeVisible();
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /up to 5/);
     await expect(page.getByTestId("practice-error")).toHaveCount(0);
     await expect(page.getByTestId("practice-option")).toHaveCount(
       undersizedUnit.optionCount,
@@ -177,6 +180,13 @@ test.describe("curriculum inventory", () => {
     await expect(
       page.getByTestId("practice-prompt"),
     ).toHaveText(new RegExp(`^(${undersizedUnit.words.join("|")})$`));
+  });
+
+  test("the Thai small-unit introduction promises a maximum, not five guaranteed questions", async ({ page }) => {
+    await page.goto(`/th/english/${slug}/unit/${SEED.irregularLevel.undersizedUnit.unit}/practice`);
+    await expect(page.getByText(/ลองตอบคำถามจากบทที่.*สูงสุด 5 ข้อ/)).toBeVisible();
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /สูงสุด 5/);
+    await expect(page.getByTestId("practice-option")).toHaveCount(4);
   });
 
   /**

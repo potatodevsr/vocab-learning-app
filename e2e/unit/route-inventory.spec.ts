@@ -1,7 +1,8 @@
-import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { expect, test } from "@playwright/test";
+
+import { fileExists } from "../support/fs-exists";
 
 import {
   ENGLISH_STATIC_CHILDREN,
@@ -40,7 +41,7 @@ test.describe("the family inventory matches the filesystem", () => {
     const missing = ENGLISH_STATIC_CHILDREN.filter(
       (child) =>
         !UNBUILT_ENGLISH_CHILDREN.has(child) &&
-        !existsSync(resolve(appDir, child, "page.tsx")),
+        !fileExists(resolve(appDir, child, "page.tsx")),
     );
 
     expect(
@@ -51,7 +52,7 @@ test.describe("the family inventory matches the filesystem", () => {
 
   test("no unbuilt family has quietly grown a page", () => {
     const built = [...UNBUILT_ENGLISH_CHILDREN].filter((child) =>
-      existsSync(resolve(appDir, child, "page.tsx")),
+      fileExists(resolve(appDir, child, "page.tsx")),
     );
 
     expect(

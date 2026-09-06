@@ -57,16 +57,47 @@ export const extractWords = (response: VocabWordResponse): OxfordWord[] => {
 };
 
 /**
- * One retry for reads. These are idempotent GETs crossing a process boundary, and a
- * single transient failure otherwise becomes a rendered error page — a whole lesson lost
- * to one dropped connection.
+ * Retries for reads, with a pause between them.
+ *
+ * These are idempotent GETs crossing a process boundary, and a single transient failure
+ * otherwise becomes a rendered error page — a whole lesson lost to one dropped connection.
+ * At build time it is worse than that: ~50 routes are prerendered by fetching this API and
+ * `/english/search`, `/english/words` and the HTML sitemap each walk the entire published
+ * corpus 100 rows at a time, so one dropped socket fails the whole build.
+ *
+ * **The pause is the part that matters, and it is why one immediate retry was not enough.**
+ * Node keeps HTTP connections alive and pools them; when the server closes an idle socket
+ * before the client notices, the next request goes out on a dead one and arrives as
+ * `ECONNRESET` with `reusedSocket: true`. Retrying in the same tick just takes another
+ * socket from the same poisoned pool and resets again — which is exactly how a full-stack
+ * run died during `next build`, on
+ * `GET /vocabword?…&take=100&skip=0`, having tested nothing. A short backoff gives the
+ * agent time to discard the dead sockets and open a fresh one.
+ *
+ * Three attempts, not more: this is a localhost hop to a Worker we started ourselves. If
+ * it fails three times over a second and a half, something is actually wrong and a
+ * rendered error is the honest answer.
  */
-const withRetry = async <T>(read: () => Promise<T>): Promise<T> => {
-    try {
-        return await read();
-    } catch {
-        return read();
+const RETRY_DELAYS_MS = [250, 1_250];
+
+/** Exported for tests: the failure it exists for cannot be provoked from a healthy API. */
+export const withRetry = async <T>(read: () => Promise<T>): Promise<T> => {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+        try {
+            return await read();
+        } catch (error) {
+            lastError = error;
+
+            const delay = RETRY_DELAYS_MS[attempt];
+            if (delay === undefined) break;
+
+            await new Promise((resolve) => setTimeout(resolve, delay));
+        }
     }
+
+    throw lastError;
 };
 
 const readWords = async (where: Record<string, unknown>, take?: number) =>

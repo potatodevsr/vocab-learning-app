@@ -28,6 +28,60 @@ recorded once under “Behavior to protect while rebuilding.”
 
 ## Release hold
 
+### 2026-09-06 follow-up corrections (code fixed; final gate interrupted)
+
+- Generated typecheck fingerprints now include the complete diagnostic, including
+  indented overload explanations: **133 errors, 29 groups**. A nested-only substitution
+  now changes the fingerprint. The generated errors themselves remain unfixed.
+- Anonymous practice rejects supplied levels other than A1/A2/B1/B2, including an empty
+  string; a scoped request cannot silently widen to another level.
+- The shared JSON reader treats null, arrays and primitives as an absent object, preserving
+  existing missing-body behavior without throwing while reading a field.
+- Unit-practice introductions and metadata promise **up to five** questions in both locales.
+- New practice pools filter mechanically damaged meanings and hide damaged optional
+  pronunciations, using the public-page rules with parity tests. Pool reads page past OCR
+  damage, remain in scope, and never auto-approve editorial content. This is a practice-only
+  improvement; F-05's other learning engines and semantically wrong Thai remain open.
+- Focused full-stack run: **74 passed in 2.2 minutes, exit 0**. Log:
+  `/Users/potato/vocab-fix-focused-2026-09-06.log`.
+- Full `pnpm test:e2e`: **1,336 test cases passed**, including both sitemap fault-injection
+  tests (neither skipped), but the command **exited 1** with two teardown errors:
+  `worker-0 process did not exit within 300000ms after stop, force-killed it`.
+  Reported elapsed time: 2.5 hours. This is **not a green commit gate**. There were no
+  failed test cases or reported Wrangler ProxyWorker crashes. Log:
+  `/Users/potato/vocab-fix-full-2026-09-06.log`.
+- A later full rerun (`/Users/potato/vocab-gate-combined3.log`) reached **1,173 passing
+  tests** before Playwright attached a red result to boundary test 1,174 and again emitted
+  two five-minute `worker-0 process did not exit` errors. The named file had existed
+  unchanged since August and the same assertion returned true from the gate cwd; the run
+  then made no progress for more than three hours and was terminated (exit 143). An
+  immediate real-stack rerun of the complete boundary file passed **39/39 in 2.4 minutes**,
+  including the allegedly missing `admin/(protected)/letters/error.tsx`. This is further
+  teardown/host-instability evidence, not a product-code regression, and still is not a
+  green commit gate.
+- macOS power logs confirm repeated sleep/dark-wake cycles during the teardown interval
+  (including 09:49–10:33). A runner sample is preserved at
+  `/Users/potato/vocab-fix-runner-sample.txt`. Host sleep is a likely contributor, not a
+  proven application defect; no speculative timeout or product-code change was made.
+- Post-fix Chrome verification connected through the installed extension against the real
+  local corpus. `/en/english/a1/unit/32/practice` returned 200 and rendered the corrected
+  "up to 5" copy, counter `1 of 3`, four Thai choices and no leaked Latin OCR distractor;
+  the real `POST /practice/start` returned 200. A stale `.next/dev` route manifest initially
+  contained only the global 404 and web-manifest routes, making every locale route answer
+  404 without reaching application code; moving that generated cache aside and restarting
+  Next rebuilt the expected dynamic route manifest and restored `/en` and the practice URL
+  to 200. Chrome's extension repeatedly timed out when asked for the final console-log read,
+  so this pass does not claim a clean console or a completed three-answer click-through.
+- Other gates: web `tsc --noEmit` clean with generated `cloudflare-env.d.ts`; backend
+  `pnpm typecheck` clean against 133 known generated diagnostics / 29 groups; lint 0 errors
+  / 17 existing warnings; coverage audit **200 runtime exports / 215 testids**; production
+  migration check and both repositories' `git diff --check` clean. Seed parity passed in
+  the full suite. Dev web/API and test-stack ports were released after verification.
+- No commit or deployment. Rights/provenance (F-06), editorial review and deployment remain
+  outside these fixes; the 133 generated errors are baselined, not repaired.
+
+### Earlier verification record
+
 The authoritative curriculum-inventory work is verified end to end, and the full-stack gate
 passes. The production-only defects, misleading navigation states and backend `src/`
 TypeScript errors that held this section are **fixed and covered** — the change-set review
@@ -40,9 +94,14 @@ finding **F-06 blocks a relaunch on its own**.
 
 Latest documented evidence (2026-09-04, after an external audit of the change-set fixes):
 
-- Full `pnpm test:e2e`: **1,298 passed in 58.8 minutes**, exit code 0, no failures and no
-  hidden Worker restart. The suite grew from 1,245 to 1,298 — this change set adds 53
-  tests, 7 of them from the audit round.
+- Full `pnpm test:e2e`: **1,316 passed in 1.2 hours**, exit code 0, **no failures and no
+  Worker crash** (2026-09-05, on `wrangler@4.113.0`). The suite grew from 1,245 to 1,316
+  across this change set: 53 tests from the review rounds plus 18 from the gate-hardening
+  round.
+- Getting there took the Wrangler stability experiment below. On `wrangler@4.123.0` the
+  suite could not be completed on demand at all — five ProxyWorker crashes, twice
+  consecutively. Pinning `4.113.0` produced five consecutive complete runs, the last of them
+  green.
 - Run history for this tree, in order, because two of these are worth remembering:
   - **Run 3** — `1 failed, 1296 passed (54.5m)`. The failure was
     `e2e/sitemap-failure.spec.ts`, and it was the new test's own harness rather than the
@@ -79,40 +138,56 @@ Latest documented evidence (2026-09-04, after an external audit of the change-se
 - Web TypeScript: clean both with and without generated `cloudflare-env.d.ts`
   (`pnpm cf:typegen && pnpm exec tsc --noEmit` → exit 0).
 - Backend TypeScript: `cd backend && pnpm typecheck` → **green**. That is the gate now, and
-  it is a real one: **any** error in `src/` fails the run, and the `prisma/generated/` error
-  count is pinned to a baseline so a regeneration that breaks something new fails too
-  (`backend/scripts/typecheck.mjs`, documented in `backend/AGENTS.md`).
+  it is a real one: **any** error in `src/` fails the run, and the `prisma/generated/`
+  diagnostics are pinned as a **multiset** — how many of each error code, in each file — so
+  a regeneration that breaks something new fails too
+  (`backend/scripts/typecheck.mjs` + `backend/scripts/generated-typecheck-baseline.json`,
+  documented in `backend/AGENTS.md`).
   - `src/` errors: **11 → 0**.
   - `cd backend && pnpm exec tsc --noEmit` **on its own is still red — 133 errors, exit 2 —
     and always has been.** It is not the gate and must not be quoted as one. The errors are
     all in the committed generated tree, which `src` imports and TypeScript therefore
-    checks: 81 are one generator bug (`HandlerContext` declares `prisma` optional,
-    `Context<HonoEnv>` requires it — both generator-emitted types, no application type
-    appears in the error), and most of the rest come from `routeConfig.ts` and
-    `routeConfig.target.ts` exporting two structurally incompatible `RouteConfig` types.
+    checks: 111 are `TS2345` across the three generated routers — 81 of them carrying one
+    message, `HandlerContext` declaring `prisma` optional where `Context<HonoEnv>` requires
+    it, both generator-emitted types with no application type in the error — and most of the
+    rest come from `routeConfig.ts` and `routeConfig.target.ts` exporting two structurally
+    incompatible `RouteConfig` types.
     Clearing them means changing or upgrading `prisma-generator-express`, which is its own
     piece of work and is **not** done here.
   - The baseline moved 144 → 133 across this change set, which is exactly the 11 removed.
+  - A first version of the gate compared only the **total**, which a review correctly
+    rejected: a regeneration could remove one known error and introduce a different one and
+    still total 133. The baseline is now 14 `<file>|<code>` groups summing to 133, and a
+    same-count swap is reported as `CHANGED`/`NEW`/`GONE` lines naming each one. Verified by
+    perturbing the baseline to simulate exactly that substitution — the gate failed, as it
+    must. `pnpm typecheck --update` re-records it, and is a no-op on an accurate baseline.
 - Lint: **0 errors, 17 warnings** — the documented baseline, unchanged.
-- Coverage audit: green — "196 runtime exports (+85 type-only via tsc), 214 data-testids
+- Coverage audit: green — "197 runtime exports (+85 type-only via tsc), 214 data-testids
   and every route are referenced by tests".
 - Production migration validation: green — "16 applied migrations are immutable; 6 new
   migration(s) are additive".
 - Generated e2e seed matches its committed copy, and `unit/seed-parity` now enforces it on
   every run rather than by hand.
 - `git diff --check`: green.
-- **Chrome MCP still could not attach.** Exact error, from both `list_pages` and
-  `new_page`:
-  `Could not connect to Chrome. Check if Chrome is running. Cause: Could not find
-  DevToolsActivePort for chrome at /Users/potato/Library/Application
-  Support/Google/Chrome/DevToolsActivePort`. Chrome 152.0.7977.75 **is** running (pid
-  27809) and the extension is installed, but it was not started with a DevTools debugging
-  port on the default profile, and attaching would mean quitting and relaunching a live
-  browser session. Playwright Chromium supplied the browser coverage instead, at 390px and
-  1440px, against the production-equivalent corpus — see "Browser verification" below. It
-  is not a substitute for the requested Chrome-MCP pass and is not recorded as one.
+- **Chrome MCP: unavailable during implementation, completed during review.**
+  - During the implementation pass it could not attach. Exact error, from both `list_pages`
+    and `new_page`: `Could not connect to Chrome. Check if Chrome is running. Cause: Could
+    not find DevToolsActivePort for chrome at /Users/potato/Library/Application
+    Support/Google/Chrome/DevToolsActivePort`. Chrome 152.0.7977.75 was running (pid 27809)
+    with the extension installed, but had not been started with a DevTools debugging port
+    on the default profile, and attaching would have meant quitting a live browser session.
+    Playwright Chromium supplied the coverage instead — recorded as Playwright, never as
+    Chrome MCP.
+  - A **subsequent review pass connected Chrome MCP successfully** and confirmed the
+    findings independently: production-shaped Thai speech renders and invokes `th-TH` with
+    the correct Thai meaning; the undersized-unit trial shows four options and "1 of 3"
+    with no overflow; English and Thai login redirects preserve locale and the complete
+    query string; the healthy sitemap carries 167 unit links and 2,785 word links; no
+    console warnings or errors on the inspected healthy routes; and the failed sitemap
+    renders exactly one `noindex, follow` tag, the localized error state, and zero word
+    links — agreeing with the raw HTTP response, with no contradictory robots tags.
 
-### Browser verification (Playwright Chromium, not Chrome MCP)
+### Browser verification (Playwright Chromium during implementation; Chrome MCP on review)
 
 Driven against the **production-equivalent** dev corpus — 3,082 published rows; A1 758/45,
 A2 828/44, B1 791/41, B2 705/37; 167 units — not the e2e fixture. Both viewports agree.
@@ -141,9 +216,17 @@ Release-gate work:
   code, says why the run is being failed, and exits with that status
   (`e2e/scripts/start-api.sh`). **This immediately proved the instability is real** — see
   "Observed crash signature" below.
-- [ ] Run a controlled stability experiment: pin exact Wrangler versions or split the
-  suite across fresh Worker processes.
-- [x] Observe a complete full-stack e2e run green without a hidden Worker restart.
+- [x] Run a controlled stability experiment: pin exact Wrangler versions or split the
+  suite across fresh Worker processes. **Done — see "Wrangler stability experiment" below.**
+  Result: `wrangler` pinned exactly to `4.113.0`, which resolves stable `miniflare@4.x`
+  instead of the `5.x-alpha` that both crashing versions pull. Five consecutive complete
+  runs, no crashes, the last fully green. The `4.129.0` forward candidate was tested and
+  **rejected** — it crashed on its first run. Sharding was not needed and its rationale was
+  disproved.
+- [x] Observe a complete full-stack e2e run green without a hidden Worker restart —
+  **1,316 passed, 1.2 hours, exit 0, zero failures** (2026-09-05, on the pinned
+  `wrangler@4.113.0`). Now achieved reliably rather than once: five consecutive complete
+  runs on that pin, none crashing.
 - [x] Regenerate and verify web API types against backend `f88fe3d`. `lib/api-types.ts`
   carries the `CurriculumInventory` / `LevelInventory` / `UnitInventory` schemas the
   inventory work consumes, and `pnpm exec tsc --noEmit` is clean against them with the
@@ -162,7 +245,153 @@ Release-gate work:
 - [ ] Deploy API migrations and the API Worker first, then the web Worker; verify the
   production service binding, incremental caches, tag cache, and learner-visible behavior.
 
-### Observed crash signature (2026-08-30, 2026-09-01 and 2026-09-03)
+### Wrangler stability experiment (2026-09-05, in progress)
+
+Five occurrences of the same `ProxyController -> ProxyWorker -> Network connection lost`
+crash, the last two back to back, so re-running 4.123.0 unchanged stopped being informative.
+The signature matches an open Wrangler regression reported against Next.js 16 / OpenNext
+(cloudflare/workers-sdk issue **#15317**), with the upstream regression boundary placed
+between **4.113** and **4.114**. Wrangler 4.129's changelog carries dependency updates but no
+identified ProxyWorker fix, so it is a forward candidate rather than an expected fix.
+
+Design — one variable at a time, **two consecutive complete runs** required before a
+configuration is called stable:
+
+| Step | Configuration | Status |
+| --- | --- | --- |
+| Control | `wrangler` pinned **exactly** to `4.113.0` (pre-regression) | **PASSED** — two consecutive complete runs, no crash |
+| Candidate | `wrangler@4.129.0` | **REJECTED** — crashed on its first run, at test 277 |
+| Fallback | Shard the suite across fresh Worker processes | not started |
+
+The control pin is exact (`"wrangler": "4.113.0"`, no caret) so a later install cannot drift
+off the version under test — `^4.113.0` had already resolved forward once.
+
+**One observation already, before any run finishes:** pinning 4.113.0 also moves
+**miniflare from `5.20260811.1-alpha` to `4.20260721.0`**. Every recorded crash names
+miniflare's `#handleLoopbackCustomFetchService` in its stack, and the previous resolution was
+an *alpha*. So this step changes two things at once and cannot by itself attribute a fix to
+the wrangler version — if the control is stable, miniflare is at least as likely to be the
+cause, and the candidate step has to be read with that in mind.
+
+**Control run A (2026-09-05): 1,313 passed, 1 failed, 1.2 hours — and zero Worker
+crashes.** The run reached the end under its own power, which neither of the two preceding
+4.123.0 runs managed. Its single failure was `sitemap-failure.spec.ts`, and it was this
+repo's own test harness rather than the application or the runtime: Next 16 permits only one
+`next dev` per project directory, an orphaned dev server from earlier manual debugging held
+port 3000, and the spec's spawned server exited with
+`⨯ Another next dev server is already running`. The diagnostics added to that spec after the
+previous round printed the cause verbatim instead of a bare timeout, which is the only
+reason this took minutes to diagnose rather than another full run.
+
+Two things came out of that:
+
+- The orphan was removed, and the spec now **skips with a stated reason** when another dev
+  server holds the directory, instead of failing. A developer with `pnpm dev` running would
+  otherwise have seen a permanently red suite, which is how people learn to ignore red
+  suites. CI runs no dev server, so it still exercises the path for real. Verified: 2 passed.
+- The failure is unrelated to Wrangler and does not qualify run A as unstable.
+
+**Control run B (2026-09-05): 1,315 passed, 1 failed, 1.3 hours — again zero Worker
+crashes.** Its one failure was `units.progress.spec.ts:70`, a 30.2s timeout on
+`GET /api/progress/units`; in isolation the same test passes in **2.1s** (6 passed, 2.5m).
+A different test from run A's, and again not a crash.
+
+**Control verdict: two consecutive complete runs on 4.113.0, neither crashing.** On 4.123.0
+the crash landed five times and twice in a row, always after ~57-64 minutes of Worker
+uptime; both control runs ran straight through that window at 1.2h and 1.3h. The suite is
+now **1,316 tests**.
+
+Run B's *first* attempt is worth recording too: it died after 49 seconds during
+`wrangler d1 migrations apply` with `✘ [ERROR] other side closed`, because the `pkill` that
+preceded it raced the previous run's teardown. That is a harness-hygiene failure, not a gate
+result, and the retry on a settled machine is the run reported above.
+
+**Attribution caveat, and it matters.** Pinning 4.113.0 also moved **miniflare from
+`5.20260811.1-alpha` to `4.20260721.0`**. Every recorded crash names miniflare's
+`#handleLoopbackCustomFetchService`, and the previous resolution was an *alpha* build. The
+control therefore changed two variables at once and cannot on its own attribute the fix to
+the wrangler version. If the 4.129.0 candidate also resolves a non-alpha miniflare and is
+stable, miniflare is the better explanation.
+
+**Candidate (2026-09-05): `wrangler@4.129.0` crashed at test 277 of 1,316 — first run,
+identical signature.**
+
+```
+at castErrorCause (wrangler@4.129.0/wrangler-dist/cli.js:165236:19)
+at async #handleLoopbackCustomFetchService (miniflare@5.20260903.0-alpha/…:81753:22)
+  message: 'Network connection lost.'
+```
+
+It is not a fix, and moving forward would be strictly worse than staying put. Two
+consecutive complete runs were never reached, so the candidate is rejected on run one.
+
+**A third complete run on 4.113.0 (56.9 minutes, no crash)** then exposed a defect in the
+sitemap regression itself rather than in the application: it asserted **exactly one**
+`<meta name="robots">` in the raw HTML, and the response carried two — both `noindex`. React
+may hoist the metadata more than once depending on where the throw lands relative to the
+metadata flush, so a tag *count* is timing-dependent; it passed in isolation and failed in
+the suite. The bug the assertion exists to catch is a **contradiction** — an `index, follow`
+from `generateMetadata` sitting alongside a `noindex` from the boundary — so the check is
+now unanimity: every robots directive present must be `noindex`, and no indexable one may
+appear. Duplication is harmless; disagreement is the failure.
+
+**Four complete runs on 4.113.0, zero Worker crashes** (1.2h, 1.3h, 56.9m, 59.6m). Each
+carried exactly one failure, a different test every time, and none was a crash:
+
+| Run | Failure | Verdict |
+| --- | --- | --- |
+| A | `sitemap-failure.spec.ts` — orphaned `next dev` held the project directory | defect in the new spec; **fixed** (skips with a reason) |
+| B | `units.progress.spec.ts:70` — 30.2s API timeout | flake; passes in isolation in **2.1s** |
+| Final 1 | `sitemap-failure.spec.ts` — asserted exactly one robots tag, got two, both `noindex` | defect in the new spec; **fixed** (unanimity, not arity) |
+| Final 2 | `learn.spec.ts:49` — `expect(box.y).toBe(...)`, 704.69 vs 734.13 | flake; passes in isolation, 12 passed in 4.6m |
+
+Two of the four were defects in the test this change set added, and both are fixed. The
+other two are pre-existing brittleness that only shows under suite load, and both pass
+alone.
+
+**Then, with both new-spec defects fixed, the fifth run went fully green:
+`1316 passed (1.2h)`, exit 0, no failures and no Worker crash.** That is the repository's
+commit gate satisfied end to end on the selected configuration.
+
+Two assertions are still worth hardening as separate work, because they are what produced
+runs B and Final 2 and will produce more: `learn.spec.ts:61` compares layout coordinates
+with exact float equality, and several specs sit on a 30s timeout that CPU contention alone
+can exceed (`playwright.config.ts` documents that class and raises the budget on CI but not
+locally). Neither is a product defect and neither is fixed here.
+
+### What the three configurations actually say
+
+| wrangler | resolved miniflare | outcome |
+| --- | --- | --- |
+| `4.123.0` | `5.20260811.1-alpha` | crashed 5 times, twice consecutively |
+| `4.113.0` | `4.20260721.0` — **stable** | 2 consecutive complete runs, no crash |
+| `4.129.0` | `5.20260903.0-alpha` | crashed on run 1 |
+
+The variable that tracks the failure is **miniflare's major line, not the wrangler version**.
+Both crashing configurations resolve a `5.x` **alpha**; the one that does not crash resolves
+stable `4.x`. Every crash stack, across all six occurrences and two different wrangler
+versions, names the same miniflare frame — `#handleLoopbackCustomFetchService`. Wrangler
+4.129's changelog carrying no ProxyWorker fix is consistent with this: nothing was fixed
+because the fault is in the miniflare it pulls.
+
+This also revises the earlier "Worker lifetime" theory. 4.129.0 crashed after roughly five
+minutes rather than the 57-64 minutes seen on 4.123.0, so uptime is not the mechanism —
+it changes how *quickly* an unstable build fails, not whether it does. Sharding the suite
+would therefore have reduced the crash rate without addressing the cause, and is no longer
+the recommended next step.
+
+**Recommendation: pin `wrangler` to exactly `4.113.0`** (which is what the tree now holds)
+until a non-alpha miniflare 5.x ships, then re-test forward. The pin must stay exact — a
+`^4.113.0` range resolved forward to 4.114.0 on the very first install during this
+experiment, which is how the regression boundary would be silently re-crossed.
+
+Original rationale for the sharding fallback — kept because it was the reasoning at the time
+and the candidate run disproved it: the 4.123.0 crashes landed after roughly **57-64
+minutes** of continuous Worker uptime rather than at any particular test, which suggested
+Worker lifetime as the mechanism and shorter shards as a version-independent mitigation.
+4.129.0 crashing inside five minutes ruled that out.
+
+### Observed crash signature (2026-08-30, 09-01, 09-03 and 09-04)
 
 With the launcher hardened, a full `pnpm test:e2e` run reached test ~264 and the API Worker
 exited on its own with status 1. Every test after it failed on a 21-second timeout, because
@@ -187,9 +416,42 @@ the ProxyWorker. The following clean run passed all 1,245 tests.
 
 It recurred again on 2026-09-03, at test 553 of 1,291, with the identical
 `Network connection lost` stack. 552 tests had passed with zero application failures. The
-clean rerun passed all 1,291. **Consequence for the gate:** three occurrences, three clean
-reruns — Wrangler stability remains a release-engineering risk, and it still does not
-support a claim that the application suite cannot pass.
+clean rerun passed all 1,291.
+
+It then recurred **twice in a row** on 2026-09-04, which is new and is the reason this
+section now matters more than it did:
+
+- **Run 5** — crashed at test 1,293 of 1,298
+  (`wrangler-2026-09-04_15-45-33_232.log`). The three `wordlists` failures after it are
+  collateral from a dead Worker. That run also carried one isolated failure at **test 549**,
+  `progress.page.spec.ts:42`, a 30s timeout ~1,700 log lines *before* the Worker died, with
+  743 tests passing after it.
+- **Run 6** — the instructed clean rerun. Crashed again
+  (`wrangler-2026-09-04_16-51-25_347.log`), this time at test 715 of 1,298, and
+  `today.spec.ts:80` failed immediately after it as collateral.
+
+Both of those individual failures were then run in isolation and **passed**:
+`progress.page.spec.ts:42` in 6.2s (against a 30.3s timeout in the suite) and
+`today.spec.ts:80` in 13.2s (31.1s in the suite) — 15 passed in 4.2m. Neither is a
+regression; both are the CPU-starvation-reads-as-timeout class `playwright.config.ts`
+already documents. This is recorded rather than dropped because "it was probably flaky" is a
+claim that has to be re-earned on each occurrence, not assumed.
+
+**Consequence for the gate:** five occurrences now, and for the first time the crash
+survived a clean rerun. The last **complete** green run remains 2026-09-04 run 4 —
+**1,298 passed in 58.8 minutes, exit 0** — and the only changes to the tree after it are
+`backend/scripts/typecheck.mjs`, `backend/scripts/generated-typecheck-baseline.json`,
+`backend/AGENTS.md` and `todo.md`. No spec reads any of those (`unit/deployment-config` is
+the only spec that reads anything under `backend/scripts`, and it reads
+`generate-e2e-seed.mjs`, unchanged since run 4). So the green result still describes the
+application code — but the gate itself is no longer reliably completable on this machine,
+and that is a release-engineering blocker in its own right, not a footnote.
+
+Wrangler **4.129.0** is now available against the resolved 4.123.0. Trying it is the obvious
+first move for the controlled stability experiment still open above, and it is a dependency
+change in the API submodule rather than part of this change-set review, so it is left for a
+deliberate decision instead of being made here. Full logs preserved outside `/tmp` at
+`~/vocab-gate-run5.log` and `~/vocab-gate-run6.log`.
 
 Corrective patches and truthful copy may deploy through this gate. Rights/provenance
 finding F-06 independently blocks a product relaunch, monetization, or meaningful paid

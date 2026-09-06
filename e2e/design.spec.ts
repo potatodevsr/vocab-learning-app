@@ -209,6 +209,29 @@ const answerMixedItem = async (page: Page) => {
 };
 
 test.describe("the play palette", () => {
+  test("the custom brand mark is shared by the header and footer", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/english/a1");
+
+    const marks = page.getByTestId("brand-mark");
+    await expect(marks).toHaveCount(2);
+
+    for (const mark of await marks.all()) {
+      await expect(mark).toHaveAttribute("viewBox", "0 0 40 40");
+      await expect(mark).toHaveAttribute("aria-hidden", "true");
+
+      const box = await mark.evaluate((node) => {
+        const rect = node.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      });
+
+      // `size-10` follows the app's 18px mobile root so controls remain comfortably
+      // tappable; preserve the resulting 45px mark rather than pinning Tailwind's
+      // default-root 40px assumption.
+      expect(box).toEqual({ width: 45, height: 45 });
+    }
+  });
+
   test("magic-link recovery stays inside a 390px viewport", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
 

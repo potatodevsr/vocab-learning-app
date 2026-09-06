@@ -1,8 +1,8 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+import { BrandMark } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { UserNavbar } from "@/components/user-navbar";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -90,12 +90,7 @@ export function AppBar({ locale }: { locale: string }) {
           aria-label={t("homeLabel")}
           className="play-lift play-focus flex shrink-0 items-center gap-2"
         >
-          <span
-            aria-hidden
-            className="flex size-10 items-center justify-center rounded-xl border-2 border-ink bg-brand text-white"
-          >
-            <Sparkles className="size-5" />
-          </span>
+          <BrandMark className="size-10" />
 
           <span aria-hidden className="hidden sm:block">
             <span className="block text-sm font-extrabold leading-tight">

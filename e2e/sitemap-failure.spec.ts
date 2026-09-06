@@ -162,6 +162,18 @@ test.describe("the HTML sitemap when the corpus cannot be read", () => {
   let logPath = "";
   const webPort = 3210;
 
+  /**
+   * Set when the environment cannot host a second dev server, rather than failing.
+   *
+   * Next 16 allows exactly one `next dev` per project directory and refuses the second with
+   * `Another next dev server is already running`. That is not a defect in the sitemap and
+   * not something this spec can work around — but it *is* the normal state of a developer's
+   * machine while `pnpm dev` is up, and turning that into a red suite would train people to
+   * ignore a red suite. A skip with the reason attached is visible in the report and honest
+   * about what was not checked; CI, which runs no dev server, still runs it for real.
+   */
+  let unavailable: string | null = null;
+
   test.beforeAll(async () => {
     test.setTimeout(BOOT_BUDGET_MS);
 
@@ -215,8 +227,26 @@ test.describe("the HTML sitemap when the corpus cannot be read", () => {
      * Asking for `/en` first separates "the server is listening" from "this route has
      * compiled", so a slow boot cannot be mistaken for a broken page.
      */
-    await waitForServer(`http://localhost:${webPort}/en`, BOOT_BUDGET_MS - 60_000, logPath, () => web);
-    await waitForServer(`http://localhost:${webPort}/en/sitemap`, 60_000, logPath, () => web);
+    try {
+      await waitForServer(
+        `http://localhost:${webPort}/en`,
+        BOOT_BUDGET_MS - 60_000,
+        logPath,
+        () => web,
+      );
+      await waitForServer(`http://localhost:${webPort}/en/sitemap`, 60_000, logPath, () => web);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+
+      if (detail.includes("Another next dev server is already running")) {
+        unavailable =
+          "another `next dev` is running for this project directory, and Next 16 permits " +
+          "only one. Stop it (or run this spec in CI) to exercise the sitemap failure path.";
+        return;
+      }
+
+      throw error;
+    }
   });
 
   test.afterAll(async () => {
@@ -237,6 +267,8 @@ test.describe("the HTML sitemap when the corpus cannot be read", () => {
   });
 
   test("the raw response is noindex, and carries no corpus it could be indexed for", async () => {
+    test.skip(unavailable !== null, unavailable ?? "");
+
     const res = await fetch(`http://localhost:${webPort}/en/sitemap`);
     const html = await res.text();
 
@@ -248,12 +280,28 @@ test.describe("the HTML sitemap when the corpus cannot be read", () => {
      * nothing else. When the boundary owned this tag instead, the raw response said
      * `index, follow` and this assertion failed.
      */
-    expect(html).toMatch(/<meta name="robots" content="noindex/);
-    expect(html).not.toMatch(/<meta name="robots" content="index/);
+    const directives = [...html.matchAll(/<meta name="robots" content="([^"]*)"/g)].map(
+      (match) => match[1],
+    );
 
-    // Exactly one robots directive. Two — an `index` from the head and a `noindex` from
-    // the boundary — is what the previous implementation produced after hydration.
-    expect(html.match(/<meta name="robots"/g) ?? []).toHaveLength(1);
+    expect(directives.length).toBeGreaterThan(0);
+
+    /**
+     * Every robots directive says noindex — the assertion is unanimity, not arity.
+     *
+     * The bug this guards against is a **contradiction**: an `index, follow` emitted by
+     * `generateMetadata` alongside a `noindex` from the error boundary, which is what the
+     * first implementation produced once hydrated. Counting tags looked like the same
+     * check and is not: React may hoist the metadata more than once depending on where the
+     * throw lands relative to the metadata flush, so the count is timing-dependent while
+     * the contradiction is not. An earlier version asserted exactly one tag and failed in
+     * the suite while passing in isolation, for precisely that reason.
+     */
+    for (const directive of directives) {
+      expect(directive, `robots directive "${directive}" must not be indexable`).toMatch(
+        /^noindex/,
+      );
+    }
 
     // And nothing that looks like a working sitemap: no word links to be indexed for.
     expect(html).not.toMatch(/href="\/en\/english\/words\/[a-z]/);
@@ -270,17 +318,20 @@ test.describe("the HTML sitemap when the corpus cannot be read", () => {
   test("a reader gets the route's error boundary, not a header-and-footer page", async ({
     page,
   }) => {
+    test.skip(unavailable !== null, unavailable ?? "");
+
     await page.goto(`http://localhost:${webPort}/en/sitemap`);
 
     await expect(page.getByTestId("sitemap-error")).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
     await expect(page.locator('a[href*="/english/words/"]')).toHaveCount(0);
 
-    // Still noindex once React has hydrated, and still only one of them.
-    await expect(page.locator('meta[name="robots"]')).toHaveCount(1);
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
-      "content",
-      /noindex/,
-    );
+    // Still noindex once React has hydrated, and no indexable directive anywhere — same
+    // unanimity rule as the raw response above, for the same reason.
+    const robots = page.locator('meta[name="robots"]');
+    await expect(robots.first()).toHaveAttribute("content", /noindex/);
+    await expect(
+      page.locator('meta[name="robots"][content^="index"]'),
+    ).toHaveCount(0);
   });
 });
