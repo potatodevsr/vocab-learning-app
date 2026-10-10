@@ -32,12 +32,16 @@ export type OxfordWord = {
     meaningTh: string;
     /** The English word spelled out in Thai script, for a Thai learner. */
     pronunciationTh: string;
+    /** The English word as a Latin respelling, stress in capitals: `uh-BOUT`. */
+    pronunciationRoman: string;
     /** How `meaningTh` is itself read — the other direction, for a learner of Thai. */
     meaningThReading: string;
     meaningThRoman: string;
     ipa: string;
     exampleEn: string;
     exampleTh: string;
+    /** `exampleTh` in Latin script, for a learner who cannot read Thai yet. */
+    exampleThRoman: string;
     /**
      * JSON `PosUsage[]` — one meaning and example pair per part of speech, for the words
      * that have more than one. Read it through `alignPosUsages` in `lib/pos.ts`.

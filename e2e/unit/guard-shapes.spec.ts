@@ -130,11 +130,13 @@ test.describe("guard shape contents", () => {
     expect(writable).toEqual([
       "meaningTh",
       "pronunciationTh",
+      "pronunciationRoman",
       "meaningThReading",
       "meaningThRoman",
       "ipa",
       "exampleEn",
       "exampleTh",
+      "exampleThRoman",
       "posUsages",
       "letterBreakdown",
       "notes",

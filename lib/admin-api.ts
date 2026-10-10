@@ -19,11 +19,13 @@ export type VocabWord = {
     partOfSpeech: string;
     meaningTh: string;
     pronunciationTh: string;
+    pronunciationRoman: string;
     meaningThReading: string;
     meaningThRoman: string;
     ipa: string;
     exampleEn: string;
     exampleTh: string;
+    exampleThRoman: string;
     /** JSON `PosUsage[]`; see `lib/pos.ts`. Empty array for a single-part-of-speech word. */
     posUsages: string;
     /** JSON override for the letter breakdown; empty means derive it. */
@@ -181,11 +183,13 @@ export const updateWord = async (
             VocabWord,
             | "meaningTh"
             | "pronunciationTh"
+            | "pronunciationRoman"
             | "meaningThReading"
             | "meaningThRoman"
             | "ipa"
             | "exampleEn"
             | "exampleTh"
+            | "exampleThRoman"
             | "posUsages"
             | "letterBreakdown"
             | "notes"

@@ -51,8 +51,10 @@ type EditableField =
   | "meaningThReading"
   | "meaningThRoman"
   | "pronunciationTh"
+  | "pronunciationRoman"
   | "exampleEn"
-  | "exampleTh";
+  | "exampleTh"
+  | "exampleThRoman";
 
 type FieldSpec = { key: EditableField; label: string; hint: string };
 type FieldGroup = { title: string; caption: string; fields: FieldSpec[] };
@@ -84,6 +86,11 @@ const GROUPS: FieldGroup[] = [
         label: "คำอ่านศัพท์อังกฤษ",
         hint: "เออะ บ๊าว ถึ",
       },
+      {
+        key: "pronunciationRoman",
+        label: "คำอ่านศัพท์อังกฤษ (อักษรโรมัน)",
+        hint: "uh-BOUT",
+      },
     ],
   },
 ];
@@ -101,6 +108,11 @@ const EXAMPLE_GROUP: FieldGroup = {
       key: "exampleTh",
       label: "ตัวอย่าง TH",
       hint: "",
+    },
+    {
+      key: "exampleThRoman",
+      label: "ตัวอย่าง TH (อักษรโรมัน)",
+      hint: "rao gam-lang khui gan giao-gap ngaan",
     },
   ],
 };
