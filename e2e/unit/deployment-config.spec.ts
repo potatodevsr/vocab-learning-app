@@ -8,6 +8,17 @@ import { expect, test } from "@playwright/test";
 const root = process.cwd();
 
 test.describe("production deployment contract", () => {
+  test("dependency build policies are explicit for unattended installs", () => {
+    for (const directory of ["", "backend"]) {
+      const workspace = readFileSync(resolve(root, directory, "pnpm-workspace.yaml"), "utf8");
+      const policies = workspace.match(/^allowBuilds:\n((?:[ \t]+[^\n]*\n)+)/m)?.[1];
+      expect(policies, `${directory || "web"} must declare dependency build policies`).toBeTruthy();
+      for (const policy of policies!.trim().split("\n")) {
+        expect(policy.trim(), `${directory || "web"}: unresolved build policy`).toMatch(/:\s*(true|false)\s*$/);
+      }
+    }
+  });
+
   test("deploys and verifies the API before prerendering the web Worker", () => {
     const workflow = readFileSync(
       resolve(root, ".github/workflows/deploy-cloudflare.yml"),
