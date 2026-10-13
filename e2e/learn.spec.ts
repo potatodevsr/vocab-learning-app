@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-import { registerThroughUi } from "./support/actions";
+import { loginAsAdmin, registerThroughUi } from "./support/actions";
+import { SEED } from "./support/fixtures";
 
 /**
  * The merged eight-item mixed session at `/learn`
@@ -28,6 +29,17 @@ const answerCurrentItem = async (page: import("@playwright/test").Page) => {
 test.describe("mixed session", () => {
   test.beforeEach(async ({ page }) => {
     await registerThroughUi(page);
+  });
+
+  test("an admin can also start and resume their own learner session", async ({ page }) => {
+    await loginAsAdmin(page, SEED.admin);
+    await page.goto("/en/learn?level=A1&unit=1");
+    await expect(page.getByTestId("session-card")).toBeVisible();
+    await answerCurrentItem(page);
+    await page.reload();
+    await expect(page.getByTestId("session-counter")).toHaveText("2 of 8");
+    await page.goto("/admin/vocabulary");
+    await expect(page.getByRole("heading", { name: "Oxford 3000 — Translations" })).toBeVisible();
   });
 
   test("replayed answers have neutral option styling after a failed resume read", async ({ page }) => {

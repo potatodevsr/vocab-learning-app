@@ -23,9 +23,9 @@ test.describe("admin", () => {
     await page.getByTestId("input-meaningTh").fill(updated);
     await page.getByTestId("save-word").click();
 
-    // The button goes back to disabled only when the form is clean again, which happens
-    // once the API's response has replaced the draft — so this is the write confirming.
+    // Disabled also means saving; wait for the completed cache purge before reloading.
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
 
     // Reload from the API — proves it was persisted, not just held in React state.
     await page.reload();
@@ -52,6 +52,7 @@ test.describe("admin", () => {
     await page.getByTestId("input-meaningThRoman").fill(roman);
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
 
     // Both fields survive a round trip through the API, not just React state.
     await page.reload();
@@ -94,6 +95,7 @@ test.describe("admin", () => {
     await input.fill(roman);
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
 
     await page.reload();
     await openWord(page, SEED.mutableWord.word);
@@ -119,6 +121,7 @@ test.describe("admin", () => {
     await page.getByTestId("input-exampleEn").fill("");
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
     await page.goto(`/en/english/words/${SEED.mutableWord.word}`);
     await expect(example.getByTestId("example-roman")).toHaveText(roman);
     await expect(example.getByTestId("example-english")).toHaveCount(0);
@@ -177,6 +180,7 @@ test.describe("admin", () => {
 
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
 
     await page.reload();
     await openWord(page, SEED.mutableWord.word);
@@ -239,6 +243,7 @@ test.describe("admin", () => {
     await expect(page.getByTestId("input-status")).toContainText("draft");
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
 
     // Survives a cold reload — proves D1 holds it, not just this React tree.
     await page.reload();
@@ -251,6 +256,7 @@ test.describe("admin", () => {
     await expect(page.getByTestId("input-status")).toContainText("published");
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
 
     // ------------------------------------------------------ ก่อนหน้า navigation
     // The form is clean, so stepping back is pure navigation — no write. It must land on
@@ -294,6 +300,7 @@ test.describe("admin", () => {
     await page.getByTestId("input-meaningThReading").fill(`ลำดับ-${Date.now()}`);
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
 
     expect(await firstThree()).toEqual(["word1", "word2", "word3"]);
   });
@@ -333,6 +340,7 @@ test.describe("admin", () => {
     await page.getByTestId("input-meaningTh").fill(SEED.mutableWord.meaning);
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
   });
 
   test("the breakdown override is picked from the chart, persists, and resets to automatic", async ({
@@ -394,6 +402,7 @@ test.describe("admin", () => {
 
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
 
     // ----------------------------------------------------- override survives reload
     // A cold fetch proves `letterBreakdown` is in D1, not just this React tree.
@@ -410,6 +419,7 @@ test.describe("admin", () => {
 
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
 
     // The cleared override also survives a reload — the row now derives its split again.
     await page.reload();
@@ -420,6 +430,7 @@ test.describe("admin", () => {
     await page.getByTestId("input-meaningTh").fill(SEED.mutableWord.meaning);
     await page.getByTestId("save-word").click();
     await expect(page.getByTestId("save-word")).toBeDisabled();
+    await expect(page.getByTestId("save-word")).toHaveText("บันทึก");
 
     await page.reload();
     await openWord(page, SEED.mutableWord.word);

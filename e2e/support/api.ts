@@ -5,9 +5,8 @@ export const API = "http://localhost:4100";
 export const SEED_ADMIN = { username: "admin", password: "admin-e2e-password" };
 
 /**
- * A fresh cookie jar. The default `request` fixture is shared for a whole test, and the
- * auth middleware prefers `admin_token` over `user_token`, so mixing an admin and a
- * learner in one jar silently changes who the API thinks you are.
+ * A fresh cookie jar, so tests exercise only the identities they deliberately sign in.
+ * Admin and learner sessions may coexist; neither identity grants the other's access.
  */
 export const newApiContext = () => playwrightRequest.newContext();
 

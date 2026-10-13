@@ -108,6 +108,57 @@ test.describe("POST /auth/logout", () => {
   });
 });
 
+test.describe("admin and learner sessions in one browser", () => {
+  test("both identities work and logging out of admin preserves the learner", async () => {
+    const { ctx, user } = await asNewUser();
+    expect((await ctx.post(`${API}/auth/login`, { data: SEED_ADMIN })).status()).toBe(200);
+    expect((await ctx.get(`${API}/auth/me`)).status()).toBe(200);
+    const me = await ctx.get(`${API}/user/me`);
+    expect(me.status()).toBe(200);
+    expect((await me.json()).id).toBe(user.id);
+    expect((await ctx.post(`${API}/progress/session/start`, {
+      data: { level: "A1", unit: 1 },
+    })).status()).toBe(200);
+    await ctx.post(`${API}/auth/logout`);
+    expect((await ctx.get(`${API}/auth/me`)).status()).toBe(401);
+    expect((await ctx.get(`${API}/user/me`)).status()).toBe(200);
+  });
+
+  test("an invalid admin cookie cannot hide a valid learner", async () => {
+    const { ctx, user } = await asNewUser();
+    const token = await cookieValue(ctx, "user_token");
+    const headers = { Cookie: `admin_token=invalid; user_token=${token}` };
+    const me = await ctx.get(`${API}/user/me`, { headers });
+    expect(me.status()).toBe(200);
+    expect((await me.json()).id).toBe(user.id);
+    expect((await ctx.get(`${API}/auth/me`, { headers })).status()).toBe(401);
+  });
+
+  test("admin authority cannot substitute for a missing or invalid learner token", async () => {
+    const ctx = await asAdmin();
+    const token = await cookieValue(ctx, "admin_token");
+    for (const learnerCookie of ["", "; user_token=invalid", `; user_token=${token}`]) {
+      const headers = { Cookie: `admin_token=${token}${learnerCookie}` };
+      expect((await ctx.get(`${API}/auth/me`, { headers })).status()).toBe(200);
+      expect((await ctx.get(`${API}/user/me`, { headers })).status()).toBe(401);
+      expect((await ctx.post(`${API}/progress/session/start`, {
+        headers, data: { level: "A1", unit: 1 },
+      })).status()).toBe(401);
+    }
+  });
+
+  test("logging out of the learner preserves admin access but stops gameplay", async () => {
+    const { ctx } = await asNewUser();
+    await ctx.post(`${API}/auth/login`, { data: SEED_ADMIN });
+    await ctx.post(`${API}/user/logout`);
+    expect((await ctx.get(`${API}/auth/me`)).status()).toBe(200);
+    expect((await ctx.get(`${API}/user/me`)).status()).toBe(401);
+    expect((await ctx.post(`${API}/progress/session/start`, {
+      data: { level: "A1", unit: 1 },
+    })).status()).toBe(401);
+  });
+});
+
 test.describe("POST /user/register", () => {
   const required = ["email", "username", "password"] as const;
 
