@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { BrandMark } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Link, usePathname } from "@/i18n/navigation";
+import { useSession } from "@/lib/use-session";
 
 /**
  * Every page used to simply stop. A footer is where a learner who scrolled to the
@@ -56,10 +57,19 @@ const LEGAL = [
 
 export function SiteFooter() {
   const pathname = usePathname();
+  const { signedIn } = useSession();
   const t = useTranslations("Nav");
   const tFooter = useTranslations("Footer");
 
   if (HIDDEN_ON.some((pattern) => pattern.test(pathname))) return null;
+
+  const appLinks = signedIn
+    ? [
+        { href: "/learn?level=A1&unit=1", label: t("learn") },
+        { href: "/quiz?level=A1&unit=1", label: t("quiz") },
+        { href: "/review", label: t("review") },
+      ]
+    : [{ href: "/english/a1/practice", label: t("tryFree") }];
 
   return (
     <footer className="border-t-2 border-ink bg-ink text-white">
@@ -112,31 +122,25 @@ export function SiteFooter() {
             {tFooter("appHeading")}
           </p>
 
+          {/*
+            The same three links the app bar stopped showing to a logged-out visitor, for
+            the same reason: `/learn`, `/quiz` and `/review` all 307 into the login form,
+            so on every public page the footer offered three dead ends to exactly the
+            people who cannot use them. `components/app-bar.tsx` fixed its copy of this
+            list and the footer kept its own. Signed out, the column offers the trial —
+            the one thing here that works without an account.
+          */}
           <ul className="mt-4 grid gap-2 text-sm">
-            <li>
-              <Link
-                href="/learn?level=A1&unit=1"
-                className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
-              >
-                {t("learn")}
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/quiz?level=A1&unit=1"
-                className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
-              >
-                {t("quiz")}
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/review"
-                className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
-              >
-                {t("review")}
-              </Link>
-            </li>
+            {appLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="play-underline play-focus inline-flex min-h-11 items-center font-semibold"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
             <li>
               <Link
                 href="/faq"

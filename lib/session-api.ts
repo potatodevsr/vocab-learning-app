@@ -66,14 +66,55 @@ export const startSession = (scope: {
 export const answerSessionItem = (data: SessionAnswerBody) =>
     request<SessionAnswerResult>("/progress/session/answer", { method: "POST", body: data });
 
-export const getTodaySummaryWithToken = async (token: string): Promise<TodaySummary | null> => {
-    const res = await fetch(`${API_URL}/progress/today`, {
+/**
+ * How far into a session the learner already is.
+ *
+ * `POST /progress/session/start` returns the *same* in-progress session when one is open,
+ * but not how much of it has been answered — so the client used to redraw it from item 1
+ * and hand back questions the server has already graded. Answering one of those returns
+ * the stored verdict (`duplicate: true`), which is how a wrong pick could be greeted with
+ * "Correct!". This read is what lets the session resume where it stopped, and it is the
+ * promise the close-confirmation dialog already makes ("your answers are saved — come
+ * back later").
+ */
+export const getSessionStatus = (sessionId: string) =>
+    request<SessionStatusResult>(`/progress/session/${encodeURIComponent(sessionId)}`);
+
+/**
+ * Server-side reads answer two different questions with one `null`, so they no longer do.
+ *
+ * A non-2xx used to collapse to `null` and every caller read that as "not signed in":
+ * Today fell through to the marketing page, Progress and Profile redirected to the login
+ * form. But `middleware.ts` verifies the JWT locally before any of these pages run, so the
+ * caller's session is valid by construction — a 500, a 429 or the `1102 Worker exceeded
+ * resource limits` this deployment has actually returned served a signed-in learner the
+ * acquisition landing page, or bounced them to a login they were already past and which
+ * could not succeed while the API was down.
+ *
+ * Only 401/403 mean "this session is no longer good". Everything else is the service
+ * failing, and a failing service belongs in the route's `error.tsx` — which every one of
+ * these routes has.
+ */
+const readAuthenticated = async <T>(
+    path: string,
+    token: string,
+    label: string,
+): Promise<T | null> => {
+    const res = await fetch(`${API_URL}${path}`, {
         headers: { Cookie: `user_token=${token}` },
         cache: "no-store",
     });
-    if (!res.ok) return null;
+
+    // The session itself is gone: the caller decides where to send the learner.
+    if (res.status === 401 || res.status === 403) return null;
+
+    if (!res.ok) throw new Error(`${label} failed: ${res.status}`);
+
     return res.json();
 };
+
+export const getTodaySummaryWithToken = (token: string) =>
+    readAuthenticated<TodaySummary>("/progress/today", token, "today summary");
 
 export const setWeeklyGoal = (days: number) =>
     request<components["schemas"]["SetGoalResult"]>("/progress/goal", {

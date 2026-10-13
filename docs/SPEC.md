@@ -754,7 +754,11 @@ decode instructions in the language they are trying to learn.
   character and name, and identify the matching cluster in the hero word when pressed.
 - Example sentences show the studied-language sentence first and its translation directly
   below. Both lines carry visible `Thai` / `English` labels; script alone is not sufficient
-  orientation for a beginner. A missing example uses the interface language.
+  orientation for a beginner. In Thai-learning mode, put the stored Roman reading between
+  the Thai sentence and its English translation, with its own label. Missing readings are
+  identified in the interface language, never invented; a per-sense example may reuse the
+  word's reading only when its Thai sentence matches. A missing example uses the interface
+  language.
 - One top progress bar is the session progress signal. Do not repeat progress, known/review
   tallies, or upcoming-word previews in a desktop sidebar. Known/review totals belong on the
   completion screen, where they answer a learner question instead of adding dashboard noise.

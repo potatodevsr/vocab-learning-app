@@ -35,11 +35,14 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   const token = (await cookies()).get("user_token")?.value;
 
   if (!token) {
-    redirect(`/${locale}/auth/login?from=/${locale}/review`);
+    redirect(`/${locale}/auth/login?from=${encodeURIComponent(`/${locale}/review`)}`);
   }
 
   const bank = await getMistakesWithToken(token);
-  const rows = bank?.words ?? [];
+  if (!bank) {
+    redirect(`/${locale}/auth/login?from=${encodeURIComponent(`/${locale}/review`)}`);
+  }
+  const rows = bank.words;
 
   // The CTA needs no scope any more — the server picks the mistake set — so the only
   // question left is whether there is anything to practise at all.

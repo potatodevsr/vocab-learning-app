@@ -201,9 +201,9 @@ const answerMixedItem = async (page: Page) => {
     await spelling.fill("placeholder");
     await page.getByTestId("session-continue").click();
   } else {
-    const type = await page.getByTestId("session-card").getAttribute("data-item-type");
+
     await page.getByTestId("session-option").first().click();
-    if (type === "match-pairs") await page.getByTestId("session-option").first().click();
+
   }
   await expect(page.getByTestId("session-feedback")).toBeVisible();
 };
@@ -819,6 +819,67 @@ test.describe("mobile-first", () => {
     const box = await button.boundingBox();
 
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  });
+
+  /**
+   * The signed-out app bar has to survive the phones this audience actually holds.
+   *
+   * At 390px the bar fitted with 8px to spare; at 360px and 320px — a Galaxy A-series and
+   * an iPhone SE — logo + locale toggle + "เข้าสู่ระบบ" + "สมัครสมาชิก" measured 382px,
+   * so the page scrolled sideways and the sign-up CTA, the one control the landing page
+   * exists to reach, was sliced off the right edge. Thai labels are the reason the
+   * English width is not evidence.
+   */
+  for (const width of [320, 360, 390]) {
+    for (const locale of ["th", "en"] as const) {
+      test(`the signed-out app bar fits a ${width}px screen (${locale})`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 800 });
+        await page.goto(`/${locale}/english/a1`);
+
+        const bar = await page.evaluate(() => {
+          const controls = [...document.querySelectorAll("header a, header button")]
+            .map((el) => el.getBoundingClientRect())
+            .filter((box) => box.width > 0);
+
+          return {
+            pageOverflows: document.documentElement.scrollWidth > window.innerWidth + 1,
+            offScreen: controls.filter((box) => box.right > window.innerWidth + 1).length,
+          };
+        });
+
+        expect(bar.pageOverflows).toBe(false);
+        expect(bar.offScreen).toBe(0);
+      });
+    }
+  }
+
+  /**
+   * A Thai character is one glyph wide. As a bare inline link in the alphabet table each
+   * one was a 14×34px target — under the 24px WCAG 2.2 floor, forty-four times over, on a
+   * page written for phones.
+   */
+  test("alphabet letters are tappable, not just readable", async ({ page }) => {
+    await page.goto("/th/thai-alphabet");
+
+    const letter = page.getByTestId("alphabet-row").first().getByRole("link").first();
+    await expect(letter).toBeVisible();
+
+    const box = await letter.boundingBox();
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(24);
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(24);
+  });
+
+  /**
+   * Sign-in does not vanish when the bar drops its pill — it moves one row down
+   * (`components/app-bar.tsx`). A CTA that fits by disappearing is not a fix.
+   */
+  test("a phone can still reach sign-in", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.goto("/th/english/a1");
+
+    await expect(page.getByTestId("mobile-sign-in")).toBeVisible();
+    await page.getByTestId("mobile-sign-in").click();
+    await expect(page).toHaveURL(/\/th\/auth\/login/);
   });
 
   test("the profile does not scroll sideways either", async ({ page }) => {

@@ -42,7 +42,7 @@ export default async function ProgressPage({ params }: ProgressPageProps) {
   const token = (await cookies()).get("user_token")?.value;
 
   if (!token) {
-    redirect(`/${locale}/auth/login?from=/${locale}/progress`);
+    redirect(`/${locale}/auth/login?from=${encodeURIComponent(`/${locale}/progress`)}`);
   }
 
   const [summary, history, today] = await Promise.all([
@@ -52,7 +52,7 @@ export default async function ProgressPage({ params }: ProgressPageProps) {
   ]);
 
   if (!summary) {
-    redirect(`/${locale}/auth/login?from=/${locale}/progress`);
+    redirect(`/${locale}/auth/login?from=${encodeURIComponent(`/${locale}/progress`)}`);
   }
 
   const stats = [

@@ -589,6 +589,8 @@ export interface components {
                 id: string;
                 level: string;
                 unit: number | null;
+                /** @enum {string} */
+                mode: "normal" | "review" | "comeback" | "mistakes";
                 createdAt: string;
             } | null;
             nextUnit: number | null;

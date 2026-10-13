@@ -248,16 +248,7 @@ test.describe("hover states — learner pages", () => {
         await spelling.fill("placeholder");
         await page.getByTestId("session-continue").click();
       } else {
-        const itemType = await page
-          .getByTestId("session-card")
-          .getAttribute("data-item-type");
         await page.getByTestId("session-option").first().click();
-        // match-pairs is a tap-then-tap interaction (§4.1): a first tap only "picks up"
-        // the word. Branch on the explicit item contract; probing feedback races the
-        // asynchronous grade and can accidentally click a now-disabled ordinary option.
-        if (itemType === "match-pairs") {
-          await page.getByTestId("session-option").first().click();
-        }
       }
       await expect(page.getByTestId("session-feedback")).toBeVisible();
       await page.getByTestId("session-continue").click();
@@ -339,11 +330,7 @@ test.describe("hover states — learner pages", () => {
         await spelling.fill("placeholder");
         await page.getByTestId("session-continue").click();
       } else {
-        const itemType = await page.getByTestId("session-card").getAttribute("data-item-type");
         await page.getByTestId("session-option").first().click();
-        if (itemType === "match-pairs") {
-          await page.getByTestId("session-option").first().click();
-        }
       }
       await expect(page.getByTestId("session-feedback")).toBeVisible();
       await page.getByTestId("session-continue").click();

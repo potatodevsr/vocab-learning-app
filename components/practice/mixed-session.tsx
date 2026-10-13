@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, Loader2, LockKeyhole, Timer, X } from "lucide-react";
+import { AlertTriangle, Check, Info, Loader2, LockKeyhole, Minus, Timer, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { WordAudio } from "@/components/play/word-audio";
 import {
   answerSessionItem,
+  getSessionStatus,
   startSession,
   SessionApiError,
   type SessionItem,
@@ -30,7 +31,7 @@ import type { CefrLevel } from "@/lib/types";
  * - spelling: a typed answer, graded server-side against the real word.
  * - match-pairs / speed-round: warm-up variants (§4.1 — "never as proof of mastery"), so
  *   the server does not move mastery for them even though they still fill an item-slot.
- *   match-pairs renders as tap-the-word-then-tap-the-meaning instead of a single tap;
+ *   match-pairs is a single-tap meaning match;
  *   speed-round adds a visible countdown that locks in "incorrect" on timeout.
  */
 
@@ -41,6 +42,18 @@ type AnsweredItem = {
   selectedOptionIndex?: number;
   spelling?: string;
   correctSpelling?: string;
+  /**
+   * Answered before this mount, and reconstructed from `answeredCount` alone — the status
+   * read says how many items are done, not which of them were right. `correct` is a
+   * placeholder on these, so nothing may draw them as right or wrong.
+   */
+  resumed?: boolean;
+  /**
+   * The server had already graded this index and replayed its stored verdict
+   * (`duplicate: true`). It is the truth about the *item* but not about the pick just
+   * made, so it is never shown as "correct!".
+   */
+  alreadyAnswered?: boolean;
 };
 
 type Phase = "loading" | "in-progress" | "checking" | "feedback" | "result" | "blocked" | "error";
@@ -70,13 +83,20 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
   const [lastResult, setLastResult] = useState<AnsweredItem | null>(null);
   const [errorCode, setErrorCode] = useState<SessionErrorCode | null>(null);
   const [showClose, setShowClose] = useState(false);
+  /**
+   * The server's own tally, kept for the result screen.
+   *
+   * A resumed session cannot count its own correct answers — the items answered before
+   * this mount carry no verdict (see `AnsweredItem.resumed`). The completing answer
+   * returns the authoritative count, so the headline reports that rather than a local
+   * total that would be short by everything the learner did yesterday.
+   */
+  const [serverTotals, setServerTotals] = useState<{ correctCount: number; total: number } | null>(
+    null,
+  );
   const [speedLeft, setSpeedLeft] = useState(SPEED_ROUND_SECONDS);
 
   const startedTrackedRef = useRef(false);
-  // match-pairs is a two-tap interaction (§3.10): the first tap "picks up" the word, the
-  // second submits it. A ref rather than state so a second tap that lands before React has
-  // re-rendered still sees the picked-up flag and submits, instead of swallowing itself.
-  const matchWordTappedRef = useRef(false);
   const currentIndex = answered.length;
   const visibleIndex = phase === "feedback" ? Math.max(currentIndex - 1, 0) : currentIndex;
   const currentItem = items[visibleIndex];
@@ -117,8 +137,40 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
       setSessionId(result.sessionId);
       setItems(result.items);
       setDueCount(result.dueCount);
-      setAnswered([]);
-      setPhase(result.itemCount === 0 ? "result" : "in-progress");
+      setServerTotals(null);
+
+      /**
+       * Resume where the learner stopped.
+       *
+       * `start` hands back the *open* session when one exists, items and all, but says
+       * nothing about how much of it is answered — so a reload replayed it from item 1.
+       * The server grades an already-answered index idempotently and returns its stored
+       * verdict, which meant a wrong pick on a replayed item was answered with "Correct!"
+       * and a green tick on the wrong word. `GET /progress/session/:id` is the missing
+       * half: it says how many items are done, so the session opens on the first one that
+       * is not.
+       *
+       * A failed status read is not worth failing the session over — it falls back to the
+       * old behaviour of starting at item 1, and the duplicate guard in `submitSelection`
+       * still refuses to dress a stale verdict up as this answer's.
+       */
+      // `sessionId` is null exactly when there is nothing to answer, and there is then
+      // nothing to resume either.
+      const status =
+        result.itemCount > 0 && result.sessionId
+          ? await getSessionStatus(result.sessionId).catch(() => null)
+          : null;
+      const resumedCount =
+        status && !status.done && status.total === result.itemCount
+          ? Math.min(Math.max(status.answeredCount, 0), result.itemCount)
+          : 0;
+
+      setAnswered(
+        Array.from({ length: resumedCount }, () => ({ correct: false, resumed: true })),
+      );
+      setPhase(
+        result.itemCount === 0 || resumedCount >= result.itemCount ? "result" : "in-progress",
+      );
       if (!startedTrackedRef.current) {
         startedTrackedRef.current = true;
         track("session_started", {
@@ -161,7 +213,11 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
           itemIndex: currentIndex,
           selectedOptionIndex: optionIndex,
         });
-        const entry: AnsweredItem = { correct: result.correct, selectedOptionIndex: optionIndex };
+        const entry: AnsweredItem = {
+          correct: result.correct,
+          selectedOptionIndex: optionIndex,
+          alreadyAnswered: result.duplicate,
+        };
         const nextAnswered = [...answered, entry];
         setAnswered(nextAnswered);
         setLastResult(entry);
@@ -173,6 +229,9 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
           correct: result.correct,
         });
         if (result.done) {
+          if (result.correctCount !== undefined && result.total !== undefined) {
+            setServerTotals({ correctCount: result.correctCount, total: result.total });
+          }
           track("session_completed", {
             sessionKind: "mixed",
             level: scope.level,
@@ -202,6 +261,7 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
         correct: result.correct,
         spelling: typedSpelling,
         correctSpelling: result.correctSpelling,
+        alreadyAnswered: result.duplicate,
       };
       const nextAnswered = [...answered, entry];
       setAnswered(nextAnswered);
@@ -214,6 +274,9 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
         correct: result.correct,
       });
       if (result.done) {
+        if (result.correctCount !== undefined && result.total !== undefined) {
+          setServerTotals({ correctCount: result.correctCount, total: result.total });
+        }
         track("session_completed", {
           sessionKind: "mixed",
           level: scope.level,
@@ -230,7 +293,6 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
 
   const continueToNext = useCallback(() => {
     setSelected(null);
-    matchWordTappedRef.current = false;
     setTypedSpelling("");
     setLastResult(null);
     setSpeedLeft(SPEED_ROUND_SECONDS);
@@ -272,7 +334,13 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
       }
       if ((phase === "in-progress" || phase === "feedback") && event.key === "Enter") {
         if (phase === "feedback") continueToNext();
-        else if (currentItem?.type === "spelling") void submitSpelling();
+        // The same emptiness guard the Check button carries below. Without it a single
+        // Enter — the key the three cards before this one have just taught as "continue" —
+        // posted an empty answer on the session's one spelling item, which the server
+        // grades as wrong and which costs the word a mastery rung.
+        else if (currentItem?.type === "spelling") {
+          if (typedSpelling.trim().length > 0) void submitSpelling();
+        }
         else if (selected !== null) void submitSelection(selected);
         return;
       }
@@ -283,7 +351,9 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, selected, currentItem, submitSelection, submitSpelling, continueToNext, showClose]);
+    // `typedSpelling` is read directly by the Enter branch's emptiness guard, so it belongs
+    // here as well as inside `submitSpelling`.
+  }, [phase, selected, currentItem, typedSpelling, submitSelection, submitSpelling, continueToNext, showClose]);
 
   const correctCount = useMemo(() => answered.filter((a) => a.correct).length, [answered]);
 
@@ -351,12 +421,15 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
   }
 
   if (phase === "result") {
-    const total = items.length;
+    // The server's tally wins when it sent one: a resumed session's local answers are
+    // only the part of it that happened in this tab.
+    const total = serverTotals?.total ?? items.length;
+    const reportedCorrect = serverTotals?.correctCount ?? correctCount;
     return (
       <div className="play-card p-6 sm:p-8" data-testid="session-result">
         <Badge className="rounded-full bg-brand text-white hover:bg-brand">{t("resultBadge")}</Badge>
         <h2 className="mt-4 text-2xl font-extrabold sm:text-3xl" data-testid="session-result-heading">
-          {t("resultHeadline", { correct: correctCount, total })}
+          {t("resultHeadline", { correct: reportedCorrect, total })}
         </h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("resultBody")}</p>
 
@@ -365,12 +438,23 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
             <span
               key={i}
               data-testid="session-result-pip"
-              data-correct={a.correct}
+              data-correct={a.resumed ? undefined : a.correct}
+              data-resumed={a.resumed ? "true" : undefined}
               className={`flex size-8 items-center justify-center rounded-full border-2 border-ink text-xs font-bold ${
-                a.correct ? "bg-success text-white" : "bg-danger text-white"
+                a.resumed
+                  ? "bg-ink/40 text-white"
+                  : a.correct
+                    ? "bg-success text-white"
+                    : "bg-danger text-white"
               }`}
             >
-              {a.correct ? <Check className="size-4" /> : <X className="size-4" />}
+              {a.resumed ? (
+                <Minus className="size-4" />
+              ) : a.correct ? (
+                <Check className="size-4" />
+              ) : (
+                <X className="size-4" />
+              )}
             </span>
           ))}
         </div>
@@ -428,9 +512,13 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
               data-filled={i < answered.length}
               className={`h-2.5 flex-1 rounded-full transition-[background-color] duration-[--dur-fast] ease-[--ease-play] ${
                 i < answered.length
-                  ? answered[i].correct
-                    ? "bg-success"
-                    : "bg-danger"
+                  ? // Answered before this mount: done, but with no verdict this client
+                    // ever saw. Grey says "behind you" without inventing a right or wrong.
+                    answered[i].resumed
+                    ? "bg-ink/40"
+                    : answered[i].correct
+                      ? "bg-success"
+                      : "bg-danger"
                   // The segment you are on. Eight identical grey pills said "0 of 8
                   // answered" and nothing at all about where the learner is standing.
                   : i === answered.length
@@ -477,10 +565,13 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
               </p>
             ) : isListening ? (
               <div className="flex items-center gap-3" data-testid="session-prompt">
+                {/* The clip *is* the question here (the server sends no written word),
+                    so a failed load may not take the control away with it. */}
                 <WordAudio
                   audioKey={currentItem.prompt.audioKeyEn}
                   word={t("listenPromptLabel")}
                   size="large"
+                  essential
                 />
                 <span className="text-base font-semibold text-muted-foreground">
                   {t("listenQuestion")}
@@ -548,8 +639,8 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
               <div className="mt-3 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={t("question")}>
                 {currentItem.options?.map((option, index) => {
                   const isSelected = selected === index;
-                  const isCorrectOption = !!showingFeedback && lastResult.selectedOptionIndex !== undefined && lastResult.correct && isSelected;
-                  const isWrongSelected = !!showingFeedback && isSelected && !lastResult.correct;
+                  const isCorrectOption = !!showingFeedback && !lastResult.alreadyAnswered && lastResult.selectedOptionIndex !== undefined && lastResult.correct && isSelected;
+                  const isWrongSelected = !!showingFeedback && !lastResult.alreadyAnswered && isSelected && !lastResult.correct;
                   const label = option.meaningTh ?? option.displayWord ?? "";
                   /**
                    * Which language the option is actually in. `choose-word` and `cloze`
@@ -568,13 +659,7 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
                       data-testid="session-option"
                       data-index={index}
                       disabled={phase !== "in-progress"}
-                      onClick={() => {
-                        if (isMatchPairs && !matchWordTappedRef.current) {
-                          matchWordTappedRef.current = true;
-                          return;
-                        }
-                        void submitSelection(index);
-                      }}
+                      onClick={() => void submitSelection(index)}
                       className={[
                         "play-press flex min-h-14 items-center gap-3 rounded-2xl border-3 border-ink px-4 py-3 text-left text-base font-semibold font-thai transition-colors disabled:cursor-not-allowed",
                         isCorrectOption
@@ -618,12 +703,26 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
       <div className="mt-4 min-h-[92px]">
             {showingFeedback && (
               <div
-                className={`rounded-2xl border-3 border-ink p-4 ${lastResult.correct ? "bg-success-soft" : "bg-danger-soft"}`}
+                className={`rounded-2xl border-3 border-ink p-4 ${
+                  lastResult.alreadyAnswered
+                    ? "bg-card"
+                    : lastResult.correct
+                      ? "bg-success-soft"
+                      : "bg-danger-soft"
+                }`}
                 data-testid="session-feedback"
+                data-already-answered={lastResult.alreadyAnswered ? "true" : undefined}
                 role="status"
               >
                 <p className="flex items-center gap-2 text-sm font-extrabold">
-                  {lastResult.correct ? (
+                  {/* A replayed verdict grades the answer given earlier, not the one just
+                      given, so it is never dressed as this pick's result. */}
+                  {lastResult.alreadyAnswered ? (
+                    <>
+                      <Info className="size-4 text-muted-foreground" />
+                      {t("feedbackAlreadyAnswered")}
+                    </>
+                  ) : lastResult.correct ? (
                     <>
                       <Check className="size-4 text-success" />
                       {t("feedbackCorrect")}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Check, Loader2, LockKeyhole, Trophy, X } from "lucide-react";
+import { AlertTriangle, Check, Info, Loader2, LockKeyhole, Trophy, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
@@ -110,7 +110,12 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
   const [answered, setAnswered] = useState<AnsweredItem[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [typedSpelling, setTypedSpelling] = useState("");
-  const [lastResult, setLastResult] = useState<{ correct: boolean; correctSpelling?: string } | null>(null);
+  const [lastResult, setLastResult] = useState<{
+    correct: boolean;
+    correctSpelling?: string;
+    /** The verdict was a replay of an earlier answer, not a grade of this one. */
+    alreadyAnswered?: boolean;
+  } | null>(null);
   const [outcome, setOutcome] = useState<CheckpointOutcome | null>(null);
   const [recoveryCount, setRecoveryCount] = useState(0);
   const [showClose, setShowClose] = useState(false);
@@ -205,6 +210,7 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
       result: {
         correct: boolean;
         done: boolean;
+        duplicate?: boolean;
         correctSpelling?: string;
         correctCount?: number;
         total?: number;
@@ -212,9 +218,18 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
         recoveryCount?: number;
       },
     ) => {
+      // `duplicate` means the server had already graded this index and replayed the stored
+      // verdict rather than re-grading (`backend/src/checkpoint.ts`). It is the truth about
+      // the item and not about the answer just given — a second tab, or a retry after a
+      // committed answer whose response was lost, could otherwise be told "correct!" for a
+      // pick it never accepted. Same rule as the mixed session.
       const entry: AnsweredItem = { correct: result.correct };
       setAnswered((prev) => [...prev, entry]);
-      setLastResult({ correct: result.correct, correctSpelling: result.correctSpelling });
+      setLastResult({
+        correct: result.correct,
+        correctSpelling: result.correctSpelling,
+        alreadyAnswered: result.duplicate === true,
+      });
       setPhase("feedback");
       if (result.done) {
         const passed = result.passed ?? false;
@@ -295,7 +310,13 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
       }
       if ((phase === "in-progress" || phase === "feedback") && event.key === "Enter") {
         if (phase === "feedback") continueToNext();
-        else if (currentItem?.type === "spelling") void submitSpelling();
+        // The same emptiness guard the Check button carries below. Without it a single
+        // Enter — the key the three cards before this one have just taught as "continue" —
+        // posted an empty answer on the session's one spelling item, which the server
+        // grades as wrong and which costs the word a mastery rung.
+        else if (currentItem?.type === "spelling") {
+          if (typedSpelling.trim().length > 0) void submitSpelling();
+        }
         else if (selected !== null) void submitSelection(selected);
         return;
       }
@@ -306,7 +327,9 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, selected, currentItem, submitSelection, submitSpelling, continueToNext, showClose]);
+    // `typedSpelling` is read directly by the Enter branch's emptiness guard, so it belongs
+    // here as well as inside `submitSpelling`.
+  }, [phase, selected, currentItem, typedSpelling, submitSelection, submitSpelling, continueToNext, showClose]);
 
   // ---------------------------------------------------------------- render branches
 
@@ -608,13 +631,25 @@ export function CheckpointSession({ scope, unitHref, practiceHref }: CheckpointS
           <div className="mt-4 min-h-[92px]">
             {showingFeedback && (
               <div
-                className={`rounded-2xl border-3 border-ink p-4 ${lastResult.correct ? "bg-success-soft" : "bg-danger-soft"}`}
+                className={`rounded-2xl border-3 border-ink p-4 ${
+                  lastResult.alreadyAnswered
+                    ? "bg-card"
+                    : lastResult.correct
+                      ? "bg-success-soft"
+                      : "bg-danger-soft"
+                }`}
                 data-testid="checkpoint-feedback"
-                data-correct={lastResult.correct}
+                data-correct={lastResult.alreadyAnswered ? undefined : lastResult.correct}
+                data-already-answered={lastResult.alreadyAnswered ? "true" : undefined}
                 role="status"
               >
                 <p className="flex items-center gap-2 text-sm font-extrabold">
-                  {lastResult.correct ? (
+                  {lastResult.alreadyAnswered ? (
+                    <>
+                      <Info className="size-4 text-muted-foreground" />
+                      {t("feedbackAlreadyAnswered")}
+                    </>
+                  ) : lastResult.correct ? (
                     <>
                       <Check className="size-4 text-success" />
                       {t("feedbackCorrect")}

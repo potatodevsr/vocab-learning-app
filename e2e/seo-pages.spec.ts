@@ -308,6 +308,29 @@ test.describe("crawlability", () => {
     }
   });
 
+  /**
+   * The app bar stopped offering `/learn`, `/quiz` and `/review` to a logged-out visitor
+   * because all three 307 into the login form. The footer kept its own copy of that list,
+   * so every public page still ended in three dead ends — and Next prefetched them.
+   */
+  test("the signed-out footer offers nothing that only redirects to login", async ({
+    page,
+    request,
+  }) => {
+    await page.goto("/en");
+
+    const hrefs = await page
+      .locator("footer a[href^='/']")
+      .evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
+
+    for (const href of [...new Set(hrefs)]) {
+      const res = await request.get(href, { maxRedirects: 0 });
+      expect(res.status(), `${href} is a dead end for a signed-out visitor`).toBeLessThan(
+        300,
+      );
+    }
+  });
+
   test("a word page links back to its own level and unit", async ({ page }) => {
     await page.goto(`/en/english/words/${SEED.unit1.firstWord}`);
 

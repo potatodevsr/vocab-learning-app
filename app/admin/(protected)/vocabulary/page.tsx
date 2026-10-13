@@ -97,7 +97,7 @@ const GROUPS: FieldGroup[] = [
 
 const EXAMPLE_GROUP: FieldGroup = {
   title: "ตัวอย่างประโยค",
-  caption: "",
+  caption: "ประโยคไทยพร้อมคำถอดอักษรโรมัน สำหรับชาวต่างชาติอ่านออกเสียง",
   fields: [
     {
       key: "exampleEn",
@@ -111,7 +111,7 @@ const EXAMPLE_GROUP: FieldGroup = {
     },
     {
       key: "exampleThRoman",
-      label: "ตัวอย่าง TH (อักษรโรมัน)",
+      label: "คำอ่านประโยคไทย (อักษรโรมัน)",
       hint: "rao gam-lang khui gan giao-gap ngaan",
     },
   ],

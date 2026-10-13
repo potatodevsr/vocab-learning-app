@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { userRegister, userLogin } from "@/lib/user-api";
 import { claimPractice, PracticeApiError } from "@/lib/practice-api";
+import { usePrefilledForm } from "@/lib/use-prefilled-form";
 import Link from "next/link";
 import { GoogleButton, AuthDivider } from "@/components/auth/google-button";
 
@@ -76,6 +77,14 @@ export function RegisterForm() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const startedRef = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Anything typed (or autofilled) before hydration, adopted rather than lost — see
+  // `lib/use-prefilled-form.ts`. Without this the submit button below stays disabled over
+  // five visibly complete fields.
+  usePrefilledForm(formRef, (values) =>
+    setForm((prev) => ({ ...prev, ...values })),
+  );
 
   const passwordResults = useMemo(
     () =>
@@ -178,7 +187,7 @@ export function RegisterForm() {
           `new-password`, which is what tells a password manager to offer a fresh one
           rather than an existing login.
         */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="firstName">

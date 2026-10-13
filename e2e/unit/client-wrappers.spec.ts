@@ -33,6 +33,7 @@ import {
   SessionApiError,
   answerSessionItem,
   getTodaySummaryWithToken,
+  getSessionStatus,
   setWeeklyGoal,
   startSession,
 } from "../../lib/session-api";
@@ -72,6 +73,9 @@ import { SEED } from "../support/fixtures";
  * unauthenticated call is the real 401 branch, not a simulated one.
  */
 test.describe("config", () => {
+  test("getSessionStatus rejects a signed-out read rather than inventing progress", async () => {
+    await expect(getSessionStatus("missing-session")).rejects.toThrow();
+  });
   test("API_URL points at the e2e API, never the dev one", () => {
     // If this ever reads :4000, a test run is talking to the database you develop
     // against — the exact mix-up the split ports exist to prevent.
@@ -157,6 +161,60 @@ test.describe("progress-api", () => {
       });
 
       expect(ok).toBe(false);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  /**
+   * `null` from these three readers means one thing — "this session is no longer good" —
+   * because that is how Today, Progress and Profile read it: marketing page, or a redirect
+   * to the login form. A 500, a 429 or a `1102 Worker exceeded resource limits` is not
+   * that, and `middleware.ts` has already verified the caller's token locally before any of
+   * those pages run, so collapsing a service failure into `null` logged a signed-in learner
+   * out of their own app and offered them a login that could not succeed.
+   */
+  for (const [label, status] of [
+    ["a 500", 500],
+    ["a 429", 429],
+    ["a 503", 503],
+  ] as const) {
+    test(`${label} from the API is a failure, not a signed-out session`, async () => {
+      const original = globalThis.fetch;
+      globalThis.fetch = (() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ message: "boom" }), {
+            status,
+            headers: { "Content-Type": "application/json" },
+          }),
+        )) as never;
+
+      try {
+        await expect(getTodaySummaryWithToken("token")).rejects.toThrow();
+        await expect(getProgressSummaryWithToken("token")).rejects.toThrow();
+        await expect(getMeWithToken("token")).rejects.toThrow();
+        await expect(getMistakesWithToken("token")).rejects.toThrow(`mistakes bank failed: ${status}`);
+      } finally {
+        globalThis.fetch = original;
+      }
+    });
+  }
+
+  test("a 401 stays a signed-out session, not a thrown failure", async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = (() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ message: "Unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )) as never;
+
+    try {
+      expect(await getTodaySummaryWithToken("token")).toBeNull();
+      expect(await getProgressSummaryWithToken("token")).toBeNull();
+      expect(await getMeWithToken("token")).toBeNull();
+      expect(await getMistakesWithToken("token")).toBeNull();
     } finally {
       globalThis.fetch = original;
     }

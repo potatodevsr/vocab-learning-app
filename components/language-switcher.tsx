@@ -1,11 +1,14 @@
 "use client";
 
 import { Languages } from "lucide-react";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import NextLink from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 
 import { usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { localeHref } from "@/lib/locale-href";
 
 const locales = [
   { label: "EN", value: "en" },
@@ -33,6 +36,17 @@ export function LanguageSwitcher({
 }: {
   tone?: "onColor" | "onSurface";
 }) {
+  return <Suspense fallback={<LocaleLinks tone={tone} search={null} />}>
+    <QueryLocaleLinks tone={tone} />
+  </Suspense>;
+}
+
+function QueryLocaleLinks({ tone }: { tone: "onColor" | "onSurface" }) {
+  const search = useSearchParams();
+  return <LocaleLinks tone={tone} search={search.toString()} />;
+}
+
+function LocaleLinks({ tone, search }: { tone: "onColor" | "onSurface"; search: string | null }) {
   const locale = useLocale();
   const pathname = usePathname();
   const t = useTranslations("Nav");
@@ -59,24 +73,34 @@ export function LanguageSwitcher({
 
       {locales.map((item) => {
         const isActive = locale === item.value;
+        const className = cn(
+          "flex min-h-11 items-center rounded-full px-2 text-sm font-bold transition-colors sm:px-3",
+          search === null ? "cursor-wait" : "play-lift play-focus",
+          isActive && onColor && "bg-white text-brand",
+          isActive && !onColor && "bg-brand text-white",
+          !isActive && onColor && "text-white",
+          !isActive && !onColor && "text-ink",
+          search !== null && !isActive && onColor && "hover:bg-[color-mix(in_oklab,var(--ink)_55%,var(--brand))]",
+          search !== null && !isActive && !onColor && "hover:bg-white",
+        );
+
+        // The static shell cannot know query state. An interactive fallback both
+        // drops that state and can consume a click as hydration replaces its node.
+        if (search === null) return (
+          <span key={item.value} lang={LANG_TAG[item.value]} aria-disabled="true" className={className}>
+            {item.label}
+          </span>
+        );
 
         return (
           <NextLink
             key={item.value}
-            href={`/${item.value}${pathname === "/" ? "" : pathname}`}
+            href={localeHref(pathname, search, item.value)}
             lang={LANG_TAG[item.value]}
             hrefLang={LANG_TAG[item.value]}
             prefetch={false}
             aria-current={isActive ? "true" : undefined}
-            className={cn(
-              "play-lift play-focus flex min-h-11 items-center rounded-full px-2 text-sm font-bold transition-colors sm:px-3",
-              isActive && onColor && "bg-white text-brand",
-              isActive && !onColor && "bg-brand text-white",
-              // The inactive chip stays readable in its own right — it is a link, not a
-              // placeholder. Hover deepens it rather than revealing it.
-              !isActive && onColor && "text-white hover:bg-[color-mix(in_oklab,var(--ink)_55%,var(--brand))]",
-              !isActive && !onColor && "text-ink hover:bg-white",
-            )}
+            className={className}
           >
             {item.label}
           </NextLink>

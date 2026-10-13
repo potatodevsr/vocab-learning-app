@@ -110,9 +110,14 @@ const LetterTable = ({
           >
             <td className="font-thai px-4 py-2.5 text-xl" lang="th">
               {linked ? (
+                /*
+                  A single Thai character is a 14×34px hit area as a bare inline link —
+                  under half the 44px WCAG 2.2 floor, in a table of 44 of them, on a page
+                  built for phones. The box grows; the row's look does not.
+                */
                 <Link
                   href={`/thai-alphabet/${letter.id}`}
-                  className="play-underline font-bold text-brand"
+                  className="play-underline inline-flex min-h-11 min-w-11 items-center font-bold text-brand"
                 >
                   {letter.char}
                 </Link>
@@ -232,7 +237,7 @@ export default async function ThaiAlphabetPage({ params }: LocalePageProps) {
               <li key={letter.id}>
                 <Link
                   href={`/thai-alphabet/${letter.id}`}
-                  className="play-press inline-flex items-center gap-2 rounded-full border-2 border-ink bg-white px-3 py-1.5 text-sm font-semibold text-ink hover:bg-accent-mint"
+                  className="play-press inline-flex min-h-11 items-center gap-2 rounded-full border-2 border-ink bg-white px-3 py-1.5 text-sm font-semibold text-ink hover:bg-accent-mint"
                 >
                   <span className="font-thai text-lg" lang="th">
                     {letter.char}

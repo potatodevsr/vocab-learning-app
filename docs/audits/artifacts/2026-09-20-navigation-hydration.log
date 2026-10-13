@@ -1,0 +1,8 @@
+$ playwright test e2e/navigation-continuity.spec.ts
+[WebServer] [e2e] clearing a stale lock left by pid 23438
+[WebServer] [e2e] generating Prisma client runtime
+[WebServer] (node:27621) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+Error: Timed out waiting 420000ms from config.webServer.
+
+[ELIFECYCLE] Command failed with exit code 1.

@@ -1,0 +1,24 @@
+$ playwright test e2e/navigation-continuity.spec.ts
+[WebServer] [e2e] clearing a stale lock left by pid 28303
+[WebServer] [e2e] generating Prisma client runtime
+[WebServer] (node:28654) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [dotenv-flow@4.1.0]: ".env*" files loading failed: no ".env*" files matching pattern ".env[.node_env][.local]" in "/Users/potato/vocab-learning-app/backend" dir undefined
+[WebServer] Loaded Prisma config from prisma.config.ts.
+[WebServer]
+[WebServer] Prisma schema loaded from prisma/schema.prisma.
+[WebServer] [e2e] resetting isolated D1 state at .wrangler/e2e-state
+[WebServer] [e2e] applying migrations
+[WebServer] (node:28665) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [e2e] seeding deterministic fixtures
+[WebServer] (node:28772) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [e2e] seeding audio fixtures into local R2
+[WebServer] (node:28802) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:28811) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+Error: Timed out waiting 420000ms from config.webServer.
+
+[ELIFECYCLE] Command failed with exit code 1.

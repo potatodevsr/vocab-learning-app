@@ -1,6 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { localeHref } from "@/lib/locale-href";
 
 import { BrandMark } from "@/components/brand-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -27,9 +30,30 @@ import { cn } from "@/lib/utils";
 const HIDDEN_ON = [/^\/learn/, /^\/quiz/, /^\/auth\//, /\/checkpoint$/];
 
 export function AppBar({ locale }: { locale: string }) {
+  return <Suspense fallback={<AppBarContent locale={locale} search="" />}>
+    <QueryAppBar locale={locale} />
+  </Suspense>;
+}
+
+function QueryAppBar({ locale }: { locale: string }) {
+  const search = useSearchParams();
+  return <AppBarContent locale={locale} search={search.toString()} />;
+}
+
+function AppBarContent({ locale, search }: { locale: string; search: string }) {
   const pathname = usePathname();
   const t = useTranslations("Nav");
   const { user, signedIn, clear } = useSession();
+
+  /**
+   * The page to come back to after signing in. `usePathname` here is the *unprefixed*
+   * path (`@/i18n/navigation`), so the locale is added back on — `lib/return-path.ts`
+   * validates a locale-qualified, root-relative path and rejects anything else, including
+   * a bounce back into `/auth`.
+   *
+   * A local Suspense boundary retains the static shell while hydrating safe query state.
+   */
+  const returnTo = encodeURIComponent(localeHref(pathname, search, locale));
 
   if (HIDDEN_ON.some((pattern) => pattern.test(pathname))) return null;
 
@@ -111,7 +135,12 @@ export function AppBar({ locale }: { locale: string }) {
 
         <div className="ml-auto flex min-w-0 items-center gap-2 md:ml-0">
           <LanguageSwitcher />
-          <UserNavbar locale={locale} user={user} onSignedOut={clear} />
+          <UserNavbar
+            locale={locale}
+            user={user}
+            onSignedOut={clear}
+            returnTo={returnTo}
+          />
         </div>
       </div>
 
@@ -129,6 +158,24 @@ export function AppBar({ locale }: { locale: string }) {
         className="play-scroll-row flex items-center gap-5 overflow-x-auto border-t border-border px-4 text-sm md:hidden"
       >
         {links.map((link) => navLink(link, ""))}
+
+        {/*
+          Sign-in lives here on a phone, because it does not fit up there.
+          `UserNavbar` drops its sign-in pill below `sm`, where the bar's own contents
+          (logo, locale toggle and both Thai auth labels) measured 382px against a 320px
+          or 360px viewport — the sign-up button was cut off the screen and the whole page
+          scrolled sideways. `sm:hidden` so the two never show at once between 640px and
+          768px, where the bar has room again but this row is still on screen.
+        */}
+        {!signedIn && (
+          <Link
+            href={`/auth/login?from=${returnTo}`}
+            className="play-underline play-focus flex min-h-11 items-center font-bold whitespace-nowrap text-ink sm:hidden"
+            data-testid="mobile-sign-in"
+          >
+            {t("signIn")}
+          </Link>
+        )}
       </nav>
     </header>
   );

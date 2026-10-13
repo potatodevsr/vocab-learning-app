@@ -76,11 +76,8 @@ test.describe("listening items", () => {
         await spelling.fill("placeholder");
         await page.getByTestId("session-continue").click();
       } else {
-        const type = await page.getByTestId("session-card").getAttribute("data-item-type");
+
         await page.getByTestId("session-option").first().click();
-        if (type === "match-pairs") {
-          await page.getByTestId("session-option").first().click();
-        }
       }
       await expect(page.getByTestId("session-feedback")).toBeVisible();
       await page.getByTestId("session-continue").click();
@@ -97,5 +94,43 @@ test.describe("listening items", () => {
     // And it still grades: the item completes like any other.
     await page.getByTestId("session-option").first().click();
     await expect(page.getByTestId("session-feedback")).toBeVisible();
+  });
+
+  /**
+   * On a listening item the player *is* the question — the server withholds the word by
+   * design. `WordAudio` hides itself on a failed load, which is right for the decorative
+   * speaker on a word page and wrong here: it left four Thai options and nothing to answer
+   * about. Marked essential, a failed clip keeps the control and offers another go.
+   */
+  test("a clip that will not play leaves the listening item answerable", async ({ page }) => {
+    await registerThroughUi(page);
+
+    // Every audio object fails for this run.
+    await page.route("**/api/audio/**", (route) => route.abort());
+
+    await page.goto("/en/learn?level=A1&unit=1");
+    await expect(page.getByTestId("session-card")).toBeVisible();
+
+    for (let index = 0; index < SEED.audio.listeningItemIndex; index += 1) {
+      const spelling = page.getByTestId("session-spelling-input");
+      if (await spelling.isVisible().catch(() => false)) {
+        await spelling.fill("placeholder");
+        await page.getByTestId("session-continue").click();
+      } else {
+
+        await page.getByTestId("session-option").first().click();
+      }
+      await expect(page.getByTestId("session-feedback")).toBeVisible();
+      await page.getByTestId("session-continue").click();
+    }
+
+    const player = page.getByTestId("word-audio");
+    await expect(player).toBeVisible();
+
+    await player.click();
+    await expect(player).toHaveAttribute("data-state", "failed");
+    // Still there, still pressable — the prompt did not vanish with the sound.
+    await expect(player).toBeVisible();
+    await expect(player).toBeEnabled();
   });
 });

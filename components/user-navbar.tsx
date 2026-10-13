@@ -37,11 +37,19 @@ export function UserNavbar({
   locale,
   user,
   onSignedOut,
+  /**
+   * Where to come back to after signing in — the page the learner is on, locale-prefixed
+   * and already encoded by the caller (`components/app-bar.tsx`). The bar's sign-in used
+   * to lead nowhere in particular: someone reading a word page, or three units into a
+   * level, pressed "log in" and landed back on the home page having lost their place.
+   */
+  returnTo,
 }: {
   locale: string;
   user: User | null | undefined;
   /** Clears the lifted session state — see `lib/use-session.ts`. */
   onSignedOut: () => void;
+  returnTo?: string;
 }) {
   const router = useRouter();
   const t = useTranslations("Nav");
@@ -77,19 +85,33 @@ export function UserNavbar({
         outline in `globals.css`.
       */
       <div className="flex items-center gap-2 sm:gap-3">
+        {/*
+          Below `sm` this pill is not in the bar at all — the app bar's mobile row carries
+          sign-in instead (`components/app-bar.tsx`).
+
+          Thai labels are long: logo + locale toggle + "เข้าสู่ระบบ" + "สมัครสมาชิก" needs
+          382px of a 320px or 360px screen, so the bar overflowed the viewport and the
+          sign-up CTA — the one control the landing page exists to reach — was sliced off
+          the right edge on the phones this audience actually uses. Signed out, the bar
+          keeps the CTA; sign-in stays one row below it.
+        */}
         <Button
           asChild
           variant="ghost"
-          className="play-key h-11 rounded-full bg-card px-2.5 text-sm font-bold text-ink hover:bg-brand-soft sm:px-4 [--lift:3px]"
+          className="play-key hidden h-11 rounded-full bg-card px-2.5 text-sm font-bold text-ink hover:bg-brand-soft sm:inline-flex sm:px-4 [--lift:3px]"
         >
-          <Link href={`/${locale}/auth/login`}>{t("signIn")}</Link>
+          <Link href={`/${locale}/auth/login${returnTo ? `?from=${returnTo}` : ""}`}>
+            {t("signIn")}
+          </Link>
         </Button>
 
         <Button
           asChild
           className="play-key h-11 rounded-full bg-brand px-2.5 text-sm font-extrabold text-white hover:bg-brand sm:px-4 [--lift:3px]"
         >
-          <Link href={`/${locale}/auth/register`}>{t("signUp")}</Link>
+          <Link href={`/${locale}/auth/register${returnTo ? `?from=${returnTo}` : ""}`}>
+            {t("signUp")}
+          </Link>
         </Button>
       </div>
     );

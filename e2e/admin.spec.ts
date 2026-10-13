@@ -68,6 +68,62 @@ test.describe("admin", () => {
     await expect(card).toContainText(roman);
   });
 
+  test("Thai example romanisation appears below Thai and persists after editing on mobile", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loginAsAdmin(page, SEED.admin);
+    await page.goto("/admin/vocabulary");
+    await openWord(page, SEED.mutableWord.word);
+
+    const thai = "เรากำลังคุยกันเกี่ยวกับแผนวันหยุดสุดสัปดาห์";
+    const roman = "rao gam-lang khui gan giao-gap phaen wan-yut sut-sap-daa";
+    const input = page.getByRole("textbox", {
+      name: "คำอ่านประโยคไทย (อักษรโรมัน)",
+      exact: true,
+    });
+    const thaiInput = page.getByTestId("input-exampleTh");
+    await thaiInput.fill(thai);
+    await expect(input).toBeVisible();
+    const thaiBox = await thaiInput.boundingBox();
+    const romanBox = await input.boundingBox();
+    expect(thaiBox).not.toBeNull();
+    expect(romanBox).not.toBeNull();
+    expect(romanBox!.y).toBeGreaterThanOrEqual(thaiBox!.y + thaiBox!.height);
+    expect(romanBox!.x + romanBox!.width).toBeLessThanOrEqual(390);
+    await input.fill(roman);
+    await page.getByTestId("save-word").click();
+    await expect(page.getByTestId("save-word")).toBeDisabled();
+
+    await page.reload();
+    await openWord(page, SEED.mutableWord.word);
+    await expect(input).toHaveValue(roman);
+    await expect(thaiInput).toHaveValue(thai);
+
+    await page.goto(`/en/english/words/${SEED.mutableWord.word}`);
+    const example = page.getByTestId("word-example");
+    await expect(example.getByTestId("example-thai")).toContainText(thai);
+    await expect(example.getByTestId("example-roman")).toHaveText(roman);
+    await expect(example.getByTestId("example-roman")).toHaveAttribute("lang", "th-Latn");
+    const lines = await example.locator("p[lang]").allTextContents();
+    expect(lines.slice(0, 2)).toEqual([thai, roman]);
+    expect(await example.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+
+    await page.goto(`/th/english/words/${SEED.mutableWord.word}`);
+    await expect(example.getByTestId("example-reading")).toHaveCount(0);
+    await expect(example.locator("p[lang]").first()).toHaveAttribute("lang", "en");
+
+    // A Thai sentence remains useful even before its English translation is ready.
+    await page.goto("/admin/vocabulary");
+    await openWord(page, SEED.mutableWord.word);
+    await page.getByTestId("input-exampleEn").fill("");
+    await page.getByTestId("save-word").click();
+    await expect(page.getByTestId("save-word")).toBeDisabled();
+    await page.goto(`/en/english/words/${SEED.mutableWord.word}`);
+    await expect(example.getByTestId("example-roman")).toHaveText(roman);
+    await expect(example.getByTestId("example-english")).toHaveCount(0);
+  });
+
   test("a word with two parts of speech has one shared meaning and example set", async ({
     page,
   }) => {

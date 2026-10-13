@@ -99,7 +99,8 @@
   },
   "Audio": {
     "play": "Listen to “{word}”",
-    "playThai": "Listen to the Thai “{word}”"
+    "playThai": "Listen to the Thai “{word}”",
+    "retry": "Play “{word}” again"
   },
   "Quiz": {
     "notReadyTitle": "Quiz is not ready yet",
@@ -431,6 +432,12 @@
     "breadcrumbUnit": "Unit {unit}",
     "meaningPending": "Being reviewed"
   },
+  "ExampleSentence": {
+    "thai": "Thai sentence",
+    "roman": "How to read it · Roman letters",
+    "english": "English",
+    "romanPending": "The Roman reading is not available yet."
+  },
   "Word": {
     "breadcrumbLevel": "{level} words",
     "breadcrumbUnit": "Unit {unit}",
@@ -526,7 +533,10 @@
       "vowelSign": "{char} is a vowel sign, not a consonant. It is written around a consonant and supplies the vowel of the syllable.",
       "tone": "{char} is a tone mark. It carries no sound of its own; it changes the pitch of the syllable it sits on.",
       "vowelSound": "{char} ({name}) is a vowel sound. It is written with one or more vowel signs placed around the consonant it belongs to."
-    }
+    },
+    "errorTitle": "This letter could not be loaded",
+    "errorBody": "Something went wrong fetching the letter. Trying again usually fixes it.",
+    "errorRetry": "Try again"
   },
   "Pronunciation": {
     "metaTitle": "English pronunciation for Thai speakers — {count} sounds",
@@ -549,7 +559,10 @@
     "examplesBody": "{count} words in the course use this sound.",
     "examplesEmpty": "No published course word carries this sound yet.",
     "paginationLabel": "Pronunciation guides",
-    "backToHub": "All pronunciation guides"
+    "backToHub": "All pronunciation guides",
+    "errorTitle": "The pronunciation guide could not be loaded",
+    "errorBody": "Something went wrong fetching these sounds. Trying again usually fixes it.",
+    "errorRetry": "Try again"
   },
   "MinimalPairs": {
     "metaTitle": "Minimal pairs for Thai speakers — {count} English sound contrasts",
@@ -570,7 +583,10 @@
     "practiceHeading": "Practise the contrast",
     "moreWords": "More words with {symbol}",
     "paginationLabel": "Minimal pairs",
-    "backToHub": "All minimal pairs"
+    "backToHub": "All minimal pairs",
+    "errorTitle": "The sound pairs could not be loaded",
+    "errorBody": "Something went wrong fetching these pairs. Trying again usually fixes it.",
+    "errorRetry": "Try again"
   },
   "PhrasalVerbs": {
     "metaTitle": "{count} English phrasal verbs with Thai meanings",
@@ -590,7 +606,10 @@
     "relatedHeading": "The verb it is built from",
     "baseVerb": "Study {verb} in the course",
     "paginationLabel": "Phrasal verbs",
-    "backToHub": "All phrasal verbs"
+    "backToHub": "All phrasal verbs",
+    "errorTitle": "The phrasal verbs could not be loaded",
+    "errorBody": "Something went wrong fetching these verbs. Trying again usually fixes it.",
+    "errorRetry": "Try again"
   },
   "Search": {
     "metaTitle": "Search Oxford 3000 words with Thai meanings",
@@ -611,7 +630,10 @@
     "failed": "Search is unavailable right now. Please try again.",
     "hint": "Type a word to search.",
     "count": "{count} results",
-    "didYouMean": "Did you mean"
+    "didYouMean": "Did you mean",
+    "errorTitle": "Search could not be loaded",
+    "errorBody": "Something went wrong fetching the word list. Trying again usually fixes it.",
+    "errorRetry": "Try again"
   },
   "Faq": {
     "title": "Frequently asked questions",
@@ -732,8 +754,13 @@
     "insightKeepGoing": "Good first try. Another short round will help these stick.",
     "nextPreview": "Up next: {label}",
     "savedAlready": "Saved to your account",
+    "claimSaving": "Saving your progress…",
+    "claimFailed": "Your progress could not be saved. Please try again.",
+    "claimExpired": "This trial can no longer be saved. Your account is ready for your next lesson.",
+    "claimRetry": "Try saving again",
     "saveProgressCta": "Save my progress",
-    "continueWithoutAccount": "Continue without an account"
+    "continueWithoutAccount": "Continue without an account",
+    "feedbackAlreadyAnswered": "You already answered this one — carrying on from here."
   },
   "Placement": {
     "metaTitle": "English level test — find your CEFR starting point",
@@ -898,13 +925,14 @@
     "promptLabel": "Word",
     "matchPromptLabel": "Match this word",
     "question": "What does this mean?",
-    "matchQuestion": "Tap the word, then tap its match.",
+    "matchQuestion": "Choose the matching meaning.",
     "matchHint": "A quick warm-up round — it doesn't affect mastery.",
     "spellingQuestion": "Type the English word for this meaning",
     "speedSecondsLeft": "{seconds}s left",
     "feedbackCorrect": "Correct!",
     "feedbackWrongGeneric": "Not quite — this word will come back for review.",
     "feedbackWrongSpelling": "Not yet — this word is spelled \"{word}\".",
+    "feedbackAlreadyAnswered": "You already answered this one — carrying on from here.",
     "continue": "Continue",
     "check": "Check",
     "checking": "Checking…",
@@ -985,6 +1013,7 @@
     "passedBody": "You recalled {correct} of {total}. This unit is done — nothing here was un-learned.",
     "failedBody": "Strengthen {count} more words in this unit, then try the checkpoint again. Your progress is safe.",
     "failedBodyScore": "You recalled {correct} of {total}. Give this unit another quick round and try again — your progress is safe.",
-    "recoveryCta": "Practise the weak words"
+    "recoveryCta": "Practise the weak words",
+    "feedbackAlreadyAnswered": "You already answered this one — carrying on from here."
   }
 }

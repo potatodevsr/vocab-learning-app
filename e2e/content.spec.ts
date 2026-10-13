@@ -83,6 +83,58 @@ test.describe("public content", () => {
     ).toBeVisible();
   });
 
+  test("Thai example comes first with an honest fallback when Roman reading is missing", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/en/english/words/${SEED.unit1.firstWord}`);
+    const example = page.getByTestId("word-example");
+    await expect(example.getByTestId("example-thai")).toContainText(SEED.unit1.firstExampleTh);
+    await expect(example.getByTestId("example-roman")).toHaveText("The Roman reading is not available yet.");
+    await expect(example.locator("p[lang]").first()).toHaveAttribute("lang", "th");
+    await expect(example.getByTestId("example-english")).toContainText(SEED.unit1.firstExampleEn);
+
+    await page.goto(`/th/english/words/${SEED.unit1.firstWord}`);
+    await expect(example.getByTestId("example-reading")).toHaveCount(0);
+    await expect(example.locator("p[lang]").first()).toHaveAttribute("lang", "en");
+  });
+
+  test("the Thai sentence speaker reads the full example and each per-sense sentence", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      Object.defineProperty(window.speechSynthesis, "speak", {
+        configurable: true,
+        value: (utterance: SpeechSynthesisUtterance) => {
+          document.body.dataset.spokenThai = utterance.text;
+          document.body.dataset.spokenLanguage = utterance.lang;
+        },
+      });
+    });
+    await page.goto(`/en/english/words/${SEED.unit1.firstWord}`);
+    const example = page.getByTestId("word-example");
+    const audio = example.getByRole("button", {
+      name: `Listen to the Thai “${SEED.unit1.firstExampleTh}”`, exact: true,
+    });
+    await audio.click();
+    await expect(page.locator("body")).toHaveAttribute("data-spoken-thai", SEED.unit1.firstExampleTh);
+    await expect(page.locator("body")).toHaveAttribute("data-spoken-language", "th-TH");
+    const bounds = await audio.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.width).toBeGreaterThanOrEqual(44);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+    expect(await example.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+
+    await page.goto(`/en/english/words/${SEED.multiPosWord.word}`);
+    for (const [index, usage] of SEED.multiPosWord.usages.entries()) {
+      await page.getByTestId("pos-usage").nth(index).getByRole("button", {
+        name: `Listen to the Thai “${usage.exampleTh}”`, exact: true,
+      }).click();
+      await expect(page.locator("body")).toHaveAttribute("data-spoken-thai", usage.exampleTh);
+      await expect(page.locator("body")).toHaveAttribute("data-spoken-language", "th-TH");
+    }
+
+    await page.goto(`/th/english/words/${SEED.unit1.firstWord}`);
+    await expect(page.getByTestId("word-example").getByRole("button")).toHaveCount(0);
+  });
+
   test("a word with two parts of speech teaches both of them", async ({
     page,
   }) => {

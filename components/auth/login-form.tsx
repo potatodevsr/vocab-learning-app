@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requestMagicLink, userLogin } from "@/lib/user-api";
+import { usePrefilledForm } from "@/lib/use-prefilled-form";
 import { GoogleButton, AuthDivider } from "@/components/auth/google-button";
 import { safeReturnPath } from "@/lib/return-path";
 
@@ -31,7 +32,16 @@ export function LoginForm() {
   const [sent, setSent] = useState(false);
   const [magicUnavailable, setMagicUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [devMagicLink, setDevMagicLink] = useState<string | null>(null);
+
+  // Typing and autofill both beat hydration on a slow phone, and a controlled input
+  // silently drops what landed before React attached — here it would post an empty
+  // password and answer with "wrong email or password".
+  usePrefilledForm(formRef, (values) => {
+    if (values.email) setEmail(values.email);
+    if (values.password) setPassword(values.password);
+  });
 
   const validateEmail = () => {
     if (isValidEmail(email)) return true;
@@ -129,7 +139,7 @@ export function LoginForm() {
               </>
             )}
 
-            <form onSubmit={submitPassword} className="space-y-4" noValidate>
+            <form ref={formRef} onSubmit={submitPassword} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="email">{t("email")}</Label>
               <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" autoFocus aria-invalid={!!error} />

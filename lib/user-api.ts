@@ -38,7 +38,13 @@ export const getMeWithToken = async (token: string): Promise<User | null> => {
         cache: "no-store",
     });
 
-    if (!res.ok) return null;
+    // Only an unusable session becomes `null` — the caller reads that as "signed out".
+    // Anything else is the API failing, which is a different thing to tell the learner and
+    // belongs in the route's `error.tsx` rather than in a redirect to a login form the
+    // learner has already passed (`middleware.ts` verified the token before this ran).
+    if (res.status === 401 || res.status === 403) return null;
+
+    if (!res.ok) throw new Error(`user/me failed: ${res.status}`);
 
     return res.json();
 };

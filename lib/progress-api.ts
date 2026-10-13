@@ -97,7 +97,16 @@ export const reportQuizComplete = (data: {
     answers: QuizAnswerReport[];
 }) => post("/progress/quiz", data);
 
-/** Server-side read for the profile page, which must forward the caller's cookie. */
+/**
+ * Server-side read for the profile and progress pages, which must forward the caller's
+ * cookie.
+ *
+ * `null` means one thing only: this session is no longer good (401/403), which is the
+ * caller's cue to send the learner to the login form. A service failure is *not* that —
+ * `middleware.ts` has already verified the token locally, so the learner reaching this
+ * code is signed in — and bouncing them to a login they are already past, while the API is
+ * the thing that is down, is a loop. Those throw, into the route's `error.tsx`.
+ */
 export const getProgressSummaryWithToken = async (
     token: string,
 ): Promise<ProgressSummary | null> => {
@@ -106,7 +115,9 @@ export const getProgressSummaryWithToken = async (
         cache: "no-store",
     });
 
-    if (!res.ok) return null;
+    if (res.status === 401 || res.status === 403) return null;
+
+    if (!res.ok) throw new Error(`progress summary failed: ${res.status}`);
 
     return res.json();
 };
@@ -167,7 +178,8 @@ export const getMistakesWithToken = async (
         cache: "no-store",
     });
 
-    if (!res.ok) return null;
+    if (res.status === 401 || res.status === 403) return null;
+    if (!res.ok) throw new Error(`mistakes bank failed: ${res.status}`);
 
     return res.json();
 };

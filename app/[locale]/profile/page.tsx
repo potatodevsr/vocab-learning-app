@@ -63,7 +63,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     ]);
 
   if (!user) {
-    redirect(`/${locale}/auth/login?from=/${locale}/profile`);
+    redirect(`/${locale}/auth/login?from=${encodeURIComponent(`/${locale}/profile`)}`);
   }
 
   const hasProgress = Boolean(summary && summary.lessons + summary.quizzes > 0);

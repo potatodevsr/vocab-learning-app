@@ -230,20 +230,16 @@ test.describe("mixed session branches", () => {
   const START = "**/api/progress/session/start";
 
   /** Steps through all eight items of a fresh unit-1 session, answering whatever variant
-   *  the server hands over (recognition tap, match-pairs two-tap, or typed spelling). */
+   *  the server hands over (single-tap recognition/matching, or typed spelling). */
   const finishSession = async (page: import("@playwright/test").Page) => {
     await expect(page.getByTestId("session-card")).toBeVisible();
     for (let index = 0; index < 8; index += 1) {
-      const itemType = await page.getByTestId("session-card").getAttribute("data-item-type");
       const spelling = page.getByTestId("session-spelling-input");
       if (await spelling.isVisible().catch(() => false)) {
         await spelling.fill("placeholder");
         await page.getByTestId("session-continue").click();
       } else {
         await page.getByTestId("session-option").first().click();
-        if (itemType === "match-pairs") {
-          await page.getByTestId("session-option").first().click();
-        }
       }
       await expect(page.getByTestId("session-feedback")).toBeVisible();
       await page.getByTestId("session-continue").click();
@@ -361,9 +357,6 @@ test.describe("mixed session branches", () => {
         await page.getByTestId("session-continue").click();
       } else {
         await page.getByTestId("session-option").first().click();
-        if (itemType === "match-pairs") {
-          await page.getByTestId("session-option").first().click();
-        }
       }
       await expect(page.getByTestId("session-feedback")).toBeVisible();
       await page.getByTestId("session-continue").click();

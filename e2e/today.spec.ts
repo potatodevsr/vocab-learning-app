@@ -18,13 +18,9 @@ const completeOneSession = async (page: import("@playwright/test").Page) => {
       await spelling.fill("placeholder");
       await page.getByTestId("session-continue").click();
     } else {
-      // Only match-pairs needs a second tap; a blind second tap on any other item would
-      // land on a disabled option mid-grade and hang. Branch on the exposed item type.
-      const type = await page.getByTestId("session-card").getAttribute("data-item-type");
+      // Matching uses the same single-tap interaction as other choices.
+
       await page.getByTestId("session-option").first().click();
-      if (type === "match-pairs") {
-        await page.getByTestId("session-option").first().click();
-      }
     }
     await expect(page.getByTestId("session-feedback")).toBeVisible();
     await page.getByTestId("session-continue").click();
@@ -33,6 +29,25 @@ const completeOneSession = async (page: import("@playwright/test").Page) => {
 };
 
 test.describe("Today card", () => {
+  for (const mode of ["normal", "review", "comeback", "mistakes"] as const) {
+    test(`Today resumes the authoritative ${mode} mode`, async ({ page }) => {
+      test.setTimeout(60_000);
+      await registerThroughUi(page);
+      await completeOneSession(page);
+      const backdate = await page.request.post("/api/progress/test/backdate", { data: { days: 2 } });
+      expect(backdate.ok()).toBe(true);
+      await page.goto(`/en/learn?level=A1&mode=${mode}`);
+      await expect(page.getByTestId("session-card")).toBeVisible();
+      await page.getByTestId("session-option").first().click();
+      await expect(page.getByTestId("session-feedback")).toBeVisible();
+      await page.goto("/en");
+      const resume = page.getByTestId("today-continue-session");
+      await expect(resume).toHaveAttribute("href", new RegExp(`mode=${mode}`));
+      await resume.click();
+      await expect(page.getByTestId("session-card")).toBeVisible();
+      await expect(page.getByTestId("session-counter")).toContainText("2 of");
+    });
+  }
   test("a logged-in request to / resolves to the Today card, not the marketing page", async ({
     page,
   }) => {
@@ -41,6 +56,20 @@ test.describe("Today card", () => {
     await expect(page.getByTestId("today-card")).toBeVisible();
     // The marketing hero's own CTA must not be present for a signed-in learner.
     await expect(page.getByTestId("home-practice-cta")).toHaveCount(0);
+  });
+
+  /**
+   * The app's home screen for everyone who signs in, and it opened on a chip and a button
+   * with no `h1` at all — nothing for a screen reader to announce and nothing to jump to,
+   * on the one page every session starts from.
+   */
+  test("the Today card names itself with a heading", async ({ page }) => {
+    await registerThroughUi(page);
+    await page.goto("/en");
+
+    const heading = page.getByTestId("today-card").getByRole("heading", { level: 1 });
+    await expect(heading).toBeVisible();
+    await expect(heading).not.toBeEmpty();
   });
 
   test("a fresh learner's primary CTA starts today's session", async ({ page }) => {

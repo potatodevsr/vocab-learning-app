@@ -28,11 +28,7 @@ const completeOneSession = async (page: Page) => {
       await spelling.fill("placeholder");
       await page.getByTestId("session-continue").click();
     } else {
-      const itemType = await page.getByTestId("session-card").getAttribute("data-item-type");
       await page.getByTestId("session-option").first().click();
-      if (itemType === "match-pairs") {
-        await page.getByTestId("session-option").first().click();
-      }
     }
     await expect(page.getByTestId("session-feedback")).toBeVisible();
     await page.getByTestId("session-continue").click();
@@ -97,6 +93,48 @@ test.describe("unit checkpoint", () => {
     await expect(page.getByTestId("checkpoint-card")).toBeVisible();
     await expect(page.getByTestId("checkpoint-counter")).toHaveText("3 of 5");
     await expect(page.locator('[data-testid="checkpoint-pip"][data-filled="true"]')).toHaveCount(2);
+  });
+
+  /**
+   * A gate is graded once. When the server replays a verdict it already stored
+   * (`duplicate: true` — reachable from a second tab on the same checkpoint, or from a
+   * retry after a committed answer whose response was lost), that verdict belongs to the
+   * earlier answer, so the card must not paint it as this one's result.
+   */
+  test("a replayed verdict is not drawn as the grade for the answer just given", async ({
+    page,
+  }) => {
+    await registerThroughUi(page);
+    await completeOneSession(page);
+
+    await page.goto(CHECKPOINT_URL);
+    await expect(page.getByTestId("checkpoint-card")).toBeVisible();
+
+    // Item 0 is now graded and stored.
+    await answerCheckpointItem(page);
+    await expect(page.getByTestId("checkpoint-counter")).toHaveText("2 of 5");
+
+    // Re-point the next answer at the index the server has already settled: it replays the
+    // stored verdict instead of grading this pick.
+    await page.route("**/progress/checkpoint/answer", async (route) => {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      await route.continue({ postData: JSON.stringify({ ...body, itemIndex: 0 }) });
+    });
+
+    await expect(page.getByTestId("checkpoint-card")).toBeVisible();
+    const spelling = page.getByTestId("checkpoint-spelling-input");
+    if (await spelling.isVisible().catch(() => false)) {
+      await spelling.fill("placeholder");
+      await page.getByTestId("checkpoint-continue").click();
+    } else {
+      await page.getByTestId("checkpoint-option").first().click();
+    }
+
+    const feedback = page.getByTestId("checkpoint-feedback");
+    await expect(feedback).toBeVisible();
+    await expect(feedback).toHaveAttribute("data-already-answered", "true");
+    // And it claims neither verdict for the pick that was just made.
+    await expect(feedback).not.toHaveAttribute("data-correct", /.*/);
   });
 
   test("a failed checkpoint gives a recovery route and keeps prior progress", async ({

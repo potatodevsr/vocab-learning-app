@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, Loader2, Volume2, X } from "lucide-react";
+import { AlertTriangle, Check, Info, Loader2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ThaiSpeech } from "@/components/play/thai-speech";
 import {
   answerPractice,
   claimPractice,
@@ -33,6 +34,14 @@ type AnsweredItem = {
   selectedOptionIndex: number;
   correct: boolean;
   correctOptionIndex: number;
+  /**
+   * The server replayed a verdict it had already stored for this index
+   * (`duplicate: true`) instead of grading the pick just made — reachable when a committed
+   * answer's response is lost and the learner retries, or from a second tab on the same
+   * trial cookie. It is the truth about the item, not about this answer, so it is never
+   * drawn as a grade.
+   */
+  alreadyAnswered?: boolean;
 };
 
 type CachedSession = {
@@ -111,7 +120,10 @@ export function PracticeSession({
   const [showClose, setShowClose] = useState(false);
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
   const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<"expired" | "retry" | null>(null);
   const [claimed, setClaimed] = useState<{ correctCount: number; total: number } | null>(null);
+  const claimInFlight = useRef(false);
+  const autoClaimAttempted = useRef(false);
 
   const startedTrackedRef = useRef(false);
   const currentIndex = answered.length;
@@ -221,6 +233,7 @@ export function PracticeSession({
           selectedOptionIndex: optionIndex,
           correct: result.correct,
           correctOptionIndex: result.correctOptionIndex,
+          alreadyAnswered: result.duplicate === true,
         };
 
         const nextAnswered = [...answered, entry];
@@ -265,23 +278,30 @@ export function PracticeSession({
   }, [currentIndex, items.length]);
 
   const attemptClaim = useCallback(async () => {
-    if (claiming || claimed) return;
+    if (claimInFlight.current || claimed) return;
+    claimInFlight.current = true;
     setClaiming(true);
+    setClaimError(null);
     try {
       const result = await claimPractice();
       setClaimed({ correctCount: result.correctCount, total: result.total });
       clearCache(scopeKey);
-    } catch {
-      // Not signed in, or the claim cookie already expired — the result screen still
-      // offers the normal "save my progress" signup CTA in that case.
+    } catch (error) {
+      setClaimError(error instanceof PracticeApiError && [400, 404].includes(error.status)
+        ? "expired" : "retry");
     } finally {
+      claimInFlight.current = false;
       setClaiming(false);
     }
-  }, [claiming, claimed, scopeKey]);
+  }, [claimed, scopeKey]);
 
   useEffect(() => {
     if (phase !== "result" || !isAuthed) return;
-    const timer = window.setTimeout(() => void attemptClaim(), 0);
+    const timer = window.setTimeout(() => {
+      if (autoClaimAttempted.current) return;
+      autoClaimAttempted.current = true;
+      void attemptClaim();
+    }, 0);
     return () => window.clearTimeout(timer);
   }, [phase, isAuthed, attemptClaim]);
 
@@ -297,6 +317,9 @@ export function PracticeSession({
         return;
       }
       if ((phase === "in-progress" || phase === "feedback") && event.key === "Enter") {
+        // Focused buttons own Enter. In particular, replaying Thai audio must not
+        // advance the question and immediately cancel its speech on unmount.
+        if (event.target instanceof Element && event.target.closest("button:not(:disabled)")) return;
         if (phase === "feedback") continueToNext();
         else if (selected !== null) void submit(selected);
         return;
@@ -410,13 +433,26 @@ export function PracticeSession({
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          {isAuthed || claimed ? (
+          {claimed ? (
             <div
               className="play-tile flex items-center gap-3 p-4 text-sm font-semibold"
               data-testid="practice-saved"
             >
               <Check className="size-5 text-success" />
               {t("savedAlready")}
+            </div>
+          ) : isAuthed ? (
+            <div className="flex flex-col gap-3" aria-live="polite">
+              <p data-testid="practice-claim-status" role={claimError ? "alert" : "status"}>
+                {t(claimError === "expired" ? "claimExpired" : claimError ? "claimFailed" : "claimSaving")}
+              </p>
+              {claimError === "retry" && (
+                <Button onClick={() => void attemptClaim()} disabled={claiming}
+                  className="play-key h-12 rounded-full bg-brand text-white hover:bg-brand"
+                  data-testid="practice-claim-retry">
+                  {t("claimRetry")}
+                </Button>
+              )}
             </div>
           ) : (
             <Button
@@ -431,7 +467,7 @@ export function PracticeSession({
           )}
 
           <Button asChild size="lg" variant="outline" className="play-press h-12 rounded-full bg-white px-6">
-            <Link href={backHref}>{t("continueWithoutAccount")}</Link>
+            <Link href={backHref}>{t(isAuthed ? "continue" : "continueWithoutAccount")}</Link>
           </Button>
         </div>
       </div>
@@ -443,6 +479,9 @@ export function PracticeSession({
   }
 
   const showingFeedback = phase === "feedback" && lastResult;
+  const correctMeaning = showingFeedback && !lastResult.alreadyAnswered
+    ? currentItem.options[lastResult.correctOptionIndex]?.meaningTh ?? ""
+    : "";
 
   return (
     <div data-testid="practice-card">
@@ -507,8 +546,12 @@ export function PracticeSession({
           <div className="mt-3 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={t("question")}>
             {currentItem.options.map((option, index) => {
               const isSelected = selected === index;
-              const isCorrectOption = showingFeedback && lastResult.correctOptionIndex === index;
-              const isWrongSelected = showingFeedback && isSelected && !lastResult.correct;
+              // A replayed verdict marks nothing: painting the tick would celebrate an
+              // option this answer did not choose.
+              const isCorrectOption =
+                showingFeedback && !lastResult.alreadyAnswered && lastResult.correctOptionIndex === index;
+              const isWrongSelected =
+                showingFeedback && !lastResult.alreadyAnswered && isSelected && !lastResult.correct;
 
               return (
                 <button
@@ -553,26 +596,40 @@ export function PracticeSession({
           {showingFeedback && (
             <div
               className={`mt-4 rounded-2xl border-3 border-ink p-4 ${
-                lastResult.correct ? "bg-success-soft" : "bg-warn-soft"
+                lastResult.alreadyAnswered
+                  ? "bg-card"
+                  : lastResult.correct
+                    ? "bg-success-soft"
+                    : "bg-warn-soft"
               }`}
               data-testid="practice-feedback"
+              data-already-answered={lastResult.alreadyAnswered ? "true" : undefined}
               role="status"
             >
-              <p className="flex items-center gap-2 text-sm font-extrabold">
-                {lastResult.correct ? (
+              <div className="flex items-center gap-3">
+                {correctMeaning.trim() && (
+                  <ThaiSpeech text={correctMeaning} className="size-11" />
+                )}
+                <p className="flex items-center gap-2 text-sm font-extrabold">
+                {lastResult.alreadyAnswered ? (
+                  <>
+                    <Info className="size-4 text-muted-foreground" />
+                    {t("feedbackAlreadyAnswered")}
+                  </>
+                ) : lastResult.correct ? (
                   <>
                     <Check className="size-4 text-success" />
                     {t("feedbackCorrect")}
                   </>
                 ) : (
                   <>
-                    <Volume2 className="size-4 text-ink" />
                     {t("feedbackWrong", {
-                      meaning: currentItem.options[lastResult.correctOptionIndex]?.meaningTh ?? "",
+                      meaning: correctMeaning,
                     })}
                   </>
                 )}
-              </p>
+                </p>
+              </div>
             </div>
           )}
         </article>

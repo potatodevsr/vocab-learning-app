@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { loginThroughUi, registerThroughUi } from "./support/actions";
+import { newUser } from "./support/fixtures";
 
 test.describe("authentication", () => {
   test("auth shells are cacheable and keep query state in the client island", async ({
@@ -181,5 +182,62 @@ test.describe("authentication", () => {
     // And the protected route is protected again.
     await page.goto("/en/learn?level=A1&unit=1");
     await expect(page).toHaveURL(/\/auth\/login/);
+  });
+});
+
+
+/**
+ * A controlled form is deaf until React attaches.
+ *
+ * Between first paint and hydration the markup is real HTML: it accepts typing, and a
+ * password manager fills it, and none of that reaches `useState`. The register form's
+ * submit is disabled on `isFormValid`, so what a learner on a slow phone saw was five
+ * filled fields above a dead button and no explanation. `usePrefilledForm` adopts
+ * whatever the DOM already holds on mount.
+ */
+test.describe("a form filled before hydration", () => {
+  test("keeps what was typed and lets the learner submit", async ({ page }) => {
+    // Hold every script back long enough to type the whole form into un-hydrated markup.
+    await page.route("**/*.js", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await route.continue();
+    });
+
+    await page.goto("/en/auth/register", { waitUntil: "domcontentloaded" });
+
+    const user = newUser();
+    await page.fill("#firstName", user.firstName);
+    await page.fill("#lastName", user.lastName);
+    await page.fill("#email", user.email);
+    await page.fill("#username", user.username);
+    await page.fill("#password", user.password);
+
+    await page.unroute("**/*.js");
+
+    const submit = page.locator('button[type="submit"]');
+    await expect(submit).toBeEnabled({ timeout: 30_000 });
+    await expect(page.locator("#email")).toHaveValue(user.email);
+  });
+});
+
+/**
+ * The bar's own sign-in used to lead nowhere in particular.
+ *
+ * `middleware.ts` preserves a return path when it *sends* someone to the login wall, but a
+ * learner who pressed "log in" in the header — three units into a level, or halfway down a
+ * word page — was returned to the home page having lost their place (audit UX-09).
+ */
+test.describe("signing in from the bar", () => {
+  test("comes back to the page the learner was reading", async ({ page }) => {
+    await page.goto("/th/english/words/about");
+
+    const links = await page
+      .locator("header a[href*='/auth/']")
+      .evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
+
+    expect(links.length).toBeGreaterThan(0);
+    for (const href of links) {
+      expect(href).toContain("from=%2Fth%2Fenglish%2Fwords%2Fabout");
+    }
   });
 });

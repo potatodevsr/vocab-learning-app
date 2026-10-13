@@ -228,6 +228,36 @@ test.describe("translation keys the app actually asks for", () => {
     expect(missing).toEqual([]);
   });
 
+  /**
+   * `components/route-error.tsx` takes its namespace as a *prop*, so the literal-bind scan
+   * above cannot see any of its keys — and eight boundaries shipped whose namespaces
+   * carried none of the three, which renders the key path ("Search.errorTitle") to a
+   * learner whose page has just failed. Every namespace handed to `RouteError` has to own
+   * the three strings the component asks for, in both locales.
+   */
+  test("every namespace passed to RouteError carries its three error strings", async () => {
+    const files = await readSources();
+    const missing: string[] = [];
+    const seen = new Set<string>();
+
+    for (const { path, source } of files) {
+      for (const match of source.matchAll(/<RouteError[^>]*\snamespace=["']([A-Za-z0-9_]+)["']/g)) {
+        const namespace = match[1];
+        seen.add(namespace);
+
+        for (const key of ["errorTitle", "errorBody", "errorRetry"]) {
+          const full = `${namespace}.${key}`;
+          if (!enKeys.includes(full)) missing.push(`${path} → en.${full}`);
+          if (!thKeys.includes(full)) missing.push(`${path} → th.${full}`);
+        }
+      }
+    }
+
+    // A guard that matches nothing passes forever; this one has eight callers today.
+    expect(seen.size).toBeGreaterThan(0);
+    expect(missing).toEqual([]);
+  });
+
   test("every dynamic key family is complete in both locales", () => {
     const missing: string[] = [];
 

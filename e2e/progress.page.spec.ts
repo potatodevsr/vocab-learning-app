@@ -20,9 +20,9 @@ const completeOneSession = async (page: import("@playwright/test").Page) => {
       await spelling.fill("placeholder");
       await page.getByTestId("session-continue").click();
     } else {
-      const type = await page.getByTestId("session-card").getAttribute("data-item-type");
+
       await page.getByTestId("session-option").first().click();
-      if (type === "match-pairs") await page.getByTestId("session-option").first().click();
+
     }
     await expect(page.getByTestId("session-feedback")).toBeVisible();
     await page.getByTestId("session-continue").click();

@@ -30,6 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrackPageView } from "@/components/track-page-view";
+import { WordExample } from "@/components/word-example";
 
 /**
  * Public content: cacheable, re-rendered hourly.
@@ -557,26 +558,19 @@ export default async function WordPage({ params }: WordPageProps) {
                           </p>
                         )}
 
-                        {usage.exampleEn && (
-                          <p className="mt-2 text-base leading-7 text-foreground">
-                            {usage.exampleEn}
-                          </p>
-                        )}
-
-                        {usage.exampleTh && (
-                          <p
-                            className="font-thai mt-1 text-base leading-7 text-muted-foreground"
-                            lang="th"
-                          >
-                            {usage.exampleTh}
-                          </p>
-                        )}
+                        <WordExample
+                          mode={mode}
+                          exampleEn={usage.exampleEn}
+                          exampleTh={usage.exampleTh}
+                          // The row's reading belongs only to its matching sentence.
+                          exampleThRoman={usage.exampleTh.trim() === entry.exampleTh.trim() ? entry.exampleThRoman : ""}
+                        />
                       </li>
                     ))}
                   </ul>
                 </div>
               ) : (
-                entry.exampleEn && (
+                (entry.exampleEn.trim() || entry.exampleTh.trim()) && (
                   <div
                     className="mt-4 rounded-2xl bg-accent-mint/15 p-5"
                     data-testid="word-example"
@@ -584,18 +578,12 @@ export default async function WordPage({ params }: WordPageProps) {
                     <p className="play-eyebrow">
                       {t("example")}
                     </p>
-                    <p className="mt-2 text-base leading-7 text-foreground">
-                      {entry.exampleEn}
-                    </p>
-
-                    {entry.exampleTh && (
-                      <p
-                        className="font-thai mt-2 text-base leading-7 text-muted-foreground"
-                        lang="th"
-                      >
-                        {entry.exampleTh}
-                      </p>
-                    )}
+                    <WordExample
+                      mode={mode}
+                      exampleEn={entry.exampleEn}
+                      exampleTh={entry.exampleTh}
+                      exampleThRoman={entry.exampleThRoman}
+                    />
                   </div>
                 )
               )}

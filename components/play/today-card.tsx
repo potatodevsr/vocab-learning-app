@@ -20,7 +20,7 @@ export async function TodayCard({ summary }: { summary: TodaySummary }) {
     ? {
         href: `/learn?level=${summary.inProgressSession.level}${
           summary.inProgressSession.unit ? `&unit=${summary.inProgressSession.unit}` : ""
-        }`,
+        }&mode=${summary.inProgressSession.mode ?? "normal"}`,
         label: t("continueSessionCta"),
         testId: "today-continue-session",
       }
@@ -58,11 +58,17 @@ export async function TodayCard({ summary }: { summary: TodaySummary }) {
     <main className="min-h-screen bg-background text-foreground" data-testid="today-card">
       <section className="border-b-3 border-ink bg-brand text-white">
         <div className="mx-auto w-full max-w-column px-4 py-12 sm:px-6 lg:px-8">
-          <div>
+          {/*
+            The authenticated home had no `h1` at all: the marketing page it replaces has
+            one, this one opened on a chip and a button. A page with no heading gives a
+            screen reader nothing to announce and nothing to jump to, and it is the home
+            screen of the whole app.
+          */}
+          <h1>
             <span className="play-stamp bg-accent-sun px-4 py-1.5 text-sm font-extrabold text-ink">
               {t("greeting")}
             </span>
-          </div>
+          </h1>
 
           <Button
             asChild
