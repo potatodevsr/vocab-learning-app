@@ -116,6 +116,9 @@ const readAuthenticated = async <T>(
 export const getTodaySummaryWithToken = (token: string) =>
     readAuthenticated<TodaySummary>("/progress/today", token, "today summary");
 
+/** Browser read: recover the saved session's actual scope after a start conflict. */
+export const getTodaySummary = () => request<TodaySummary>("/progress/today");
+
 export const setWeeklyGoal = (days: number) =>
     request<components["schemas"]["SetGoalResult"]>("/progress/goal", {
         method: "POST",

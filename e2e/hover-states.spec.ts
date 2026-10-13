@@ -237,6 +237,15 @@ test.describe("hover states — learner pages", () => {
     await checkPage(page, "phone-session");
   });
 
+  test("the saved-session recovery remains legible on a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/learn?level=A1&unit=1");
+    await expect(page.getByTestId("session-card")).toBeVisible();
+    await page.goto("/en/learn?level=A1");
+    await expect(page.getByTestId("session-resume")).toBeVisible();
+    await checkPage(page, "phone-session-recovery");
+  });
+
   test("the mixed session result answers the pointer everywhere", async ({ page }) => {
     await page.goto("/en/learn?level=A1&unit=1");
     await expect(page.getByTestId("session-card")).toBeVisible();

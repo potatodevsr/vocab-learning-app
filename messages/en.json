@@ -912,6 +912,9 @@
   },
   "Session": {
     "preparing": "Preparing your session…",
+    "conflictTitle": "You have an unfinished lesson",
+    "conflictBody": "Your answers are saved. Continue your unfinished lesson before starting another one.",
+    "resumeSaved": "Continue saved lesson",
     "errorTitle": "Something went wrong",
     "errorBody": "We couldn't load your session. Please try again.",
     "retry": "Try again",

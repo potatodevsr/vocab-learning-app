@@ -11,6 +11,7 @@ import { WordAudio } from "@/components/play/word-audio";
 import {
   answerSessionItem,
   getSessionStatus,
+  getTodaySummary,
   startSession,
   SessionApiError,
   type SessionItem,
@@ -69,7 +70,7 @@ type MixedSessionProps = {
   backHref: string;
 };
 
-type SessionErrorCode = "generic" | "not-enough" | "unauth";
+type SessionErrorCode = "generic" | "not-enough" | "unauth" | "conflict";
 
 export function MixedSession({ scope, backHref }: MixedSessionProps) {
   const t = useTranslations("Session");
@@ -82,6 +83,7 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
   const [typedSpelling, setTypedSpelling] = useState("");
   const [lastResult, setLastResult] = useState<AnsweredItem | null>(null);
   const [errorCode, setErrorCode] = useState<SessionErrorCode | null>(null);
+  const [resumeHref, setResumeHref] = useState<string | null>(null);
   const [showClose, setShowClose] = useState(false);
   /**
    * The server's own tally, kept for the result screen.
@@ -118,6 +120,7 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
 
   const boot = useCallback(async () => {
     setPhase("loading");
+    setResumeHref(null);
     try {
       /**
        * `mode` has to travel with the request.
@@ -184,6 +187,20 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
     } catch (err) {
       if (err instanceof SessionApiError && err.status === 401) {
         setErrorCode("unauth");
+      } else if (err instanceof SessionApiError && err.status === 409) {
+        // A different unit (including an omitted unit) also conflicts. Retrying the
+        // same scope cannot help; offer the server's saved scope without discarding it.
+        const saved = (await getTodaySummary().catch(() => null))?.inProgressSession;
+        if (saved) {
+          const query = new URLSearchParams({ level: saved.level });
+          if (saved.unit !== null) query.set("unit", String(saved.unit));
+          query.set("mode", saved.mode ?? "normal");
+          setResumeHref(`/learn?${query.toString()}`);
+          setErrorCode("conflict");
+        } else {
+          // The session may have finished in another tab, or the read failed.
+          setErrorCode("generic");
+        }
       } else if (err instanceof SessionApiError && err.status === 422) {
         setErrorCode("not-enough");
       } else {
@@ -368,16 +385,21 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
 
   if (phase === "error") {
     const isUnauth = errorCode === "unauth";
+    const isConflict = errorCode === "conflict";
     const titleKey = isUnauth
       ? "unauthTitle"
-      : errorCode === "not-enough"
-        ? "notEnoughTitle"
-        : "errorTitle";
+      : isConflict
+        ? "conflictTitle"
+        : errorCode === "not-enough"
+          ? "notEnoughTitle"
+          : "errorTitle";
     const bodyKey = isUnauth
       ? "unauthBody"
-      : errorCode === "not-enough"
-        ? "notEnoughBody"
-        : "errorBody";
+      : isConflict
+        ? "conflictBody"
+        : errorCode === "not-enough"
+          ? "notEnoughBody"
+          : "errorBody";
     return (
       <div
         className="play-card flex flex-col items-center gap-4 p-8 text-center"
@@ -385,14 +407,23 @@ export function MixedSession({ scope, backHref }: MixedSessionProps) {
       >
         <div
           className={`flex size-12 items-center justify-center rounded-2xl border-3 border-ink text-white ${
-            isUnauth ? "bg-brand" : "bg-danger"
+            isUnauth || isConflict ? "bg-brand" : "bg-danger"
           }`}
         >
-          {isUnauth ? <LockKeyhole className="size-5" /> : <AlertTriangle className="size-5" />}
+          {isUnauth ? <LockKeyhole className="size-5" /> : isConflict ? <Info className="size-5" /> : <AlertTriangle className="size-5" />}
         </div>
         <h2 className="text-xl font-bold">{t(titleKey)}</h2>
         <p className="max-w-md text-sm text-muted-foreground">{t(bodyKey)}</p>
-        {isUnauth ? (
+        {isConflict && resumeHref ? (
+          <Button
+            asChild
+            className="play-key h-12 rounded-2xl bg-brand px-6 font-extrabold text-white hover:bg-brand"
+          >
+            <Link href={resumeHref} data-testid="session-resume">
+              {t("resumeSaved")}
+            </Link>
+          </Button>
+        ) : isUnauth ? (
           <Button
             asChild
             className="play-key h-12 rounded-2xl bg-brand px-6 font-extrabold text-white hover:bg-brand"

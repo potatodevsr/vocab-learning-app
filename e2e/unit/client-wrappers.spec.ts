@@ -33,6 +33,7 @@ import {
   SessionApiError,
   answerSessionItem,
   getTodaySummaryWithToken,
+  getTodaySummary,
   getSessionStatus,
   setWeeklyGoal,
   startSession,
@@ -344,6 +345,10 @@ test.describe("gameplay client wrappers", () => {
 
   test("today summary returns null for a garbage token", async () => {
     await expect(getTodaySummaryWithToken("not-a-jwt")).resolves.toBeNull();
+  });
+
+  test("browser today summary rejects an unauthenticated caller", async () => {
+    await expect(getTodaySummary()).rejects.toMatchObject({ status: 401 });
   });
 });
 

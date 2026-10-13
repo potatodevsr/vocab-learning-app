@@ -31,6 +31,33 @@ test.describe("mixed session", () => {
     await registerThroughUi(page);
   });
 
+  for (const scenario of [
+    { locale: "en", openQuery: "level=A1&unit=1", requestedQuery: "level=A1", resumeQuery: "level=A1&unit=1&mode=normal", label: "Continue saved lesson" },
+    { locale: "en", openQuery: "level=A1&unit=1", requestedQuery: "level=A1&unit=2", resumeQuery: "level=A1&unit=1&mode=normal", label: "Continue saved lesson" },
+    { locale: "th", openQuery: "level=A1&mode=comeback", requestedQuery: "level=A1&unit=1", resumeQuery: "level=A1&mode=comeback", label: "เรียนบทเรียนเดิมต่อ" },
+  ]) {
+    test(`an incompatible session offers recovery (${scenario.locale}, ${scenario.requestedQuery}, ${scenario.openQuery})`, async ({ page }) => {
+      await page.goto(`/${scenario.locale}/learn?${scenario.openQuery}`);
+      await expect(page.getByTestId("session-card")).toBeVisible();
+      await answerCurrentItem(page);
+      const before = await (await page.request.get("/api/progress/today")).json();
+
+      await page.goto(`/${scenario.locale}/learn?${scenario.requestedQuery}`);
+      const resume = page.getByTestId("session-resume");
+      await expect(resume).toHaveText(scenario.label);
+      await expect(resume).toHaveAttribute("href", `/${scenario.locale}/learn?${scenario.resumeQuery}`);
+      await expect(page.getByTestId("session-retry")).toHaveCount(0);
+      await resume.click();
+      await expect(page).toHaveURL(new RegExp(scenario.resumeQuery.replaceAll("?", "\\?") + "$"));
+      await expect(page.getByTestId("session-card")).toBeVisible();
+      const after = await (await page.request.get("/api/progress/today")).json();
+      expect(after.inProgressSession.id).toBe(before.inProgressSession.id);
+      const status = await (await page.request.get(`/api/progress/session/${after.inProgressSession.id}`)).json();
+      expect(status.answeredCount).toBe(1);
+      await expect(page.getByTestId("session-counter")).toContainText("2");
+    });
+  }
+
   test("an admin can also start and resume their own learner session", async ({ page }) => {
     await loginAsAdmin(page, SEED.admin);
     await page.goto("/en/learn?level=A1&unit=1");
